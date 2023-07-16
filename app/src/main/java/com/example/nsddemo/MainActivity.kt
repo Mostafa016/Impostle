@@ -9,13 +9,18 @@ import android.text.format.Formatter
 import android.util.Log
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContentProviderCompat.requireContext
 import com.example.nsddemo.Debugging.TAG
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import io.ktor.network.sockets.Connection
+import io.ktor.utils.io.readUTF8Line
+import io.ktor.utils.io.writeStringUtf8
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.net.InetAddress
-import java.util.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -29,6 +34,23 @@ class MainActivity : AppCompatActivity() {
     private lateinit var gameCode: String
 
     private var isHost = false
+
+    private var LOCK = Any()
+
+    private val _gameState: MutableStateFlow<GameState> = MutableStateFlow(GameState.StartGame)
+    val gameState = _gameState.asStateFlow()
+
+    private lateinit var askingPairs: List<Pair<Player, Player>>
+
+    private var currentAskingPairIndex = 0
+
+    private var numberOfVoters = 0
+
+    private val votedPlayers: MutableMap<Player, Int> =
+        emptyMap<Player, Int>() as MutableMap<Player, Int>
+
+    //TODO: Define this using input from user and random color
+    private val serverPlayer = Player("Mostafa", "00FF00")
 
     private val registrationListener = object : NsdManager.RegistrationListener {
 
@@ -88,7 +110,10 @@ class MainActivity : AppCompatActivity() {
                     // Not the host of the lobby I want to join
                     val serviceGameCode = service.serviceName.split("_")[1].lowercase()
                     if (serviceGameCode != gameCode) {
-                        Log.d(TAG, "${service.serviceName} is not the host of the game I want to join with code $gameCode")
+                        Log.d(
+                            TAG,
+                            "${service.serviceName} is not the host of the game I want to join with code $gameCode"
+                        )
                         return
                     }
                     nsdManager.resolveService(
@@ -125,7 +150,7 @@ class MainActivity : AppCompatActivity() {
                 Log.d(TAG, "Client connecting to server with: ")
                 Log.d(TAG, "Port: $port")
                 Log.d(TAG, "Host: $host")
-                CoroutineScope(Dispatchers.IO).launch{
+                CoroutineScope(Dispatchers.IO).launch {
                     Log.d(TAG, "Started client")
                     Log.d(TAG, "Address: ${host.hostAddress!!} Port: $port")
                     Client.run(host.hostAddress!!, port)
@@ -159,7 +184,21 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         findViewById<Button>(R.id.btnRegisterService).setOnClickListener {
-            // TODO: Get port number from the socket thing
+            CoroutineScope(Dispatchers.IO).launch {
+                gameState.collect {
+                    when (gameState.value) {
+                        GameState.StartGame -> TODO()
+                        is GameState.GetPlayerName -> TODO()
+                        is GameState.DisplayCategoryAndWord -> TODO()
+                        is GameState.AskQuestion -> TODO()
+                        GameState.StartVote -> TODO()
+                        is GameState.GetPlayerVote -> TODO()
+                        is GameState.EndVote -> TODO()
+                        GameState.ShowScoreboard -> TODO()
+                        GameState.Replay -> TODO()
+                    }
+                }
+            }
             gameCode = generateGameCode()
             Log.d(TAG, "gameCode: $gameCode")
             findViewById<TextView>(R.id.tvCode).text = "Code: $gameCode"
@@ -168,14 +207,13 @@ class MainActivity : AppCompatActivity() {
                 val wm = this.getSystemService(WIFI_SERVICE) as WifiManager
                 serverIP = Formatter.formatIpAddress(wm.connectionInfo.ipAddress)
                 Log.d(TAG, "Device IP: $serverIP")
-            }
-            catch (e: Exception){
+            } catch (e: Exception) {
                 Log.d(TAG, e.message.toString())
             }
             val serverPort: Int = Server.initServerSocket(serverIP!!)
             val tmp = CoroutineScope(Dispatchers.IO).launch {
                 Log.d(TAG, "Started server")
-                Server.run()
+                Server.run(::handleMessages)
             }
             Log.d(TAG, tmp.children.toString())
             registerService(serverPort, gameCode)
@@ -242,8 +280,7 @@ class MainActivity : AppCompatActivity() {
             }
         } catch (E: Exception) {
             Log.e(TAG, E.message.toString())
-        }
-        finally {
+        } finally {
 
         }
         Log.d(TAG, "Created nsdManager")
@@ -261,9 +298,193 @@ class MainActivity : AppCompatActivity() {
         nsdManager.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, discoveryListener)
     }
 
+
+    private fun generateAllAskingCombinations(firstPlayerList: List<Player>): List<Pair<Player, Player>> {
+        val secondPlayerList = firstPlayerList.toMutableList()
+        val pairs = mutableListOf<Pair<Player, Player>>()
+
+        firstPlayerList.shuffled().map { firstPlayer ->
+            val firstPlayerIndex =
+                secondPlayerList.indexOf(firstPlayer) // To remove only one of the duplicate names
+            val secondPlayer =
+                secondPlayerList.filterIndexed { index, _ -> index != firstPlayerIndex }
+                    .random()
+            secondPlayerList.remove(secondPlayer)
+            pairs.add(firstPlayer to secondPlayer)
+        }
+
+        return pairs
+    }
+
+    //TODO: All lists should be in ViewModel or Activity for now but moved to ViewModel later.
+    private suspend fun handleMessages(connection: Connection) {
+        Log.d(TAG, "Waiting for client message...")
+        val json = connection.input.readUTF8Line()
+        Log.d(TAG, "Received from client: $json")
+        val gson = Gson()
+        val type = object : TypeToken<Map<String?, String?>?>() {}.type
+        val myMap: Map<String, String>? = gson.fromJson<Map<String, String>>(json, type)
+        Log.d(TAG, "JSON: $myMap")
+        when (_gameState.value) {
+            GameState.StartGame, is GameState.GetPlayerName -> {
+                val playerName = gson.fromJson(json, String::class.java)
+                synchronized(LOCK)
+                {
+                    Server.players.put(
+                        //connection.socket.remoteAddress.toJavaAddress().address
+                        key = connection,
+                        value = Player(
+                            playerName, "FF0000"
+                        )
+                    )
+                }
+                _gameState.value = GameState.GetPlayerName(playerName)
+            }
+            // This game state will happen when the user which acts as the server
+            // presses a button like "start game"
+            is GameState.DisplayCategoryAndWord -> {
+                val playersIncludingServer = Server.players.values.toMutableList()
+                playersIncludingServer.add(serverPlayer)
+                askingPairs = generateAllAskingCombinations(playersIncludingServer)
+                // Randomly choose imposter from list of players
+                val imposter = Server.players.random().value
+                //TODO: Function to choose category and word
+                val category = "Animals"
+                val word = "Fox"
+                // Send category and word to all players except for imposter
+                // which only receives category
+                for ((clientConnection, player) in Server.players) {
+                    if (player == imposter) {
+                        clientConnection.output.writeStringUtf8(
+                            gson.toJson(
+                                mapOf(
+                                    "category" to category
+                                )
+                            )
+                        )
+                        continue
+                    }
+                    clientConnection.output.writeStringUtf8(
+                        gson.toJson(
+                            mapOf(
+                                "category" to category,
+                                "word" to word
+                            )
+                        )
+                    )
+                }
+                //TODO: Send first asking pair to all players
+                for ((clientConnection, player) in Server.players) {
+                    clientConnection.output.writeStringUtf8(
+                        gson.toJson(
+                            mapOf(
+                                "asker" to askingPairs[currentAskingPairIndex].first,
+                                "asked" to askingPairs[currentAskingPairIndex].second,
+                                "isAsking" to (askingPairs[currentAskingPairIndex].first == player)
+                            )
+                        )
+                    )
+                }
+                //TODO: Pass real Player objects to AskQuestion and properly check the server is
+                // the one asking
+                _gameState.value = GameState.AskQuestion(
+                    askingPairs[currentAskingPairIndex].first,
+                    askingPairs[currentAskingPairIndex].second,
+                    (askingPairs[currentAskingPairIndex].first == serverPlayer)
+                )
+            }
+
+            is GameState.AskQuestion -> {
+                //This is sent from the player asking, confirming to end question
+                val isDone = gson.fromJson(json, Boolean::class.java)
+                currentAskingPairIndex++
+                if (currentAskingPairIndex == askingPairs.size) {
+                    _gameState.value = GameState.StartVote
+                    return
+                    //TODO: IDEA! gameState should be a stateflow/flow and you just change it's value
+                    // here in this function but what you do when the state changes should be in
+                    // the collect function of the flow
+                }
+                //TODO: Send next question to clients
+                for ((clientConnection, player) in Server.players) {
+                    clientConnection.output.writeStringUtf8(
+                        gson.toJson(
+                            mapOf(
+                                "asker" to askingPairs[currentAskingPairIndex].first,
+                                "asked" to askingPairs[currentAskingPairIndex].second,
+                                "isAsking" to (askingPairs[currentAskingPairIndex].first == player)
+                            )
+                        )
+                    )
+                }
+                _gameState.value = GameState.AskQuestion(
+                    askingPairs[currentAskingPairIndex].first,
+                    askingPairs[currentAskingPairIndex].second,
+                    (askingPairs[currentAskingPairIndex].first == serverPlayer)
+                )
+            }
+            // This game state will happen when the user which acts as the server
+            // presses a button like "start vote"
+            // (The screen will be like any additional questions?)
+            GameState.StartVote -> {
+                //TODO: Send messages to all players informing them to start the voting
+                // Players list should be sent at start of the game to all players where they
+                // get all other players lists not their ips just Player objects
+                for ((clientConnection, player) in Server.players) {
+                    clientConnection.output.writeStringUtf8(
+                        gson.toJson(
+                            Server.players.values.toMutableList().remove(player)
+                        )
+                    )
+                }
+            }
+
+            is GameState.GetPlayerVote -> {
+                //This is sent from the player asking, confirming to end question
+                val votedPlayer = gson.fromJson(json, Player::class.java)
+                votedPlayers[votedPlayer] = votedPlayers[votedPlayer]!! + 1
+                numberOfVoters++
+                if (numberOfVoters > Server.players.size) {
+                    _gameState.value = GameState.EndVote(votedPlayers.maxBy { it.value }.key)
+                    return
+                }
+            }
+
+            is GameState.EndVote -> {
+                //TODO: This event is triggered when all players have voted and server has votes
+                // Shouldn't send anything here
+            }
+
+            GameState.ShowScoreboard -> {
+                //TODO: This should send the votes list for now but should have a score list that
+                // keep track of player scores across multiple consecutive rounds
+                for ((clientConnection, _) in Server.players) {
+                    clientConnection.output.writeStringUtf8(
+                        gson.toJson(
+                            votedPlayers
+                        )
+                    )
+                }
+            }
+
+            GameState.Replay -> {
+                //TODO: For now this should send a message to all clients informing them that
+                // the game will be continued, for now also this will be determined by the server
+                // no voting or whatever
+                for ((clientConnection, _) in Server.players) {
+                    clientConnection.output.writeStringUtf8(
+                        gson.toJson(
+                            mapOf("replay" to true)
+                        )
+                    )
+                }
+            }
+        }
+    }
+
     companion object {
         private const val BASE_SERVICE_NAME = "NsdChat"
         private const val SERVICE_TYPE = "_nsdchat._tcp."
-        private const val CODE_LENGTH = 6
+        private const val CODE_LENGTH = 4
     }
 }

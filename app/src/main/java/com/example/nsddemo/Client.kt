@@ -8,6 +8,8 @@ import io.ktor.network.sockets.Socket
 import io.ktor.network.sockets.aSocket
 import io.ktor.network.sockets.openReadChannel
 import io.ktor.network.sockets.openWriteChannel
+import io.ktor.network.sockets.toJavaAddress
+import io.ktor.util.network.address
 import io.ktor.utils.io.writeStringUtf8
 import io.ktor.utils.io.readUTF8Line
 import kotlinx.coroutines.*
@@ -32,8 +34,8 @@ object Client {
                 var greeting: String? = null
                 try {
                     Log.d(TAG, "Before receiveChannel.readUTF8Line")
-                    //TODO: Check if any other method is used from the wrong package
                     Log.d(TAG, "Socket ${socket.remoteAddress}")
+                    serverIpAddress = socket.remoteAddress.toJavaAddress().address
                     greeting = receiveChannel.readUTF8Line()
                     Log.d(TAG, "Server sent: $greeting")
                 } catch (e: Exception) {
