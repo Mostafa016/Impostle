@@ -11,6 +11,7 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.example.nsddemo.Debugging.TAG
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import io.ktor.network.sockets.Connection
 import io.ktor.utils.io.readUTF8Line
@@ -46,11 +47,10 @@ class MainActivity : AppCompatActivity() {
 
     private var numberOfVoters = 0
 
-    private val votedPlayers: MutableMap<Player, Int> =
-        emptyMap<Player, Int>() as MutableMap<Player, Int>
+    private val votedPlayers: MutableMap<Player, Int> = mutableMapOf()
 
     //TODO: Define this using input from user and random color
-    private val serverPlayer = Player("Mostafa", "00FF00")
+    private val serverPlayer = Player("Host", "00FF00")
 
     private val registrationListener = object : NsdManager.RegistrationListener {
 
@@ -153,7 +153,7 @@ class MainActivity : AppCompatActivity() {
                 CoroutineScope(Dispatchers.IO).launch {
                     Log.d(TAG, "Started client")
                     Log.d(TAG, "Address: ${host.hostAddress!!} Port: $port")
-                    Client.run(host.hostAddress!!, port)
+                    Client.run(host.hostAddress!!, port, ::handleServerMessages)
                 }
             }
         }
@@ -186,16 +186,158 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnRegisterService).setOnClickListener {
             CoroutineScope(Dispatchers.IO).launch {
                 gameState.collect {
-                    when (gameState.value) {
-                        GameState.StartGame -> TODO()
-                        is GameState.GetPlayerName -> TODO()
-                        is GameState.DisplayCategoryAndWord -> TODO()
-                        is GameState.AskQuestion -> TODO()
-                        GameState.StartVote -> TODO()
-                        is GameState.GetPlayerVote -> TODO()
-                        is GameState.EndVote -> TODO()
-                        GameState.ShowScoreboard -> TODO()
-                        GameState.Replay -> TODO()
+                    val gson = Gson()
+                    when (val currentGameState = gameState.value) {
+                        GameState.StartGame -> {}
+                        is GameState.GetPlayerInfo -> {
+                            synchronized(LOCK) {
+                                Server.players.put(
+                                    key = currentGameState.connection,
+                                    value = Player(currentGameState.name, "FF0000")
+                                )
+                            }
+                        }
+
+                        // This game state will happen when the user which acts as the server
+                        // presses a button like "start game"
+                        is GameState.DisplayCategoryAndWord -> {
+                            val playersIncludingServer = Server.players.values.toMutableList()
+                            playersIncludingServer.add(serverPlayer)
+                            askingPairs = generateAllAskingCombinations(playersIncludingServer)
+                            // Randomly choose imposter from list of players
+                            val imposter = Server.players.random().value
+                            //TODO: Function to choose category and word
+                            val category = currentGameState.category
+                            val word = currentGameState.word
+                            // Send category and word to all players except for imposter
+                            // which only receives category
+                            for ((clientConnection, player) in Server.players) {
+                                if (player == imposter) {
+                                    clientConnection.output.writeStringUtf8(
+                                        gson.toJson(
+                                            mapOf(
+                                                "category" to category
+                                            )
+                                        ) + '\n'
+                                    )
+                                    continue
+                                }
+                                clientConnection.output.writeStringUtf8(
+                                    gson.toJson(
+                                        mapOf(
+                                            "category" to category, "word" to word
+                                        )
+                                    ) + '\n'
+                                )
+                            }
+                            // Ask first question
+                            _gameState.value = GameState.AskQuestion(
+                                askingPairs[currentAskingPairIndex].first,
+                                askingPairs[currentAskingPairIndex].second,
+                                (askingPairs[currentAskingPairIndex].first == serverPlayer)
+                            )
+                        }
+
+                        is GameState.AskQuestion -> {
+                            for ((clientConnection, player) in Server.players) {
+                                clientConnection.output.writeStringUtf8(
+                                    gson.toJson(
+                                        mapOf(
+                                            "asker" to currentGameState.asker,
+                                            "asked" to currentGameState.asked,
+                                            "isAsking" to (currentGameState.asker == player),
+                                            "isLast" to (currentAskingPairIndex == askingPairs.lastIndex)
+                                        )
+                                    ) + '\n'
+                                )
+                            }
+                            currentAskingPairIndex++
+                            if (currentGameState.isAsking
+                                && currentAskingPairIndex != askingPairs.size
+                            ) {
+                                //TODO: This should be a button
+                                _gameState.value = GameState.AskQuestion(
+                                    askingPairs[currentAskingPairIndex].first,
+                                    askingPairs[currentAskingPairIndex].second,
+                                    askingPairs[currentAskingPairIndex].first == serverPlayer
+                                )
+                            } else if (currentGameState.isAsking) {
+                                //TODO: This should be triggered by a button
+                                Log.d(TAG, "Starting vote...")
+                                Log.d(TAG, "AskingPairs Size = ${askingPairs.size}")
+                                _gameState.value = GameState.StartVote
+                            }
+                        }
+
+                        // This game state will happen when the user which acts as the server
+                        // presses a button like "start vote"
+                        // (The screen will be like any additional questions?)
+                        GameState.StartVote -> {
+                            Log.d(TAG, "Start Vote: Sending list of players to each player...")
+                            val allPlayers = Server.players.values.toMutableList()
+                            allPlayers.add(serverPlayer)
+                            Log.d(TAG, allPlayers.toString())
+                            for ((clientConnection, player) in Server.players) {
+                                clientConnection.output.writeStringUtf8(gson.toJson(allPlayers.filter { it != player }) + '\n')
+                            }
+                            //TODO: The transition to the getPlayerVote state should be done some
+                            // other way additionally, the server player should be allowed to vote
+                            // like the rest of the players
+                            // IDEA: Make another state like ReadyToReceiveVotes that and change
+                            // to it here this way you don't have to force the server to pick first
+                            // and you can receive messages as soon as possible
+                            _gameState.value = GameState.GetPlayerVote(
+                                serverPlayer,
+                                Server.players.values.random()
+                            )
+                        }
+
+                        is GameState.GetPlayerVote -> {
+                            Log.d(
+                                TAG,
+                                "${currentGameState.voter} voted for ${currentGameState.voted}"
+                            )
+                            val votedPlayer = currentGameState.voted
+                            votedPlayers[votedPlayer] = (votedPlayers[votedPlayer] ?: 0) + 1
+                            numberOfVoters++
+                            Log.d(TAG, "numberOfVoters=$numberOfVoters, numOfPlayers=${Server.players.size + 1}")
+                            if (numberOfVoters == Server.players.size + 1) {
+                                Log.d(TAG, "All players voted. Ending vote...")
+                                _gameState.value = GameState.EndVote(votedPlayers.maxBy { it.value }.key)
+                            }
+                        }
+
+                        is GameState.EndVote -> {
+                            //TODO: This event is triggered when all players have voted
+                            // Should send the votes list to all players
+                            val complexGson =
+                                GsonBuilder().enableComplexMapKeySerialization().create()
+                            for ((clientConnection, _) in Server.players) {
+                                clientConnection.output.writeStringUtf8(
+                                    complexGson.toJson(
+                                        votedPlayers
+                                    ) + '\n'
+                                )
+                            }
+                        }
+
+                        // Triggered by user pressing a button (Should probably be sent with the votes list to
+                        // be ready to be shown on screen right after to all players
+                        GameState.ShowScoreboard -> {}
+
+                        GameState.Replay -> {
+                            // - For now this should send a message to all clients informing them
+                            // that the game will be continued.
+                            // - For now also this will be determined by the server, no voting.
+                            Log.d(TAG, "Sending replay status to all players.")
+                            for ((clientConnection, _) in Server.players) {
+                                clientConnection.output.writeStringUtf8(
+                                    gson.toJson(
+                                        mapOf("replay" to true)
+                                    ) + '\n'
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -213,10 +355,22 @@ class MainActivity : AppCompatActivity() {
             val serverPort: Int = Server.initServerSocket(serverIP!!)
             val tmp = CoroutineScope(Dispatchers.IO).launch {
                 Log.d(TAG, "Started server")
-                Server.run(::handleMessages)
+                Server.run(::handleClientMessages)
             }
             Log.d(TAG, tmp.children.toString())
             registerService(serverPort, gameCode)
+        }
+
+        findViewById<Button>(R.id.btnSendCategoryAndWord).setOnClickListener {
+            _gameState.value = GameState.DisplayCategoryAndWord("Animals", "Fox")
+        }
+
+        findViewById<Button>(R.id.btnStartVote).setOnClickListener {
+            _gameState.value = GameState.StartVote
+        }
+
+        findViewById<Button>(R.id.btnReplay).setOnClickListener {
+            _gameState.value = GameState.Replay
         }
 
         findViewById<Button>(R.id.btnDiscoverAndResolveService).setOnClickListener {
@@ -307,8 +461,7 @@ class MainActivity : AppCompatActivity() {
             val firstPlayerIndex =
                 secondPlayerList.indexOf(firstPlayer) // To remove only one of the duplicate names
             val secondPlayer =
-                secondPlayerList.filterIndexed { index, _ -> index != firstPlayerIndex }
-                    .random()
+                secondPlayerList.filterIndexed { index, _ -> index != firstPlayerIndex }.random()
             secondPlayerList.remove(secondPlayer)
             pairs.add(firstPlayer to secondPlayer)
         }
@@ -317,169 +470,116 @@ class MainActivity : AppCompatActivity() {
     }
 
     //TODO: All lists should be in ViewModel or Activity for now but moved to ViewModel later.
-    private suspend fun handleMessages(connection: Connection) {
+    private suspend fun handleClientMessages(connection: Connection) {
         Log.d(TAG, "Waiting for client message...")
         val json = connection.input.readUTF8Line()
         Log.d(TAG, "Received from client: $json")
+        Log.d(TAG, "Current game state: ${_gameState.value}")
+        if (json == null) {
+            throw IllegalArgumentException("Received null string from client.")
+        }
         val gson = Gson()
-        val type = object : TypeToken<Map<String?, String?>?>() {}.type
-        val myMap: Map<String, String>? = gson.fromJson<Map<String, String>>(json, type)
-        Log.d(TAG, "JSON: $myMap")
+//        val type = object : TypeToken<Map<String?, String?>?>() {}.type
+//        val myMap: Map<String, String>? = gson.fromJson<Map<String, String>>(json, type)
+//        Log.d(TAG, "JSON: $myMap")
         when (_gameState.value) {
-            GameState.StartGame, is GameState.GetPlayerName -> {
+            GameState.StartGame, is GameState.GetPlayerInfo -> {
                 val playerName = gson.fromJson(json, String::class.java)
-                synchronized(LOCK)
-                {
-                    Server.players.put(
-                        //connection.socket.remoteAddress.toJavaAddress().address
-                        key = connection,
-                        value = Player(
-                            playerName, "FF0000"
-                        )
-                    )
-                }
-                _gameState.value = GameState.GetPlayerName(playerName)
-            }
-            // This game state will happen when the user which acts as the server
-            // presses a button like "start game"
-            is GameState.DisplayCategoryAndWord -> {
-                val playersIncludingServer = Server.players.values.toMutableList()
-                playersIncludingServer.add(serverPlayer)
-                askingPairs = generateAllAskingCombinations(playersIncludingServer)
-                // Randomly choose imposter from list of players
-                val imposter = Server.players.random().value
-                //TODO: Function to choose category and word
-                val category = "Animals"
-                val word = "Fox"
-                // Send category and word to all players except for imposter
-                // which only receives category
-                for ((clientConnection, player) in Server.players) {
-                    if (player == imposter) {
-                        clientConnection.output.writeStringUtf8(
-                            gson.toJson(
-                                mapOf(
-                                    "category" to category
-                                )
-                            )
-                        )
-                        continue
-                    }
-                    clientConnection.output.writeStringUtf8(
-                        gson.toJson(
-                            mapOf(
-                                "category" to category,
-                                "word" to word
-                            )
-                        )
-                    )
-                }
-                //TODO: Send first asking pair to all players
-                for ((clientConnection, player) in Server.players) {
-                    clientConnection.output.writeStringUtf8(
-                        gson.toJson(
-                            mapOf(
-                                "asker" to askingPairs[currentAskingPairIndex].first,
-                                "asked" to askingPairs[currentAskingPairIndex].second,
-                                "isAsking" to (askingPairs[currentAskingPairIndex].first == player)
-                            )
-                        )
-                    )
-                }
-                //TODO: Pass real Player objects to AskQuestion and properly check the server is
-                // the one asking
-                _gameState.value = GameState.AskQuestion(
-                    askingPairs[currentAskingPairIndex].first,
-                    askingPairs[currentAskingPairIndex].second,
-                    (askingPairs[currentAskingPairIndex].first == serverPlayer)
-                )
+                _gameState.value = GameState.GetPlayerInfo(playerName, connection)
             }
 
-            is GameState.AskQuestion -> {
-                //This is sent from the player asking, confirming to end question
-                val isDone = gson.fromJson(json, Boolean::class.java)
-                currentAskingPairIndex++
-                if (currentAskingPairIndex == askingPairs.size) {
-                    _gameState.value = GameState.StartVote
-                    return
-                    //TODO: IDEA! gameState should be a stateflow/flow and you just change it's value
-                    // here in this function but what you do when the state changes should be in
-                    // the collect function of the flow
-                }
-                //TODO: Send next question to clients
-                for ((clientConnection, player) in Server.players) {
-                    clientConnection.output.writeStringUtf8(
-                        gson.toJson(
-                            mapOf(
-                                "asker" to askingPairs[currentAskingPairIndex].first,
-                                "asked" to askingPairs[currentAskingPairIndex].second,
-                                "isAsking" to (askingPairs[currentAskingPairIndex].first == player)
-                            )
-                        )
-                    )
-                }
-                _gameState.value = GameState.AskQuestion(
-                    askingPairs[currentAskingPairIndex].first,
-                    askingPairs[currentAskingPairIndex].second,
-                    (askingPairs[currentAskingPairIndex].first == serverPlayer)
-                )
+            is GameState.DisplayCategoryAndWord -> {
+                Log.wtf(TAG, "Received a message while in GameState.DisplayCategoryAndWord.")
             }
-            // This game state will happen when the user which acts as the server
-            // presses a button like "start vote"
-            // (The screen will be like any additional questions?)
-            GameState.StartVote -> {
-                //TODO: Send messages to all players informing them to start the voting
-                // Players list should be sent at start of the game to all players where they
-                // get all other players lists not their ips just Player objects
-                for ((clientConnection, player) in Server.players) {
-                    clientConnection.output.writeStringUtf8(
-                        gson.toJson(
-                            Server.players.values.toMutableList().remove(player)
-                        )
+
+            // This is sent from the player asking, confirming to end question
+            is GameState.AskQuestion -> {
+                val isDone = gson.fromJson(json, Boolean::class.java)
+                Log.d(TAG, "Done = $isDone received.")
+                if (currentAskingPairIndex == askingPairs.size) {
+                    //TODO: This should be triggered by a button
+                    Log.d(TAG, "Starting vote...")
+                    Log.d(TAG, "AskingPairs Size = ${askingPairs.size}")
+                    _gameState.value = GameState.StartVote
+                } else {
+                    Log.d(TAG, "Asking another question...")
+                    _gameState.value = GameState.AskQuestion(
+                        askingPairs[currentAskingPairIndex].first,
+                        askingPairs[currentAskingPairIndex].second,
+                        (askingPairs[currentAskingPairIndex].first == serverPlayer)
                     )
                 }
+            }
+
+            GameState.StartVote -> {
+                Log.wtf(TAG, "Received a message while in GameState.StartVote.")
             }
 
             is GameState.GetPlayerVote -> {
-                //This is sent from the player asking, confirming to end question
                 val votedPlayer = gson.fromJson(json, Player::class.java)
-                votedPlayers[votedPlayer] = votedPlayers[votedPlayer]!! + 1
-                numberOfVoters++
-                if (numberOfVoters > Server.players.size) {
-                    _gameState.value = GameState.EndVote(votedPlayers.maxBy { it.value }.key)
-                    return
-                }
+                _gameState.value =
+                    GameState.GetPlayerVote(Server.players[connection]!!, votedPlayer)
             }
 
             is GameState.EndVote -> {
-                //TODO: This event is triggered when all players have voted and server has votes
-                // Shouldn't send anything here
+                Log.wtf(TAG, "Received a message while in GameState.EndVote.")
             }
 
             GameState.ShowScoreboard -> {
-                //TODO: This should send the votes list for now but should have a score list that
-                // keep track of player scores across multiple consecutive rounds
-                for ((clientConnection, _) in Server.players) {
-                    clientConnection.output.writeStringUtf8(
-                        gson.toJson(
-                            votedPlayers
-                        )
-                    )
-                }
+                Log.wtf(TAG, "Received a message while in GameState.ShowScoreboard.")
             }
 
             GameState.Replay -> {
-                //TODO: For now this should send a message to all clients informing them that
-                // the game will be continued, for now also this will be determined by the server
-                // no voting or whatever
-                for ((clientConnection, _) in Server.players) {
-                    clientConnection.output.writeStringUtf8(
-                        gson.toJson(
-                            mapOf("replay" to true)
-                        )
-                    )
-                }
+                Log.wtf(TAG, "Received a message while in GameState.Replay.")
             }
         }
+    }
+
+    private suspend fun handleServerMessages(connection: Connection) {
+        val gson = Gson()
+        val type = object : TypeToken<Map<String, String>>() {}.type
+        Log.d(TAG, "Sending player name to server.")
+        connection.output.writeStringUtf8(gson.toJson("Mostafa") + '\n')
+        Log.d(TAG, "Reading 'category and word' message from server...")
+        var json = connection.input.readUTF8Line()
+        val categoryAndWord = gson.fromJson<Map<String, String>>(json, type)
+        Log.d(
+            TAG,
+            "Category: ${categoryAndWord["category"]!!}, Word: ${categoryAndWord["word"] ?: "IMPOSTER"}"
+        )
+        do {
+            Log.d(TAG, "Reading 'ask question' message from server...")
+            json = connection.input.readUTF8Line()
+            Log.d(TAG, "$json")
+            val question = gson.fromJson<Map<String, Any>>(json, Map::class.java)
+            if (question["isAsking"].toString().toBoolean()) {
+                //TODO: This should be a button
+                Log.d(TAG, "Sending 'done' message to server.")
+                connection.output.writeStringUtf8(gson.toJson(true) + '\n')
+            }
+        } while (!(question["isLast"] as Boolean))
+        Log.d(TAG, "Reading 'start vote' message from server...")
+        json = connection.input.readUTF8Line()
+        val collectionType = object : TypeToken<Collection<Player>>() {}.type
+        val playersList = gson.fromJson<List<Player>>(json, collectionType)
+        Log.d(TAG, "Player to vote: $playersList")
+        val chosenPlayer = playersList.random()
+        Log.d(TAG, "Voted Player: $chosenPlayer")
+        Log.d(TAG, "Sending vote to server.")
+        connection.output.writeStringUtf8(gson.toJson(chosenPlayer) + '\n')
+        Log.d(TAG, "Reading 'end vote' message from server.")
+        val votesType = object : TypeToken<Map<Player, Int>>() {}.type
+        json = connection.input.readUTF8Line()
+        Log.d(TAG, json!!)
+        val complexGson =
+            GsonBuilder().enableComplexMapKeySerialization().create()
+        val votingResults = complexGson.fromJson<Map<Player, Int>>(json, votesType)
+        Log.d(TAG, "Voting results: $votingResults")
+        Log.d(TAG, "Reading 'replay' message from server...")
+        val replayType = object : TypeToken<Map<String, Boolean>>() {}.type
+        json = connection.input.readUTF8Line()
+        val replay = gson.fromJson<Map<String, Boolean>>(json, replayType)
+        Log.d(TAG, "$replay")
     }
 
     companion object {

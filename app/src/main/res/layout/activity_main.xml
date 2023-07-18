@@ -41,6 +41,36 @@
         android:layout_width="match_parent"
         android:layout_height="16dp" />
 
+    <Button
+        android:id="@+id/btnSendCategoryAndWord"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Send Category and Word"/>
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="16dp" />
+
+    <Button
+        android:id="@+id/btnStartVote"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Start Vote"/>
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="16dp" />
+
+    <Button
+        android:id="@+id/btnReplay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Replay"/>
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="16dp" />
+
     <TextView
         android:id="@+id/tvCode"
         android:layout_width="wrap_content"

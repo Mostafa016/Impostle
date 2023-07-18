@@ -35,6 +35,7 @@ object Server {
                     }
                 } catch (e: Throwable) {
                     Log.e(TAG, e.message.toString())
+                    Log.e(TAG, e.stackTraceToString())
                     Log.e(TAG, "Closing connection")
                     socket.close()
                 }
