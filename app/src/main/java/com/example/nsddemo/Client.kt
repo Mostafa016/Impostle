@@ -18,11 +18,9 @@ import kotlin.system.*
 
 object Client {
     var serverIpAddress: String = ""
-
+    var replay = false
     suspend fun run(
-        hostName: String,
-        port: Int,
-        handleMessages: suspend (connection: Connection) -> Unit
+        hostName: String, port: Int, handleMessages: suspend (connection: Connection) -> Unit
     ) = coroutineScope {
         val selectorManager = SelectorManager(Dispatchers.IO)
         Log.d(TAG, "Connecting to server...")
@@ -36,7 +34,9 @@ object Client {
         Log.d(TAG, "created receive and send channels")
         launch {
             try {
+                do {
                     handleMessages(connection)
+                } while (replay)
             } catch (e: Exception) {
                 Log.e(TAG, e.message.toString())
                 Log.e(TAG, e.stackTraceToString())
