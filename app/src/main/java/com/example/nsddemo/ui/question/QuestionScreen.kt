@@ -1,4 +1,4 @@
-package com.example.nsddemo.ui
+package com.example.nsddemo.ui.question
 
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
@@ -22,12 +22,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.nsddemo.Debugging.TAG
 import com.example.nsddemo.GameState
-import com.example.nsddemo.Player
+import com.example.nsddemo.ui.GameViewModel
 
 
 @Composable
 fun QuestionScreen(
-    viewModel: TestViewModel, onNavigateToExtraQuestionsScreen: () -> Unit
+    viewModel: GameViewModel, onNavigateToExtraQuestionsScreen: () -> Unit
 ) {
     Column(
         Modifier.fillMaxSize(),

@@ -1,4 +1,4 @@
-package com.example.nsddemo.ui
+package com.example.nsddemo
 
 import androidx.compose.ui.graphics.Color
 import com.example.nsddemo.R

@@ -1,20 +1,15 @@
-package com.example.nsddemo.ui
+package com.example.nsddemo.ui.category_and_word
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -30,14 +25,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.nsddemo.R
+import com.example.nsddemo.Categories
 
-//TODO: Find a more generalizable solution to show all categories
 @Composable
-fun ChooseCategoryScreen(viewModel: TestViewModel, onCategoryCardClick: (Categories) -> Unit) {
+fun ChooseCategoryScreen(vm: ChooseCategoryViewModel, onNavigateToCategoryAndWord: () -> Unit) {
     Column(
         Modifier
             .fillMaxSize()
@@ -46,16 +39,18 @@ fun ChooseCategoryScreen(viewModel: TestViewModel, onCategoryCardClick: (Categor
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        CategoryCard(Categories.Animals, onClick = onCategoryCardClick)
-        Spacer(modifier = Modifier.height(32.dp))
-        CategoryCard(Categories.Food, onClick = onCategoryCardClick)
-        Spacer(modifier = Modifier.height(32.dp))
-        CategoryCard(Categories.Jobs, onClick = onCategoryCardClick)
+        Categories.values().forEachIndexed { index, category ->
+            CategoryCard(category, onClick = {
+                vm.chooseCategory(category)
+                onNavigateToCategoryAndWord()
+            })
+            if (index != Categories.values().lastIndex) Spacer(modifier = Modifier.height(32.dp))
+        }
     }
 }
 
 @Composable
-fun CategoryCard(category: Categories, onClick: (Categories) -> Unit) {
+fun CategoryCard(category: Categories, onClick: () -> Unit) {
     Box(
         Modifier
             .requiredSize(300.dp)
@@ -70,7 +65,7 @@ fun CategoryCard(category: Categories, onClick: (Categories) -> Unit) {
                     ),
                 )
             )
-            .clickable { onClick(category) },
+            .clickable { onClick() },
 
         ) {
         Text(

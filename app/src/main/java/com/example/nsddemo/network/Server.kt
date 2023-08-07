@@ -1,12 +1,12 @@
-package com.example.nsddemo
+package com.example.nsddemo.network
 
 import android.util.Log
 import com.example.nsddemo.Debugging.TAG
+import com.example.nsddemo.Player
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.util.network.port
 import kotlinx.coroutines.*
-import io.ktor.utils.io.readUTF8Line
 
 
 object Server {

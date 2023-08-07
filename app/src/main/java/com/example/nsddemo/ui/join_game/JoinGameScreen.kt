@@ -1,6 +1,5 @@
-package com.example.nsddemo.ui
+package com.example.nsddemo.ui.join_game
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -13,11 +12,10 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun JoinGameScreen(viewModel: TestViewModel, onJoinGamePressed: () -> Unit) {
+fun JoinGameScreen(viewModel: JoinGameViewModel, onJoinGamePressed: () -> Unit) {
     Column(
         Modifier
             .fillMaxSize()
@@ -27,7 +25,7 @@ fun JoinGameScreen(viewModel: TestViewModel, onJoinGamePressed: () -> Unit) {
     ) {
         TextField(
             value = viewModel.gameCodeTextFieldState.value,
-            onValueChange = viewModel.onGameCodeTextFieldValueChange,
+            onValueChange = { viewModel.onGameCodeTextFieldValueChange(it) },
             label = { Text("Game Code") },
             placeholder = { Text("AB12") },
         )

@@ -1,4 +1,4 @@
-package com.example.nsddemo.ui
+package com.example.nsddemo.ui.question
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,14 +13,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nsddemo.GameState
+import com.example.nsddemo.ui.GameViewModel
 
 @Composable
-fun ExtraQuestionsScreen(viewModel: TestViewModel, onNavigateToVotingScreen: () -> Unit) {
-    val gameState = viewModel.gameState.collectAsState()
+fun ExtraQuestionsScreen(gameViewModel: GameViewModel, onNavigateToVotingScreen: () -> Unit) {
+    val gameState = gameViewModel.gameState.collectAsState()
     if (gameState.value is GameState.StartVote) {
         LaunchedEffect(Unit) {
             onNavigateToVotingScreen()
@@ -34,11 +35,9 @@ fun ExtraQuestionsScreen(viewModel: TestViewModel, onNavigateToVotingScreen: () 
         Text(
             "Ask extra questions", style = TextStyle(fontSize = 24.sp)
         )
-        if (viewModel.isHost) {
+        if (gameViewModel.isHost) {
             Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = {
-                viewModel.onStartVoteClick()
-            }) {
+            Button(onClick = gameViewModel.onStartVoteClick) {
                 Text(text = "Start Vote")
             }
         }

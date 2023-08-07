@@ -1,4 +1,4 @@
-package com.example.nsddemo.ui
+package com.example.nsddemo.ui.lobby
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -25,9 +25,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.nsddemo.Player
+import com.example.nsddemo.ui.GameViewModel
 
 @Composable
-fun LobbyScreen(viewModel: TestViewModel, onChooseCategoryClick: () -> Unit) {
+fun LobbyScreen(gameViewModel: GameViewModel, onChooseCategoryClick: () -> Unit) {
     val scrollState = rememberScrollState()
     Column(
         Modifier
@@ -47,7 +48,7 @@ fun LobbyScreen(viewModel: TestViewModel, onChooseCategoryClick: () -> Unit) {
                 .verticalScroll(scrollState)
                 .width(150.dp)
         ) {
-            for (player in viewModel.players.value) {
+            for (player in gameViewModel.players.value) {
                 PlayerRow(player)
             }
         }
@@ -56,11 +57,11 @@ fun LobbyScreen(viewModel: TestViewModel, onChooseCategoryClick: () -> Unit) {
             Text("Game Code:", style = TextStyle(fontSize = 18.sp))
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                viewModel.gameCode,
+                gameViewModel.gameCode,
                 style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             )
         }
-        if (viewModel.isHost) {
+        if (gameViewModel.isHost) {
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = onChooseCategoryClick) {
                 Text("Choose Category")

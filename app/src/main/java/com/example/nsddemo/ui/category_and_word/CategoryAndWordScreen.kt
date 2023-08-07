@@ -1,4 +1,4 @@
-package com.example.nsddemo.ui
+package com.example.nsddemo.ui.category_and_word
 
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
@@ -17,11 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.nsddemo.Debugging
 import com.example.nsddemo.GameState
-import com.example.nsddemo.Screen
+import com.example.nsddemo.ui.GameViewModel
 
 @Composable
-fun CategoryAndWordScreen(viewModel: TestViewModel, onNavigateToQuestionScreen: () -> Unit) {
-    val gameState = viewModel.gameState.collectAsState()
+fun CategoryAndWordScreen(gameViewModel: GameViewModel, onNavigateToQuestionScreen: () -> Unit) {
+    val gameState = gameViewModel.gameState.collectAsState()
     val currentGameState = gameState.value
     if (currentGameState is GameState.AskQuestion) {
         LaunchedEffect(Unit) {
@@ -30,7 +30,7 @@ fun CategoryAndWordScreen(viewModel: TestViewModel, onNavigateToQuestionScreen: 
         }
     }
     val isConfirmButtonPressedState =
-        viewModel.isDisplayCategoryAndWordConfirmationSent.collectAsState()
+        gameViewModel.isDisplayCategoryAndWordConfirmationSent.collectAsState()
     Column(
         Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
@@ -44,7 +44,7 @@ fun CategoryAndWordScreen(viewModel: TestViewModel, onNavigateToQuestionScreen: 
         } else {
             Text("Category: $category")
             Spacer(modifier = Modifier.height(16.dp))
-            if (viewModel.isImposter!!) {
+            if (gameViewModel.isImposter!!) {
                 Text("You are the imposter")
             } else {
                 Text("Word: $word")
@@ -52,7 +52,7 @@ fun CategoryAndWordScreen(viewModel: TestViewModel, onNavigateToQuestionScreen: 
         }
         Spacer(Modifier.height(16.dp))
         Button(
-            onClick = viewModel.onConfirmClick,
+            onClick = gameViewModel.onConfirmClick,
             enabled = !isConfirmButtonPressedState.value
         ) {
             Text("Confirm")

@@ -1,18 +1,13 @@
-package com.example.nsddemo
+package com.example.nsddemo.network
 
 
 import android.util.Log
 import com.example.nsddemo.Debugging.TAG
 import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.Connection
-import io.ktor.network.sockets.Socket
 import io.ktor.network.sockets.aSocket
 import io.ktor.network.sockets.openReadChannel
 import io.ktor.network.sockets.openWriteChannel
-import io.ktor.network.sockets.toJavaAddress
-import io.ktor.util.network.address
-import io.ktor.utils.io.writeStringUtf8
-import io.ktor.utils.io.readUTF8Line
 import kotlinx.coroutines.*
 import kotlin.system.*
 

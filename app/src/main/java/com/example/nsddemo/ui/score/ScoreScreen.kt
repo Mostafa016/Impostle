@@ -1,4 +1,4 @@
-package com.example.nsddemo.ui
+package com.example.nsddemo.ui.score
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,25 +8,46 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
+import com.example.nsddemo.GameState
 import com.example.nsddemo.Player
+import com.example.nsddemo.ui.GameViewModel
 
-// Maybe Use PreviewParameters for all screens
 @Composable
-fun VotingResultsScreen(
-    viewModel: TestViewModel,
-    onShowScoreClick: () -> Unit
+fun ScoreScreen(
+    viewModel: GameViewModel,
+    onPlayAgainPress: () -> Unit,
+    onNavigateToLobbyScreen: () -> Unit,
+    onNavigateToJoinGameScreen: () -> Unit
 ) {
+    val currentGameState = viewModel.gameState.collectAsState().value
+    if (currentGameState is GameState.Replay) {
+        if (currentGameState.replay) {
+            LaunchedEffect(Unit) {
+                viewModel.replayGame()
+                if(viewModel.isHost){
+                    onNavigateToLobbyScreen()
+                }
+                else{
+                    onNavigateToJoinGameScreen()
+                }
+            }
+        } else {
+            Text("Game Ended")
+        }
+    }
     Column(
         Modifier
             .fillMaxSize()
@@ -35,12 +56,12 @@ fun VotingResultsScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            "Votes",
+            "Scores",
             style = TextStyle(fontSize = 24.sp)
         )
         Spacer(modifier = Modifier.height(8.dp))
-        viewModel.votedPlayers.entries.forEachIndexed { index, (player, numberOfVotes) ->
-            PlayerVoteResultItem(player = player, numberOfVotes = numberOfVotes)
+        viewModel.playerScores.entries.forEachIndexed { index, (player, score) ->
+            PlayerScoreItem(player = player, score = score)
             if (index != viewModel.votedPlayers.entries.size - 1) {
                 Divider(
                     Modifier
@@ -49,22 +70,30 @@ fun VotingResultsScreen(
                 )
             }
         }
-        Spacer(Modifier.height(16.dp))
-        Button(onClick = onShowScoreClick) {
-            Text("Show Score")
+        if (viewModel.isHost) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Row {
+                Button(onClick = viewModel.onEndGameClick) {
+                    Text("End Game")
+                }
+                Spacer(Modifier.width(16.dp))
+                Button(onClick = onPlayAgainPress) {
+                    Text("Play Again")
+                }
+            }
         }
     }
 }
 
 @Composable
-fun PlayerVoteResultItem(player: Player, numberOfVotes: Int) {
+fun PlayerScoreItem(player: Player, score: Int) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(
             player.name,
             style = TextStyle(color = Color(player.color.toLong(radix = 16)))
         )
         Text(
-            numberOfVotes.toString(),
+            score.toString(),
         )
     }
 }

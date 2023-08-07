@@ -6,8 +6,6 @@ object Debugging {
     const val TAG = "GIGACHAD"
 }
 
-fun <T, U> Map<T, U>.random(): Map.Entry<T, U> = entries.elementAt(Random.nextInt(size))
-
 enum class Screen(val route: String) {
     MainMenu("main_menu_screen"),
     CreateGame("create_game_screen"),
@@ -21,6 +19,11 @@ enum class Screen(val route: String) {
     Voting("voting_screen"),
     VotingResults("voting_results_screen"),
     Scoreboard("scoreboard_screen")
+}
+
+object NSDConstants {
+    const val BASE_SERVICE_NAME = "NsdChat"
+    const val SERVICE_TYPE = "_nsdchat._tcp."
 }
 
 

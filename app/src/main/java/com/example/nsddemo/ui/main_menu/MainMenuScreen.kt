@@ -1,6 +1,5 @@
-package com.example.nsddemo.ui
+package com.example.nsddemo.ui.main_menu
 
-import android.widget.Space
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,21 +22,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.nsddemo.ui.GameViewModel
 
 @Composable
 fun MainMenuScreen(
-    viewModel: TestViewModel,
+    gameViewModel: GameViewModel,
+    mainMenuViewModel: MainMenuViewModel,
     onNavigateToCreateGame: () -> Unit,
     onNavigateToJoinGame: () -> Unit,
 ) {
-    if (viewModel.playerNameDialogVisibilityState.value) {
+    if (mainMenuViewModel.playerNameDialogVisibilityState.value) {
         Dialog(onDismissRequest = {}) {
             Column(
                 Modifier.background(Color.White),
@@ -53,16 +53,16 @@ fun MainMenuScreen(
                 Divider()
                 Spacer(Modifier.height(8.dp))
                 TextField(
-                    value = viewModel.playerNameTextFieldState.value,
-                    onValueChange = viewModel.onPlayerNameChange
+                    value = mainMenuViewModel.playerNameTextFieldState.value,
+                    onValueChange = { mainMenuViewModel.onPlayerNameChange(it) }
                 )
                 Spacer(Modifier.height(8.dp))
                 Row {
-                    OutlinedButton(onClick = viewModel.onCancelPlayerNameClick) {
+                    OutlinedButton(onClick = { mainMenuViewModel.onCancelPlayerNameClick() }) {
                         Text("Cancel")
                     }
                     Spacer(Modifier.width(16.dp))
-                    OutlinedButton(onClick = viewModel.onSavePlayerNameClick) {
+                    OutlinedButton(onClick = { mainMenuViewModel.savePlayerName() }) {
                         Text("Save")
                     }
                 }
@@ -77,11 +77,11 @@ fun MainMenuScreen(
         Row(
             Modifier
                 .align(Alignment.End)
-                .clickable { viewModel.onPlayerNameClick() }) {
+                .clickable { mainMenuViewModel.onPlayerNameClick() }) {
             Icon(imageVector = Icons.Filled.Person, contentDescription = "Player name icon")
             Spacer(Modifier.width(8.dp))
             Text(
-                viewModel.currentPlayer.value?.name ?: "???", style = TextStyle(
+                gameViewModel.currentPlayer.value?.name ?: "???", style = TextStyle(
                     color = Color.Black
                 )
             )
@@ -98,11 +98,11 @@ fun MainMenuScreen(
             )
             Spacer(modifier = Modifier.height(24.dp))
             TextButton(onClick = {
-                if (viewModel.currentPlayer.value == null) {
-                    viewModel.showPlayerNameDialog()
+                if (gameViewModel.currentPlayer.value == null) {
+                    mainMenuViewModel.showPlayerNameDialog()
                 } else {
                     onNavigateToCreateGame()
-                    viewModel.onRegisterServiceClick()
+                    gameViewModel.onRegisterServiceClick()
                 }
             }) {
                 Text(
@@ -112,8 +112,8 @@ fun MainMenuScreen(
             }
             Spacer(modifier = Modifier.height(16.dp))
             TextButton(onClick = {
-                if (viewModel.currentPlayer.value == null) {
-                    viewModel.showPlayerNameDialog()
+                if (gameViewModel.currentPlayer.value == null) {
+                    mainMenuViewModel.showPlayerNameDialog()
                 } else {
                     onNavigateToJoinGame()
                 }

@@ -1,4 +1,4 @@
-package com.example.nsddemo.ui
+package com.example.nsddemo.ui.voting
 
 import android.util.Log
 import androidx.compose.foundation.clickable
@@ -13,36 +13,28 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nsddemo.Debugging.TAG
 import com.example.nsddemo.GameState
 import com.example.nsddemo.Player
-import kotlinx.coroutines.launch
+import com.example.nsddemo.ui.GameViewModel
 
 @Composable
 fun VotingScreen(
-    viewModel: TestViewModel,
+    gameViewModel: GameViewModel,
     onNavigateToVotingResultsScreen: () -> Unit
 ) {
-    val gameState = viewModel.gameState.collectAsState()
+    val gameState = gameViewModel.gameState.collectAsState()
     val currentGameState = gameState.value
     if (currentGameState is GameState.EndVote) {
         LaunchedEffect(Unit) {
@@ -59,23 +51,23 @@ fun VotingScreen(
     ) {
         Text("Vote for the person you suspect", style = TextStyle(fontSize = 18.sp))
         Spacer(modifier = Modifier.height(16.dp))
-        for (player in viewModel.players.value) {
+        for (player in gameViewModel.players.value) {
             PlayerVoteItem(
                 player = player,
-                viewModel.votedPlayer.value,
-                onVoteForPlayer = viewModel.onVoteForPlayer
+                gameViewModel.votedPlayer.value,
+                onVoteForPlayer = gameViewModel.onVoteForPlayer
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
         Button(
             onClick = {
-                if (viewModel.votedPlayer.value != null) {
-                    viewModel.onConfirmVoteClick()
+                if (gameViewModel.votedPlayer.value != null) {
+                    gameViewModel.onConfirmVoteClick()
                 } else {
                     Log.e(TAG, "votedPlayer is null.")
                 }
             },
-            enabled = !viewModel.isVoteConfirmed.collectAsState().value
+            enabled = !gameViewModel.isVoteConfirmed.collectAsState().value
         ) {
             Text("Confirm Vote")
         }
