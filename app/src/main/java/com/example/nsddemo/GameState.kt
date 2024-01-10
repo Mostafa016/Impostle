@@ -5,14 +5,15 @@ import io.ktor.network.sockets.Connection
 sealed interface GameState {
     object StartGame : GameState
     class GetPlayerInfo(val name: String, val connection: Connection) : GameState
-    class DisplayCategoryAndWord(val category: String, val word: String) : GameState
+    class DisplayCategoryAndWord(val categoryOrdinal: Int, val wordResourceId: Int) : GameState
     class GetPlayerReadCategoryAndWordConfirmation(val numberOfConfirmations: Int) : GameState
 
     data class AskQuestion(
         val asker: Player,
         val asked: Player,
         val isAsking: Boolean,
-        val isLastQuestion: Boolean
+        val isLastQuestion: Boolean,
+        val isFirstQuestionInNewRound: Boolean = false
     ) :
         GameState
 

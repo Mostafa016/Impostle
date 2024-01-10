@@ -4,9 +4,9 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.example.nsddemo.GameConstants
 import com.example.nsddemo.Player
 import com.example.nsddemo.ui.GameViewModel
-import com.example.nsddemo.ui.category_and_word.ChooseCategoryViewModel
 
 class MainMenuViewModel(private val gameViewModel: GameViewModel) : ViewModel() {
     private val _playerNameDialogVisibilityState = mutableStateOf(false)
@@ -15,24 +15,26 @@ class MainMenuViewModel(private val gameViewModel: GameViewModel) : ViewModel() 
     private val _playerNameTextFieldState = mutableStateOf("")
     val playerNameTextFieldState: State<String> = _playerNameTextFieldState
 
+    private var onPlayerNameSave: () -> Unit = {}
+
     fun onPlayerNameChange(playerName: String) {
         _playerNameTextFieldState.value = playerName
     }
 
     fun savePlayerName() {
         val playerName = playerNameTextFieldState.value
-        if (playerName.matches(Regex("^[A-Za-z_]+$"))) {
-            gameViewModel.updateCurrentPlayer(Player(playerName, "FF000000"))
-            _playerNameDialogVisibilityState.value = false
-        }
+        gameViewModel.updateCurrentPlayer(Player(playerName, GameConstants.DEFAULT_PLAYER_COLOR))
+        _playerNameDialogVisibilityState.value = false
+        onPlayerNameSave()
     }
 
     fun onCancelPlayerNameClick() {
         _playerNameDialogVisibilityState.value = false
     }
 
-    fun showPlayerNameDialog() {
+    fun showPlayerNameDialog(onPlayerNameSave: () -> Unit = {}) {
         _playerNameDialogVisibilityState.value = true
+        this.onPlayerNameSave = onPlayerNameSave
     }
 
     fun onPlayerNameClick() {

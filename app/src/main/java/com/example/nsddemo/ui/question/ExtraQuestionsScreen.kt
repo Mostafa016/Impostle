@@ -6,25 +6,35 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nsddemo.GameState
+import com.example.nsddemo.R
 import com.example.nsddemo.ui.GameViewModel
 
 @Composable
-fun ExtraQuestionsScreen(gameViewModel: GameViewModel, onNavigateToVotingScreen: () -> Unit) {
+fun ExtraQuestionsScreen(
+    gameViewModel: GameViewModel,
+    onNavigateToVotingScreen: () -> Unit,
+    onNavigateToQuestionScreen: () -> Unit
+) {
     val gameState = gameViewModel.gameState.collectAsState()
     if (gameState.value is GameState.StartVote) {
         LaunchedEffect(Unit) {
             onNavigateToVotingScreen()
+        }
+    } else if (gameState.value is GameState.AskQuestion) {
+        LaunchedEffect(Unit) {
+            onNavigateToQuestionScreen()
         }
     }
     Column(
@@ -33,12 +43,37 @@ fun ExtraQuestionsScreen(gameViewModel: GameViewModel, onNavigateToVotingScreen:
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            "Ask extra questions", style = TextStyle(fontSize = 24.sp)
+            stringResource(R.string.ask_extra_questions),
+            style = MaterialTheme.typography.displayMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontWeight = FontWeight.SemiBold,
         )
         if (gameViewModel.isHost) {
             Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = gameViewModel.onStartVoteClick) {
-                Text(text = "Start Vote")
+            Column(
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Button(
+                    onClick = gameViewModel.onRestartQuestionsClick
+                ) {
+                    Text(
+                        text = stringResource(R.string.additional_round),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = gameViewModel.onStartVoteClick
+                ) {
+                    Text(
+                        text = stringResource(R.string.start_vote),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.example.nsddemo.ui
 
+import android.content.SharedPreferences
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import android.net.wifi.WifiManager
@@ -10,7 +11,9 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.nsddemo.Categories
 import com.example.nsddemo.Debugging.TAG
+import com.example.nsddemo.GameConstants
 import com.example.nsddemo.GameState
 import com.example.nsddemo.NSDConstants.BASE_SERVICE_NAME
 import com.example.nsddemo.NSDConstants.SERVICE_TYPE
@@ -23,7 +26,6 @@ import com.google.gson.reflect.TypeToken
 import io.ktor.network.sockets.Connection
 import io.ktor.utils.io.readUTF8Line
 import io.ktor.utils.io.writeStringUtf8
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,7 +33,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-class GameViewModel(val nsdManager: NsdManager, val wifiManager: WifiManager) : ViewModel() {
+class GameViewModel(
+    val nsdManager: NsdManager,
+    val wifiManager: WifiManager,
+    val sharedPreferences: SharedPreferences
+) : ViewModel() {
     private var mServiceName: String = BASE_SERVICE_NAME
     private val _isGameCreated = mutableStateOf(false)
     val isGameCreated: State<Boolean> = _isGameCreated
@@ -65,6 +71,7 @@ class GameViewModel(val nsdManager: NsdManager, val wifiManager: WifiManager) : 
 
     lateinit var gameCode: String
         private set
+
     private val _hasJoinedGame = mutableStateOf(false)
     val hasJoinedGame: State<Boolean> = _hasJoinedGame
 
@@ -87,13 +94,14 @@ class GameViewModel(val nsdManager: NsdManager, val wifiManager: WifiManager) : 
     private var _playerScores: MutableMap<Player, Int> = mutableMapOf()
     val playerScores: Map<Player, Int>
         get() {
-            return _playerScores.toMap()
+            return _playerScores
         }
 
     //TODO: It should be sent to the clients as response to their player name message
     private val _currentPlayer: MutableState<Player?> = mutableStateOf(null)
     val currentPlayer: State<Player?> = _currentPlayer
-    private lateinit var imposterPlayer: Player
+    lateinit var imposterPlayer: Player
+        private set
     var isImposter: Boolean? = null
         private set
     private val _players = mutableStateOf(emptyList<Player>())
@@ -101,8 +109,14 @@ class GameViewModel(val nsdManager: NsdManager, val wifiManager: WifiManager) : 
     private val selectedPlayerColors = mutableListOf<PlayerColors>()
     private lateinit var clientJob: Job
     private lateinit var serverJob: Job
+    private lateinit var gameStateCollectorJob: Job
+    private var isFirstRound = true
+    var categoryOrdinal: Int = -1
+        private set
+    var wordResId: Int = -1
+        private set
     val onRegisterServiceClick = {
-        viewModelScope.launch(Dispatchers.IO) {
+        gameStateCollectorJob = viewModelScope.launch(Dispatchers.IO) {
             val gson = Gson()
             gameState.collect {
                 when (val currentGameState = gameState.value) {
@@ -112,30 +126,39 @@ class GameViewModel(val nsdManager: NsdManager, val wifiManager: WifiManager) : 
                         val playerColor =
                             PlayerColors.values().filter { it !in selectedPlayerColors }.random()
                         selectedPlayerColors.add(playerColor)
-                        Server.players[currentGameState.connection] =
+                        val playerConnection = currentGameState.connection
+                        Server.players[playerConnection] =
                             Player(currentGameState.name, playerColor.argb.toString())
                         _players.value = Server.players.values.toList()
+                        playerConnection.output.writeStringUtf8(
+                            gson.toJson(playerColor.argb.toString()).appendNewLine()
+                        )
                     }
 
                     // This game state will happen when the user which acts as the server
                     // presses a button like "start game"
                     is GameState.DisplayCategoryAndWord -> {
-                        val currentPlayerColor =
-                            PlayerColors.values().filter { it !in selectedPlayerColors }.random()
-                        selectedPlayerColors.add(currentPlayerColor)
-                        _currentPlayer.value =
-                            Player(_currentPlayer.value!!.name, currentPlayerColor.argb.toString())
+                        if (isFirstRound) {
+                            val currentPlayerColor =
+                                PlayerColors.values().filter { it !in selectedPlayerColors }
+                                    .random()
+                            selectedPlayerColors.add(currentPlayerColor)
+                            _currentPlayer.value = Player(
+                                _currentPlayer.value!!.name, currentPlayerColor.argb.toString()
+                            )
+                        }
                         val playersIncludingServer = Server.players.values.toMutableList()
                         playersIncludingServer.add(_currentPlayer.value!!)
                         askingPairs = generateAllAskingCombinations(playersIncludingServer)
                         imposterPlayer = playersIncludingServer.random()
+                        Log.d(TAG, "Imposter: $imposterPlayer")
                         isImposter = (imposterPlayer == _currentPlayer.value)
-                        val category = currentGameState.category
-                        val word = currentGameState.word
+                        categoryOrdinal = currentGameState.categoryOrdinal
+                        wordResId = currentGameState.wordResourceId
                         sendUtf8LineToAllPlayers { player ->
                             gson.toJson(
-                                if (player == imposterPlayer) mapOf("category" to category)
-                                else mapOf("category" to category, "word" to word)
+                                if (player == imposterPlayer) mapOf("category" to categoryOrdinal)
+                                else mapOf("category" to categoryOrdinal, "word" to wordResId)
                             )
                         }
                     }
@@ -160,6 +183,15 @@ class GameViewModel(val nsdManager: NsdManager, val wifiManager: WifiManager) : 
                     }
 
                     is GameState.AskQuestion -> {
+                        if (currentGameState.isFirstQuestionInNewRound) {
+                            Log.d(
+                                TAG,
+                                "Sending 'additional questions' TRUE message to all players..."
+                            )
+                            sendUtf8LineToAllPlayers {
+                                Gson().toJson(true)
+                            }
+                        }
                         sendUtf8LineToAllPlayers { player ->
                             gson.toJson(
                                 currentGameState.copy(
@@ -171,6 +203,7 @@ class GameViewModel(val nsdManager: NsdManager, val wifiManager: WifiManager) : 
                     }
 
                     GameState.AskExtraQuestions -> {
+                        Log.d(TAG, "Ask Extra Questions: Sending TRUE message to clients")
                         for ((clientConnection, _) in Server.players) {
                             clientConnection.output.writeStringUtf8(gson.toJson(true) + '\n')
                         }
@@ -180,6 +213,14 @@ class GameViewModel(val nsdManager: NsdManager, val wifiManager: WifiManager) : 
                     // presses a button like "start vote"
                     // (The screen will be like any additional questions?)
                     GameState.StartVote -> {
+                        // This is sent to exit "additional questions" loop on client side
+                        Log.d(
+                            TAG,
+                            "Start Vote: Sending 'additional questions' FALSE message to all players..."
+                        )
+                        sendUtf8LineToAllPlayers {
+                            gson.toJson(false)
+                        }
                         Log.d(
                             TAG, "Start Vote: Sending list of players to each player..."
                         )
@@ -241,6 +282,7 @@ class GameViewModel(val nsdManager: NsdManager, val wifiManager: WifiManager) : 
                         sendUtf8LineToAllPlayers {
                             gson.toJson(currentGameState.replay)
                         }
+                        isFirstRound = false
                     }
                 }
             }
@@ -256,26 +298,12 @@ class GameViewModel(val nsdManager: NsdManager, val wifiManager: WifiManager) : 
             Log.d(TAG, e.message.toString())
         }
         val serverPort: Int = Server.initServerSocket(serverIP!!)
-        serverJob = CoroutineScope(Dispatchers.IO).launch {
+        serverJob = viewModelScope.launch(Dispatchers.IO) {
             Log.d(TAG, "Started server")
             Server.run(::handleClientMessages)
         }
         Log.d(TAG, serverJob.children.toString())
         registerService(serverPort, gameCode)
-    }
-
-    val onStartVoteClick = {
-        _gameState.value = GameState.StartVote
-    }
-
-    val onShowScoreClick = {
-        _gameState.value = GameState.ShowScoreboard
-    }
-    val onReplayClick = {
-        _gameState.value = GameState.Replay(true)
-    }
-    val onEndGameClick = {
-        _gameState.value = GameState.Replay(false)
     }
 
     private val _isDisplayCategoryAndWordConfirmationSent = MutableStateFlow(false)
@@ -286,6 +314,18 @@ class GameViewModel(val nsdManager: NsdManager, val wifiManager: WifiManager) : 
         _gameState.value = GameState.GetPlayerReadCategoryAndWordConfirmation(10)
         _isDisplayCategoryAndWordConfirmationSent.value = true
     }
+
+    private val _wordDialogVisibilityState = mutableStateOf(false)
+    val wordDialogVisibilityState: State<Boolean> = _wordDialogVisibilityState
+
+    val onShowWordClick = {
+        _wordDialogVisibilityState.value = true
+    }
+
+    val onWordDialogOkClicked = {
+        _wordDialogVisibilityState.value = false
+    }
+
 
     private val _isQuestionDone = MutableStateFlow(false)
     val isQuestionDone = _isQuestionDone.asStateFlow()
@@ -311,6 +351,25 @@ class GameViewModel(val nsdManager: NsdManager, val wifiManager: WifiManager) : 
         }
     }
 
+    val onRestartQuestionsClick = {
+        _isQuestionDone.value = false
+        val playersIncludingServer = Server.players.values.toMutableList()
+        playersIncludingServer.add(_currentPlayer.value!!)
+        askingPairs = generateAllAskingCombinations(playersIncludingServer)
+        currentAskingPairIndex = 0
+        _gameState.value = GameState.AskQuestion(
+            askingPairs[currentAskingPairIndex].first,
+            askingPairs[currentAskingPairIndex].second,
+            (askingPairs[currentAskingPairIndex].first == _currentPlayer.value),
+            currentAskingPairIndex == askingPairs.lastIndex,
+            true
+        )
+    }
+
+    val onStartVoteClick = {
+        _gameState.value = GameState.StartVote
+    }
+
     private val _votedPlayer = mutableStateOf<Player?>(null)
     val votedPlayer: State<Player?> = _votedPlayer
     val onVoteForPlayer = { player: Player ->
@@ -329,11 +388,36 @@ class GameViewModel(val nsdManager: NsdManager, val wifiManager: WifiManager) : 
         }
     }
 
+    val onShowScoreClick = {
+        _gameState.value = GameState.ShowScoreboard
+    }
+
+    val onEndGameClick = {
+        _gameState.value = GameState.Replay(false)
+    }
+
+    val onReplayClick = {
+        _gameState.value = GameState.Replay(true)
+    }
+
+    init {
+        val defaultPlayerName = ""
+        val savedPlayerName =
+            sharedPreferences.getString(PLAYER_NAME_SHARED_PREF_KEY, defaultPlayerName)!!
+        if (savedPlayerName != defaultPlayerName) {
+            _currentPlayer.value = Player(savedPlayerName, GameConstants.DEFAULT_PLAYER_COLOR)
+        }
+    }
+
     suspend fun handleServerMessages(connection: Connection) {
         val gson = Gson()
         if (!Client.replay) {
             Log.d(TAG, "Sending player name to server.")
             connection.output.writeStringUtf8(gson.toJson(_currentPlayer.value!!.name) + '\n')
+            Log.d(TAG, "Reading 'player color' message from server...")
+            val json = connection.input.readUTF8Line()
+            val playerColor = gson.fromJson(json, String::class.java)
+            _currentPlayer.value = currentPlayer.value!!.copy(color = playerColor)
         }
         Log.d(TAG, "Reading 'category and word' message from server...")
         val type = object : TypeToken<Map<String, String>>() {}.type
@@ -341,34 +425,42 @@ class GameViewModel(val nsdManager: NsdManager, val wifiManager: WifiManager) : 
         val categoryAndWord = gson.fromJson<Map<String, String>>(json, type)
         Log.d(
             TAG,
-            "Category: ${categoryAndWord["category"]!!}, Word: ${categoryAndWord["word"] ?: "IMPOSTER"}"
+            "Category: ${Categories.values()[categoryAndWord["category"]!!.toInt()]}, Word: ${categoryAndWord["word"] ?: "IMPOSTER"}"
         )
         isImposter = categoryAndWord["word"] == null
-        _gameState.value = GameState.DisplayCategoryAndWord(
-            categoryAndWord["category"]!!, categoryAndWord["word"] ?: "IMPOSTER"
-        )
+        categoryOrdinal = categoryAndWord["category"]!!.toInt()
+        wordResId = categoryAndWord["word"]?.toInt() ?: -1
+        _gameState.value = GameState.DisplayCategoryAndWord(categoryOrdinal, wordResId)
         //TODO: This is to be moved after sending list of players in lobby to all players
         _hasJoinedGame.value = true
         isDisplayCategoryAndWordConfirmationSent.first { it }
         Log.d(TAG, "Sending confirm reading category and word message to server")
         connection.output.writeStringUtf8(gson.toJson(true) + '\n')
         do {
-            Log.d(TAG, "Reading 'ask question' message from server...")
+            do {
+                Log.d(TAG, "Reading 'ask question' message from server...")
+                json = connection.input.readUTF8Line()
+                Log.d(TAG, "$json")
+                val askQuestionState = gson.fromJson(json, GameState.AskQuestion::class.java)
+                _gameState.value = askQuestionState
+                if (askQuestionState.isAsking) {
+                    _isQuestionDone.first { it }
+                    Log.d(TAG, "Sending 'isLast' message to server.")
+                    connection.output.writeStringUtf8(gson.toJson(askQuestionState.isLastQuestion) + '\n')
+                }
+            } while (!(askQuestionState.isLastQuestion))
+            Log.d(TAG, "Reading 'ask extra questions' message from server...")
             json = connection.input.readUTF8Line()
-            Log.d(TAG, "$json")
-            val askQuestionState = gson.fromJson(json, GameState.AskQuestion::class.java)
-            _gameState.value = askQuestionState
-            if (askQuestionState.isAsking) {
-                _isQuestionDone.first { it }
-                Log.d(TAG, "Sending 'isLast' message to server.")
-                connection.output.writeStringUtf8(gson.toJson(askQuestionState.isLastQuestion) + '\n')
-            }
-        } while (!(askQuestionState.isLastQuestion))
-        Log.d(TAG, "Reading 'ask extra questions' message from server...")
-        json = connection.input.readUTF8Line()
-        val isLastQuestionDone = gson.fromJson(json, Boolean::class.java)
-        Log.d(TAG, "isLastQuestionDone = $isLastQuestionDone")
-        _gameState.value = GameState.AskExtraQuestions
+            val isLastQuestionDone = gson.fromJson(json, Boolean::class.java)
+            Log.d(TAG, "isLastQuestionDone = $isLastQuestionDone")
+            _gameState.value = GameState.AskExtraQuestions
+            Log.d(TAG, "Reading 'additional questions' message from server...")
+            val isAnotherQuestionsRoundJson = connection.input.readUTF8Line()
+            Log.d(TAG, "isAnotherQuestionsRoundJson = $isAnotherQuestionsRoundJson")
+            val isAnotherQuestionsRound =
+                gson.fromJson(isAnotherQuestionsRoundJson, Boolean::class.java)
+            _isQuestionDone.value = false
+        } while (isAnotherQuestionsRound)
         Log.d(TAG, "Reading 'start vote' message from server...")
         json = connection.input.readUTF8Line()
         val collectionType = object : TypeToken<Collection<Player>>() {}.type
@@ -406,22 +498,22 @@ class GameViewModel(val nsdManager: NsdManager, val wifiManager: WifiManager) : 
     }
 
     /**
-     * Generates a [List] of [Player] pairs such that each player asks and is asked exactly once
+     * Generates a [List] of [Player] pairs such that each [Player] asks and is asked exactly once.
      */
-    private fun generateAllAskingCombinations(firstPlayerList: List<Player>): List<Pair<Player, Player>> {
-        val secondPlayerList = firstPlayerList.toMutableList()
-        val pairs = mutableListOf<Pair<Player, Player>>()
-
-        firstPlayerList.shuffled().map { firstPlayer ->
-            val firstPlayerIndex =
-                secondPlayerList.indexOf(firstPlayer)
-            val secondPlayer =
-                secondPlayerList.filterIndexed { index, _ -> index != firstPlayerIndex }.random()
-            secondPlayerList.remove(secondPlayer)
-            pairs.add(firstPlayer to secondPlayer)
+    private fun generateAllAskingCombinations(askingPlayers: List<Player>): List<Pair<Player, Player>> {
+        val askedPlayers = askingPlayers.toMutableList()
+        return askingPlayers.shuffled().mapIndexed { i, askingPlayer ->
+            val askingPlayerIndex = askedPlayers.indexOf(askingPlayer)
+            val askedPlayer = if (i == askingPlayers.lastIndex - 1
+                && askedPlayers.contains(askingPlayers.last())
+            ) {
+                askedPlayers.find { it == askingPlayers.last() }!!
+            } else {
+                askedPlayers.filterIndexed { j, _ -> j != askingPlayerIndex }.random()
+            }
+            askedPlayers.remove(askedPlayer)
+            return@mapIndexed (askingPlayer to askedPlayer)
         }
-
-        return pairs
     }
 
     private fun registerService(port: Int, gameCode: String) {
@@ -436,8 +528,6 @@ class GameViewModel(val nsdManager: NsdManager, val wifiManager: WifiManager) : 
         Log.d(TAG, "Created serviceInfo")
         try {
             nsdManager.apply {
-                // TODO: Handle registering multiple times for service and for server (Look more into
-                //  coroutines and stuff)
                 this.registerService(serviceInfo, NsdManager.PROTOCOL_DNS_SD, registrationListener)
             }
         } catch (E: Exception) {
@@ -523,7 +613,7 @@ class GameViewModel(val nsdManager: NsdManager, val wifiManager: WifiManager) : 
 
     private fun generateGameCode(): String {
         val allowedChars = ('A'..'Z') + ('0'..'9')
-        return (1..CODE_LENGTH).map { allowedChars.random() }.joinToString("")
+        return (1..GameConstants.CODE_LENGTH).map { allowedChars.random() }.joinToString("")
     }
 
     private fun resetUIStates() {
@@ -542,7 +632,7 @@ class GameViewModel(val nsdManager: NsdManager, val wifiManager: WifiManager) : 
         _isVoteConfirmed.value = false
     }
 
-    private fun resetGameParameters() {
+    private fun resetRoundParameters() {
         _gameState.value = GameState.StartGame
         numberOfReadCategoryAndWordConfirmations = 0
         askingPairs = emptyList()
@@ -554,19 +644,26 @@ class GameViewModel(val nsdManager: NsdManager, val wifiManager: WifiManager) : 
     }
 
     fun replayGame() {
-        resetGameParameters()
+        resetRoundParameters()
         resetUIStates()
     }
-    fun updateCurrentPlayer(player: Player){
+
+    fun updateCurrentPlayer(player: Player) {
         _currentPlayer.value = player
+        with(sharedPreferences.edit()) {
+            putString(PLAYER_NAME_SHARED_PREF_KEY, player.name)
+            apply()
+        }
     }
 
     fun updateGameState(gameState: GameState) {
         _gameState.value = gameState
     }
+
     fun setClientJob(job: Job) {
         clientJob = job
     }
+
     private fun String.appendNewLine(): String {
         return this + '\n'
     }
@@ -579,9 +676,35 @@ class GameViewModel(val nsdManager: NsdManager, val wifiManager: WifiManager) : 
         }
     }
 
-    companion object {
-        private const val CODE_LENGTH = 4
-        private const val PLAYER_SCORE_INCREMENT = 100
+    private fun resetGameParameters() {
+        if (isHost) {
+            selectedPlayerColors.clear()
+            isFirstRound = true
+            Server.players.clear()
+        }
+        isHost = false
+        _playerScores.clear()
+        _currentPlayer.value =
+            currentPlayer.value!!.copy(color = GameConstants.DEFAULT_PLAYER_COLOR)
+        _players.value = emptyList()
+        mServiceName = BASE_SERVICE_NAME
+    }
 
+    fun endGame() {
+        if (isHost) {
+            serverJob.cancel()
+            gameStateCollectorJob.cancel()
+            nsdManager.unregisterService(registrationListener)
+        } else {
+            clientJob.cancel()
+        }
+        replayGame()
+        resetGameParameters()
+    }
+
+
+    companion object {
+        private const val PLAYER_SCORE_INCREMENT = 100
+        private const val PLAYER_NAME_SHARED_PREF_KEY = "impostle_player_name"
     }
 }
