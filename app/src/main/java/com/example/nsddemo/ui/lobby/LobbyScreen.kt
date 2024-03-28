@@ -1,5 +1,7 @@
 package com.example.nsddemo.ui.lobby
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,13 +13,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,14 +30,49 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.nsddemo.Categories
 import com.example.nsddemo.Player
 import com.example.nsddemo.R
 import com.example.nsddemo.ui.GameViewModel
+import com.example.nsddemo.ui.category_and_word.ChooseCategoryViewModel
 import com.example.nsddemo.ui.theme.englishTypography
 
 @Composable
-fun LobbyScreen(gameViewModel: GameViewModel, onChooseCategoryClick: () -> Unit) {
-    val scrollState = rememberScrollState()
+fun LobbyScreen(
+    gameViewModel: GameViewModel,
+    chooseCategoryViewModel: ChooseCategoryViewModel,
+    onChooseCategoryClick: () -> Unit,
+    onStartRound: () -> Unit
+) {
+    LobbyScreen(
+        hasJoinedGame = gameViewModel.hasJoinedGame.value,
+        players = gameViewModel.players.value,
+        gameCode = gameViewModel.gameCode,
+        isHost = gameViewModel.isHost,
+        chosenCategory = chooseCategoryViewModel.chosenCategory.value,
+        onChooseCategoryClick = onChooseCategoryClick,
+        onStartRound = onStartRound,
+        chooseWordRandomly = gameViewModel::chooseWordRandomly
+    )
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun LobbyScreen(
+    hasJoinedGame: Boolean,
+    players: List<Player>,
+    gameCode: String,
+    isHost: Boolean,
+    chosenCategory: Categories? = null,
+    onChooseCategoryClick: () -> Unit,
+    onStartRound: () -> Unit,
+    chooseWordRandomly: (Categories) -> Unit
+) {
+    if (hasJoinedGame) {
+        LaunchedEffect(Unit) {
+            onStartRound()
+        }
+    }
     Column(
         Modifier
             .fillMaxSize()
@@ -59,12 +97,13 @@ fun LobbyScreen(gameViewModel: GameViewModel, onChooseCategoryClick: () -> Unit)
             Column(
                 Modifier
                     .heightIn(max = 400.dp)
-                    .verticalScroll(scrollState)
                     .width(150.dp)
             ) {
-                for ((i, player) in gameViewModel.players.value.withIndex()) {
-                    PlayerRow(player)
-                    if (i != gameViewModel.players.value.lastIndex) Spacer(Modifier.height(8.dp))
+                LazyColumn(modifier = Modifier.animateContentSize()) {
+                    itemsIndexed(players) { index, player ->
+                        PlayerRow(modifier = Modifier.animateItemPlacement(), player)
+                        if (index != players.lastIndex) Spacer(Modifier.height(8.dp))
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -76,20 +115,48 @@ fun LobbyScreen(gameViewModel: GameViewModel, onChooseCategoryClick: () -> Unit)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    gameViewModel.gameCode,
+                    gameCode,
                     style = englishTypography.headlineSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
             }
-            if (gameViewModel.isHost) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = onChooseCategoryClick) {
-                    Text(
-                        stringResource(R.string.choose_category),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                stringResource(
+                    R.string.category, chosenCategory?.name ?: stringResource(
+                        R.string.no_category_chosen
                     )
+                ),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            if (isHost) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Button(onClick = onChooseCategoryClick) {
+                        Text(
+                            stringResource(R.string.choose_category),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            chosenCategory?.let {
+                                chooseWordRandomly(it)
+                                onStartRound()
+                            }
+                        },
+                        enabled = chosenCategory != null
+                    ) {
+                        Text(
+                            stringResource(R.string.start_round),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -97,11 +164,35 @@ fun LobbyScreen(gameViewModel: GameViewModel, onChooseCategoryClick: () -> Unit)
     }
 }
 
+@Preview(backgroundColor = 0xFFFFFF, showBackground = true, locale = "en")
+@Composable
+private fun LobbyScreenPreview() {
+    LobbyScreen(
+        hasJoinedGame = false,
+        players = listOf(
+            Player("Player_1", "FFFF0000"),
+            Player("Player_2", "FF0000FF"),
+            Player("Player_3", "FF00FF00"),
+            Player("Player_4", "FF00FFFF"),
+            Player("Player_5", "FFFF00FF"),
+            Player("Player_6", "FFFFFF00"),
+            Player("Player_7", "FF000000"),
+            Player("Player_8", "FF000000"),
+        ),
+        gameCode = "ABCD",
+        isHost = true,
+        onChooseCategoryClick = {},
+        onStartRound = {},
+        chosenCategory = null,
+        chooseWordRandomly = {},
+    )
+}
+
 
 @Composable
-fun PlayerRow(player: Player) {
+private fun PlayerRow(modifier: Modifier, player: Player) {
     Row(
-        Modifier
+        modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.background)
@@ -120,6 +211,6 @@ fun PlayerRow(player: Player) {
 
 @Preview(backgroundColor = 0xFFFFFF, showBackground = true)
 @Composable
-fun PlayerRowPreview() {
-    PlayerRow(player = Player("Player_1", "FFFF00FF"))
+private fun PlayerRowPreview() {
+    PlayerRow(modifier = Modifier, player = Player("Player_1", "FFFF00FF"))
 }

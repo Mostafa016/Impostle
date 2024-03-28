@@ -95,9 +95,13 @@ class JoinGameViewModel(val gameViewModel: GameViewModel, val nsdManager: NsdMan
                 val clientJob = gameViewModel.viewModelScope.launch(Dispatchers.IO) {
                     Log.d(TAG, "Started client")
                     Log.d(TAG, "Address: ${host.hostAddress!!} Port: $port")
-                    Client.run(host.hostAddress!!, port, gameViewModel::handleServerMessages)
+                    Client.run(
+                        host.hostAddress!!,
+                        port,
+                        _hasFoundGame,
+                        gameViewModel::handleServerMessages
+                    )
                 }
-                _hasFoundGame.value = true
                 Log.d(TAG, _hasFoundGame.value.toString())
                 gameViewModel.setClientJob(clientJob)
                 stopServiceDiscovery()

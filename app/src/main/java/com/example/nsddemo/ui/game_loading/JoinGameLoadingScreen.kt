@@ -26,8 +26,14 @@ fun JoinGameLoadingScreen(
     gameViewModel: GameViewModel,
     joinGameViewModel: JoinGameViewModel,
     onGameJoined: () -> Unit,
+    onGameFound: () -> Unit,
     onGameNotFound: () -> Unit
 ) {
+    if (joinGameViewModel.hasFoundGame.value) {
+        LaunchedEffect(Unit) {
+            onGameFound()
+        }
+    }
     if (gameViewModel.hasJoinedGame.value) {
         LaunchedEffect(Unit) {
             onGameJoined()
@@ -46,8 +52,7 @@ fun JoinGameLoadingScreen(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            if (joinGameViewModel.hasFoundGame.value) stringResource(R.string.found_game_waiting_for_host_to_start_game)
-            else stringResource(R.string.finding_game),
+            stringResource(R.string.finding_game),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,

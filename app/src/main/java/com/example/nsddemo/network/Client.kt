@@ -2,20 +2,27 @@ package com.example.nsddemo.network
 
 
 import android.util.Log
+import androidx.compose.runtime.MutableState
 import com.example.nsddemo.Debugging.TAG
 import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.Connection
 import io.ktor.network.sockets.aSocket
 import io.ktor.network.sockets.openReadChannel
 import io.ktor.network.sockets.openWriteChannel
-import kotlinx.coroutines.*
-import kotlin.system.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.system.exitProcess
 
 object Client {
     var serverIpAddress: String = ""
     var replay = false
     suspend fun run(
-        hostName: String, port: Int, handleMessages: suspend (connection: Connection) -> Unit
+        hostName: String,
+        port: Int,
+        hasFoundGame: MutableState<Boolean>,
+        handleMessages: suspend (connection: Connection, hasFoundGame: MutableState<Boolean>) -> Unit
     ) = coroutineScope {
         val selectorManager = SelectorManager(Dispatchers.IO)
         Log.d(TAG, "Connecting to server...")
@@ -30,7 +37,7 @@ object Client {
         launch {
             try {
                 do {
-                    handleMessages(connection)
+                    handleMessages(connection, hasFoundGame)
                 } while (replay)
             } catch (e: Exception) {
                 Log.e(TAG, e.message.toString())

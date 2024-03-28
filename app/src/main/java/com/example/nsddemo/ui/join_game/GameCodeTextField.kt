@@ -33,7 +33,8 @@ fun GameCodeTextField(
     codeLength: Int,
     value: String,
     onValueChange: (String) -> Unit,
-    textStyle: TextStyle
+    textStyle: TextStyle,
+    enabled: Boolean,
 ) {
     val codeTextFieldValue = remember(value) {
         mutableStateOf(
@@ -57,7 +58,8 @@ fun GameCodeTextField(
                     length = codeLength,
                     textStyle = textStyle
                 )
-            }
+            },
+            enabled = enabled,
         )
     }
 }

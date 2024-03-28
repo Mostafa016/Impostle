@@ -95,6 +95,7 @@ fun MainMenuScreen(
                         modifier = Modifier
                             .weight(1f)
                             .padding(8.dp),
+                        enabled = mainMenuViewModel.playerNameTextFieldState.value.isNotBlank(),
                         onClick = { mainMenuViewModel.savePlayerName() }) {
                         Text(
                             stringResource(R.string.save),
