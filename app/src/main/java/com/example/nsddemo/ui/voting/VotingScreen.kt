@@ -46,6 +46,7 @@ fun VotingScreen(
 ) {
     val gameState = gameViewModel.gameState.collectAsState()
     val currentGameState = gameState.value
+    val playersState = gameViewModel.players.collectAsState()
     if (currentGameState is GameState.EndVote) {
         LaunchedEffect(Unit) {
             onNavigateToVotingResultsScreen()
@@ -72,13 +73,13 @@ fun VotingScreen(
                 .heightIn(max = 400.dp)
                 .verticalScroll(scrollState)
         ) {
-            for ((i, player) in gameViewModel.players.value.withIndex()) {
+            for ((i, player) in playersState.value.withIndex()) {
                 PlayerVoteItem(
                     player = player,
                     gameViewModel.votedPlayer.value,
                     onVoteForPlayer = gameViewModel.onVoteForPlayer
                 )
-                if (i != gameViewModel.players.value.lastIndex) Divider()
+                if (i != playersState.value.lastIndex) Divider()
             }
         }
         Spacer(modifier = Modifier.height(16.dp))

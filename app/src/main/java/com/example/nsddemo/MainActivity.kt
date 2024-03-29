@@ -5,8 +5,8 @@ import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.wifi.WifiManager
 import android.os.Bundle
+import android.util.Log
 import android.view.Window
-import android.widget.*
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
@@ -32,6 +32,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.compose.AppTheme
+import com.example.nsddemo.Debugging.TAG
 import com.example.nsddemo.ui.GameViewModel
 import com.example.nsddemo.ui.category_and_word.CategoryAndWordScreen
 import com.example.nsddemo.ui.category_and_word.ChooseCategoryScreen
@@ -61,7 +62,8 @@ class MainActivity : AppCompatActivity() {
             return GameViewModel(
                 nsdManager = getSystemService(Context.NSD_SERVICE) as NsdManager,
                 wifiManager = getSystemService(Context.WIFI_SERVICE) as WifiManager,
-                sharedPreferences = getPreferences(Context.MODE_PRIVATE)
+                sharedPreferences = getPreferences(Context.MODE_PRIVATE),
+                gameData = GameData(),
             ) as T
         }
     }
@@ -79,6 +81,10 @@ class MainActivity : AppCompatActivity() {
                 getSystemService(NSD_SERVICE) as NsdManager
             )
         )[JoinGameViewModel::class.java]
+        val chooseCategoryViewModel = ViewModelProvider(
+            this,
+            ChooseCategoryViewModel.Companion.ChooseCategoryViewModelFactory(gameViewModel)
+        )[ChooseCategoryViewModel::class.java]
         val settingsViewModel = ViewModelProvider(
             this,
             SettingsViewModel.Companion.SettingsViewModelFactory(getPreferences(Context.MODE_PRIVATE))
@@ -137,12 +143,17 @@ class MainActivity : AppCompatActivity() {
                                 })
                         }
                         composable(ScreenRoutes.JoinGame.route) {
-                            JoinGameScreen(joinGameViewModel, onJoinGamePressed = {
-                                //TODO: Handle failure to find game cases
-                                navController.popBackStackAndNavigateTo(ScreenRoutes.ClientGameStartLoading.route)
-                            })
+                            JoinGameScreen(
+                                gameViewModel, joinGameViewModel,
+                                onJoinGamePressed = {
+                                    navController.popBackStackAndNavigateTo(ScreenRoutes.JoinGameLoading.route)
+                                },
+                                onGoBackToMainMenuPressed = {
+                                    navController.popBackStackAndNavigateTo(ScreenRoutes.MainMenu.route)
+                                },
+                            )
                         }
-                        composable(ScreenRoutes.ClientGameStartLoading.route) {
+                        composable(ScreenRoutes.JoinGameLoading.route) {
                             //TODO: Add joined players messages to all players so lobby has a meaning
                             // or just keep the loading until host starts game and popBackStackAndNavigateTo to AskQuestion
                             // screen
@@ -151,6 +162,13 @@ class MainActivity : AppCompatActivity() {
                                 joinGameViewModel,
                                 onGameJoined = {
                                     navController.popBackStackAndNavigateTo(ScreenRoutes.CategoryAndWord.route)
+                                },
+                                onGameFound = {
+                                    Log.d(TAG, "Game found")
+                                    navController.popBackStackAndNavigateTo(ScreenRoutes.Lobby.route)
+                                    scope.launch {
+                                        snackBarHostState.showSnackbar(getString(R.string.found_game_waiting_for_host_to_start_game))
+                                    }
                                 },
                                 onGameNotFound = {
                                     navController.popBackStackAndNavigateTo(ScreenRoutes.JoinGame.route)
@@ -161,20 +179,23 @@ class MainActivity : AppCompatActivity() {
                             )
                         }
                         composable(ScreenRoutes.Lobby.route) {
-                            LobbyScreen(gameViewModel, onChooseCategoryClick = {
-                                navController.popBackStackAndNavigateTo(ScreenRoutes.ChooseCategory.route)
-                            })
+                            LobbyScreen(
+                                gameViewModel = gameViewModel,
+                                chooseCategoryViewModel = chooseCategoryViewModel,
+                                onChooseCategoryClick = {
+                                    navController.popBackStackAndNavigateTo(ScreenRoutes.ChooseCategory.route)
+                                },
+                                onStartRound = {
+                                    navController.popBackStackAndNavigateTo(ScreenRoutes.CategoryAndWord.route)
+                                },
+                            )
                         }
                         composable(ScreenRoutes.ChooseCategory.route) {
-                            ChooseCategoryScreen(vm = viewModel(
-                                ChooseCategoryViewModel::class.java,
-                                factory = ChooseCategoryViewModel.Companion.ChooseCategoryViewModelFactory(
-                                    gameViewModel
-                                )
-                            ),
-                                onNavigateToCategoryAndWord = {
+                            ChooseCategoryScreen(
+                                vm = chooseCategoryViewModel,
+                                onNavigateToLobby = {
                                     navController.popBackStackAndNavigateTo(
-                                        ScreenRoutes.CategoryAndWord.route
+                                        ScreenRoutes.Lobby.route
                                     )
                                 })
                         }
@@ -230,7 +251,7 @@ class MainActivity : AppCompatActivity() {
                                 },
                                 onNavigateToJoinGameScreen = {
                                     navController.popBackStackAndNavigateTo(
-                                        ScreenRoutes.ClientGameStartLoading.route
+                                        ScreenRoutes.JoinGameLoading.route
                                     )
                                 },
                                 onNavigateToEndGameScreen = {
@@ -249,7 +270,7 @@ class MainActivity : AppCompatActivity() {
                                 },
                                 onNavigateToJoinGameScreen = {
                                     navController.popBackStackAndNavigateTo(
-                                        ScreenRoutes.ClientGameStartLoading.route
+                                        ScreenRoutes.JoinGameLoading.route
                                     )
                                 },
                                 onNavigateToEndGameScreen = {

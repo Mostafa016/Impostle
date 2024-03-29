@@ -3,6 +3,7 @@ package com.example.nsddemo.ui.category_and_word
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -10,6 +11,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -28,9 +32,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.nsddemo.Categories
+import com.example.nsddemo.R
 
 @Composable
-fun ChooseCategoryScreen(vm: ChooseCategoryViewModel, onNavigateToCategoryAndWord: () -> Unit) {
+fun ChooseCategoryScreen(vm: ChooseCategoryViewModel, onNavigateToLobby: () -> Unit) {
     Column(
         Modifier
             .fillMaxSize()
@@ -39,21 +44,33 @@ fun ChooseCategoryScreen(vm: ChooseCategoryViewModel, onNavigateToCategoryAndWor
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Categories.values().forEachIndexed { index, category ->
-            CategoryCard(category, onClick = {
-                vm.chooseCategory(category)
-                onNavigateToCategoryAndWord()
-            })
-            if (index != Categories.values().lastIndex) Spacer(modifier = Modifier.height(32.dp))
+        Text(
+            text = stringResource(R.string.choose_a_category),
+            style = MaterialTheme.typography.displayMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(32.dp))
+        LazyHorizontalGrid(
+            modifier = Modifier.height(316.dp),
+            rows = GridCells.Fixed(2),
+            horizontalArrangement = spacedBy(16.dp),
+            verticalArrangement = spacedBy(16.dp),
+        ) {
+            itemsIndexed(Categories.values()) { _, category ->
+                CategoryCard(Modifier.requiredSize(150.dp), category, onClick = {
+                    vm.chooseCategory(category)
+                    onNavigateToLobby()
+                })
+            }
         }
+
     }
 }
 
 @Composable
-fun CategoryCard(category: Categories, onClick: () -> Unit) {
+fun CategoryCard(modifier: Modifier, category: Categories, onClick: () -> Unit) {
     Box(
-        Modifier
-            .requiredSize(300.dp)
+        modifier
             .clip(CircleShape)
             .paint(
                 painterResource(category.imageDrawableID), contentScale = ContentScale.Crop

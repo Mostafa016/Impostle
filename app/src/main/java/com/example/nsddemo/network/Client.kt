@@ -8,14 +8,21 @@ import io.ktor.network.sockets.Connection
 import io.ktor.network.sockets.aSocket
 import io.ktor.network.sockets.openReadChannel
 import io.ktor.network.sockets.openWriteChannel
-import kotlinx.coroutines.*
-import kotlin.system.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import kotlin.system.exitProcess
 
 object Client {
     var serverIpAddress: String = ""
     var replay = false
     suspend fun run(
-        hostName: String, port: Int, handleMessages: suspend (connection: Connection) -> Unit
+        hostName: String,
+        port: Int,
+        hasFoundGame: MutableStateFlow<Boolean>,
+        handleMessages: suspend (connection: Connection, hasFoundGame: MutableStateFlow<Boolean>) -> Unit
     ) = coroutineScope {
         val selectorManager = SelectorManager(Dispatchers.IO)
         Log.d(TAG, "Connecting to server...")
@@ -30,7 +37,7 @@ object Client {
         launch {
             try {
                 do {
-                    handleMessages(connection)
+                    handleMessages(connection, hasFoundGame)
                 } while (replay)
             } catch (e: Exception) {
                 Log.e(TAG, e.message.toString())

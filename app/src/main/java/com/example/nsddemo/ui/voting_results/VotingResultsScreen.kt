@@ -39,11 +39,12 @@ fun VotingResultsScreen(
     onNavigateToEndGameScreen: () -> Unit
 ) {
     val currentGameState = gameViewModel.gameState.collectAsState().value
+    val currentPlayerState = gameViewModel.currentPlayer.collectAsState()
     if (currentGameState is GameState.Replay) {
         if (currentGameState.replay) {
             LaunchedEffect(Unit) {
                 gameViewModel.replayGame()
-                if (gameViewModel.isHost) {
+                if (gameViewModel.gameData.isHost!!) {
                     onNavigateToLobbyScreen()
                 } else {
                     onNavigateToJoinGameScreen()
@@ -89,7 +90,7 @@ fun VotingResultsScreen(
             PlayerVoteResultItem(
                 player = player,
                 numberOfVotes = numberOfVotes,
-                isCurrentPlayer = player == gameViewModel.currentPlayer.value
+                isCurrentPlayer = player == currentPlayerState.value
             )
             if (index < gameViewModel.votedPlayers.entries.size - 1) {
                 Divider(

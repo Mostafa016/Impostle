@@ -32,6 +32,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -54,6 +55,7 @@ fun MainMenuScreen(
     onNavigateToJoinGame: () -> Unit,
     onNavigateToSettings: () -> Unit,
 ) {
+    val currentPlayerState = gameViewModel.currentPlayer.collectAsState()
     if (mainMenuViewModel.playerNameDialogVisibilityState.value) {
         Dialog(onDismissRequest = {}) {
             Column(
@@ -95,6 +97,7 @@ fun MainMenuScreen(
                         modifier = Modifier
                             .weight(1f)
                             .padding(8.dp),
+                        enabled = mainMenuViewModel.playerNameTextFieldState.value.isNotBlank(),
                         onClick = { mainMenuViewModel.savePlayerName() }) {
                         Text(
                             stringResource(R.string.save),
@@ -146,7 +149,7 @@ fun MainMenuScreen(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    gameViewModel.currentPlayer.value?.name
+                    currentPlayerState.value?.name
                         ?: stringResource(R.string.player_name_placeholder),
                     style = englishTypography.titleLarge,
                     color = MaterialTheme.colorScheme.onBackground
@@ -166,7 +169,7 @@ fun MainMenuScreen(
             )
             Spacer(modifier = Modifier.height(24.dp))
             TextButton(onClick = {
-                if (gameViewModel.currentPlayer.value == null) {
+                if (currentPlayerState.value == null) {
                     mainMenuViewModel.showPlayerNameDialog(
                         onPlayerNameSave = {
                             onNavigateToCreateGame()
@@ -185,7 +188,7 @@ fun MainMenuScreen(
             }
             Spacer(modifier = Modifier.height(16.dp))
             TextButton(onClick = {
-                if (gameViewModel.currentPlayer.value == null) {
+                if (currentPlayerState.value == null) {
                     mainMenuViewModel.showPlayerNameDialog(
                         onPlayerNameSave = onNavigateToJoinGame
                     )

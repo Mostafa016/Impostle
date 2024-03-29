@@ -14,6 +14,9 @@ import com.example.nsddemo.NSDConstants
 import com.example.nsddemo.network.Client
 import com.example.nsddemo.ui.GameViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.net.InetAddress
 
@@ -23,8 +26,8 @@ class JoinGameViewModel(val gameViewModel: GameViewModel, val nsdManager: NsdMan
     val gameCodeTextFieldState: State<String> = _gameCodeTextFieldState
     lateinit var gameCode: String
     private var mServiceName: String = NSDConstants.BASE_SERVICE_NAME
-    private val _hasFoundGame = mutableStateOf(false)
-    val hasFoundGame: State<Boolean> = _hasFoundGame
+    private val _hasFoundGame = MutableStateFlow(false)
+    val hasFoundGame: StateFlow<Boolean> = _hasFoundGame.asStateFlow()
     private val discoveryListener = object : NsdManager.DiscoveryListener {
         // Called as soon as service discovery begins.
         override fun onDiscoveryStarted(regType: String) {
@@ -95,9 +98,13 @@ class JoinGameViewModel(val gameViewModel: GameViewModel, val nsdManager: NsdMan
                 val clientJob = gameViewModel.viewModelScope.launch(Dispatchers.IO) {
                     Log.d(TAG, "Started client")
                     Log.d(TAG, "Address: ${host.hostAddress!!} Port: $port")
-                    Client.run(host.hostAddress!!, port, gameViewModel::handleServerMessages)
+                    Client.run(
+                        host.hostAddress!!,
+                        port,
+                        _hasFoundGame,
+                        gameViewModel::handleServerMessages
+                    )
                 }
-                _hasFoundGame.value = true
                 Log.d(TAG, _hasFoundGame.value.toString())
                 gameViewModel.setClientJob(clientJob)
                 stopServiceDiscovery()

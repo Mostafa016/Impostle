@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -25,6 +26,7 @@ import com.example.nsddemo.ui.GameViewModel
 // look if you can make isGameCreated in a local viewModel
 @Composable
 fun CreateGameLoadingScreen(gameViewModel: GameViewModel, onGameCreated: () -> Unit) {
+    val isGameCreatedState = gameViewModel.isGameCreated.collectAsState()
     Column(
         Modifier
             .fillMaxSize()
@@ -32,7 +34,7 @@ fun CreateGameLoadingScreen(gameViewModel: GameViewModel, onGameCreated: () -> U
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        if (gameViewModel.isGameCreated.value) {
+        if (isGameCreatedState.value) {
             LaunchedEffect(Unit) {
                 onGameCreated()
             }

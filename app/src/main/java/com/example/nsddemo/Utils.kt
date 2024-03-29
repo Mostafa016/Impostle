@@ -9,7 +9,7 @@ enum class ScreenRoutes(val route: String) {
     Settings("settings_screen"),
     CreateGame("create_game_screen"),
     JoinGame("join_game_screen"),
-    ClientGameStartLoading("client_game_start_loading_screen"),
+    JoinGameLoading("join_game_loading_screen"),
     Lobby("lobby_screen"),
     ChooseCategory("choose_category_screen"),
     CategoryAndWord("category_and_word_screen"),

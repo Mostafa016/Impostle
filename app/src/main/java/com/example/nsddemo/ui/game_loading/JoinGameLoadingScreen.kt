@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -26,16 +27,24 @@ fun JoinGameLoadingScreen(
     gameViewModel: GameViewModel,
     joinGameViewModel: JoinGameViewModel,
     onGameJoined: () -> Unit,
+    onGameFound: () -> Unit,
     onGameNotFound: () -> Unit
 ) {
-    if (gameViewModel.hasJoinedGame.value) {
+    val hasFoundGameState = joinGameViewModel.hasFoundGame.collectAsState()
+    val hasJoinedGameState = gameViewModel.hasJoinedGame.collectAsState()
+    if (hasFoundGameState.value) {
+        LaunchedEffect(Unit) {
+            onGameFound()
+        }
+    }
+    if (hasJoinedGameState.value) {
         LaunchedEffect(Unit) {
             onGameJoined()
         }
     }
     LaunchedEffect(Unit) {
         delay(5000L)
-        if (!joinGameViewModel.hasFoundGame.value) {
+        if (!hasFoundGameState.value) {
             joinGameViewModel.stopServiceDiscovery()
             onGameNotFound()
         }
@@ -46,8 +55,7 @@ fun JoinGameLoadingScreen(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            if (joinGameViewModel.hasFoundGame.value) stringResource(R.string.found_game_waiting_for_host_to_start_game)
-            else stringResource(R.string.finding_game),
+            stringResource(R.string.finding_game),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,

@@ -44,6 +44,7 @@ import com.example.nsddemo.ui.theme.englishTypography
 fun QuestionScreen(
     viewModel: GameViewModel, onNavigateToExtraQuestionsScreen: () -> Unit
 ) {
+    val currentPlayerState = viewModel.currentPlayer.collectAsState()
     if (viewModel.wordDialogVisibilityState.value) {
         Dialog(onDismissRequest = { viewModel.onWordDialogOkClicked() }) {
             Column(
@@ -127,7 +128,7 @@ fun QuestionScreen(
                         Text(
                             if (currentGameState.isAsking) stringResource(R.string.are_asking)
                             else {
-                                if (currentGameState.asked != viewModel.currentPlayer.value) {
+                                if (currentGameState.asked != currentPlayerState.value) {
                                     stringResource(R.string.is_asking)
                                 } else {
                                     stringResource(R.string.is_asking_you)
@@ -138,7 +139,7 @@ fun QuestionScreen(
                             fontWeight = FontWeight.SemiBold,
                         )
                         Text(
-                            if (currentGameState.asked != viewModel.currentPlayer.value) currentGameState.asked.name
+                            if (currentGameState.asked != currentPlayerState.value) currentGameState.asked.name
                             else stringResource(R.string.you_asked),
                             style = englishTypography.headlineLarge,
                             color = Color(currentGameState.asked.color.toLong(radix = 16)),

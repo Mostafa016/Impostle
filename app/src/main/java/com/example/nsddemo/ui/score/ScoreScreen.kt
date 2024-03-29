@@ -38,11 +38,12 @@ fun ScoreScreen(
     onNavigateToEndGameScreen: () -> Unit
 ) {
     val currentGameState = viewModel.gameState.collectAsState().value
+    val currentPlayerState = viewModel.currentPlayer.collectAsState()
     if (currentGameState is GameState.Replay) {
         if (currentGameState.replay) {
             LaunchedEffect(Unit) {
                 viewModel.replayGame()
-                if (viewModel.isHost) {
+                if (viewModel.gameData.isHost!!) {
                     onNavigateToLobbyScreen()
                 } else {
                     onNavigateToJoinGameScreen()
@@ -88,7 +89,7 @@ fun ScoreScreen(
             PlayerScoreItem(
                 player = player,
                 score = score,
-                isCurrentPlayer = player == viewModel.currentPlayer.value
+                isCurrentPlayer = player == currentPlayerState.value
             )
             if (index < viewModel.playerScores.entries.size - 1) {
                 Divider(
@@ -98,7 +99,7 @@ fun ScoreScreen(
                 )
             }
         }
-        if (viewModel.isHost) {
+        if (viewModel.gameData.isHost!!) {
             Spacer(modifier = Modifier.height(16.dp))
             Row {
                 Button(onClick = viewModel.onEndGameClick) {
