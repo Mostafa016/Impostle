@@ -46,6 +46,7 @@ import com.example.nsddemo.R
 import com.example.nsddemo.ui.GameViewModel
 import com.example.nsddemo.ui.PlayerColors
 import com.example.nsddemo.ui.theme.englishTypography
+import kotlinx.coroutines.flow.map
 
 @Composable
 fun MainMenuScreen(
@@ -55,7 +56,9 @@ fun MainMenuScreen(
     onNavigateToJoinGame: () -> Unit,
     onNavigateToSettings: () -> Unit,
 ) {
-    val currentPlayerState = gameViewModel.currentPlayer.collectAsState()
+    val currentPlayerState = gameViewModel.gameRepository.gameData.map {
+        it.currentPlayer
+    }.collectAsState(null)
     if (mainMenuViewModel.playerNameDialogVisibilityState.value) {
         Dialog(onDismissRequest = {}) {
             Column(

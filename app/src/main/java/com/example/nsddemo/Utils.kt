@@ -14,7 +14,7 @@ enum class ScreenRoutes(val route: String) {
     ChooseCategory("choose_category_screen"),
     CategoryAndWord("category_and_word_screen"),
     Question("question_screen"),
-    ExtraQuestions("extra_questions_screen"),
+    ChooseExtraQuestions("choose_extra_questions_screen"),
     Voting("voting_screen"),
     VotingResults("voting_results_screen"),
     Scoreboard("scoreboard_screen"),

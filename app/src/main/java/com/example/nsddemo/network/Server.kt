@@ -3,14 +3,21 @@ package com.example.nsddemo.network
 import android.util.Log
 import com.example.nsddemo.Debugging.TAG
 import com.example.nsddemo.Player
-import io.ktor.network.selector.*
-import io.ktor.network.sockets.*
+import io.ktor.network.selector.SelectorManager
+import io.ktor.network.sockets.Connection
+import io.ktor.network.sockets.ServerSocket
+import io.ktor.network.sockets.aSocket
+import io.ktor.network.sockets.openReadChannel
+import io.ktor.network.sockets.openWriteChannel
+import io.ktor.network.sockets.toJavaAddress
 import io.ktor.util.network.port
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 
 
 object Server {
-    val players: MutableMap<Connection, Player> = mutableMapOf()
+    val clients: MutableMap<Connection, Player> = mutableMapOf()
 
     private var serverSocket: ServerSocket? = null
     fun initServerSocket(serverIP: String): Int {

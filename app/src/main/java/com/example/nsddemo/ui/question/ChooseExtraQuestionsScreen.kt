@@ -22,7 +22,7 @@ import com.example.nsddemo.R
 import com.example.nsddemo.ui.GameViewModel
 
 @Composable
-fun ExtraQuestionsScreen(
+fun ChooseExtraQuestionsScreen(
     gameViewModel: GameViewModel,
     onNavigateToVotingScreen: () -> Unit,
     onNavigateToQuestionScreen: () -> Unit
@@ -48,7 +48,7 @@ fun ExtraQuestionsScreen(
             color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.SemiBold,
         )
-        if (gameViewModel.isHost) {
+        if (gameViewModel.gameData.collectAsState().value.isHost!!) {
             Spacer(modifier = Modifier.height(16.dp))
             Column(
                 verticalArrangement = Arrangement.Center,

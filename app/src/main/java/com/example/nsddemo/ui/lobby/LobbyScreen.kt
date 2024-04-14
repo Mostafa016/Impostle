@@ -35,25 +35,23 @@ import com.example.nsddemo.Categories
 import com.example.nsddemo.Player
 import com.example.nsddemo.R
 import com.example.nsddemo.ui.GameViewModel
-import com.example.nsddemo.ui.category_and_word.ChooseCategoryViewModel
 import com.example.nsddemo.ui.theme.englishTypography
 
 @Composable
 fun LobbyScreen(
     gameViewModel: GameViewModel,
-    chooseCategoryViewModel: ChooseCategoryViewModel,
     onChooseCategoryClick: () -> Unit,
     onStartRound: () -> Unit
 ) {
     LobbyScreen(
         hasJoinedGame = gameViewModel.hasJoinedGame.collectAsState().value,
-        players = gameViewModel.players.collectAsState().value,
-        gameCode = gameViewModel.gameData.gameCode!!,
-        isHost = gameViewModel.gameData.isHost!!,
-        chosenCategory = chooseCategoryViewModel.chosenCategory.value,
+        players = gameViewModel.gameRepository.gameData.collectAsState().value.players,
+        gameCode = gameViewModel.gameRepository.gameData.collectAsState().value.gameCode!!.uppercase(),
+        isHost = gameViewModel.gameRepository.gameData.collectAsState().value.isHost!!,
+        chosenCategory = gameViewModel.gameRepository.gameData.collectAsState().value.category,
         onChooseCategoryClick = onChooseCategoryClick,
         onStartRound = onStartRound,
-        chooseWordRandomly = gameViewModel::chooseWordRandomly
+        chooseWordRandomly = gameViewModel::chooseRandomWord
     )
 }
 

@@ -53,7 +53,7 @@ class JoinGameViewModel(val gameViewModel: GameViewModel, val nsdManager: NsdMan
                         return
                     }
                     // Not the host of the lobby I want to join
-                    val serviceGameCode = service.serviceName.split("_")[1].lowercase()
+                    val serviceGameCode = service.serviceName.split("_")[1]
                     if (serviceGameCode != gameCode) {
                         Log.d(
                             TAG,
@@ -83,7 +83,7 @@ class JoinGameViewModel(val gameViewModel: GameViewModel, val nsdManager: NsdMan
                     return
                 }
                 // Host of another game
-                if (serviceInfo.serviceName.split("_")[1].lowercase() != gameCode) {
+                if (serviceInfo.serviceName.split("_")[1] != gameCode) {
                     Log.d(
                         TAG, "${serviceInfo.serviceName} Host of another game $gameCode"
                     )
@@ -107,7 +107,7 @@ class JoinGameViewModel(val gameViewModel: GameViewModel, val nsdManager: NsdMan
                 }
                 Log.d(TAG, _hasFoundGame.value.toString())
                 gameViewModel.setClientJob(clientJob)
-                stopServiceDiscovery()
+                stopSearchingForGame()
             }
         }
 
@@ -149,9 +149,12 @@ class JoinGameViewModel(val gameViewModel: GameViewModel, val nsdManager: NsdMan
         )
     }
 
-    fun stopServiceDiscovery(): Unit = nsdManager.stopServiceDiscovery(discoveryListener)
+    fun stopSearchingForGame() {
+        nsdManager.stopServiceDiscovery(discoveryListener)
+        _gameCodeTextFieldState.value = ""
+    }
     fun onDiscoverAndResolveServicesClick() {
-        gameCode = gameCodeTextFieldState.value.lowercase()
+        gameCode = gameCodeTextFieldState.value
         Log.d(TAG, "Game Code: $gameCode")
         discoverServices()
     }

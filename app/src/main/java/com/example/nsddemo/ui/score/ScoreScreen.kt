@@ -28,6 +28,7 @@ import com.example.nsddemo.Player
 import com.example.nsddemo.R
 import com.example.nsddemo.ui.GameViewModel
 import com.example.nsddemo.ui.theme.englishTypography
+import kotlinx.coroutines.flow.map
 
 @Composable
 fun ScoreScreen(
@@ -38,12 +39,14 @@ fun ScoreScreen(
     onNavigateToEndGameScreen: () -> Unit
 ) {
     val currentGameState = viewModel.gameState.collectAsState().value
-    val currentPlayerState = viewModel.currentPlayer.collectAsState()
+    val currentPlayerState = viewModel.gameRepository.gameData.map {
+        it.currentPlayer
+    }.collectAsState(null)
     if (currentGameState is GameState.Replay) {
         if (currentGameState.replay) {
             LaunchedEffect(Unit) {
                 viewModel.replayGame()
-                if (viewModel.gameData.isHost!!) {
+                if (viewModel.gameData.value.isHost!!) {
                     onNavigateToLobbyScreen()
                 } else {
                     onNavigateToJoinGameScreen()
@@ -55,8 +58,8 @@ fun ScoreScreen(
             }
         }
     }
-    val imposterPlayer = remember { viewModel.imposterPlayer }
-    val isImposter = remember { viewModel.isImposter!! }
+    val imposterPlayer = remember { viewModel.gameRepository.gameData.value.imposter }
+    val isImposter = remember { viewModel.gameRepository.gameData.value.isImposter!! }
     Column(
         Modifier
             .fillMaxSize()
@@ -72,9 +75,9 @@ fun ScoreScreen(
             )
             Spacer(Modifier.width(8.dp))
             Text(
-                if (isImposter) stringResource(R.string.you) else imposterPlayer.name,
+                if (isImposter) stringResource(R.string.you) else imposterPlayer!!.name,
                 style = englishTypography.headlineLarge,
-                color = Color(imposterPlayer.color.toLong(radix = 16)),
+                color = Color(imposterPlayer!!.color.toLong(radix = 16)),
                 fontWeight = FontWeight.Bold,
             )
         }
@@ -85,13 +88,11 @@ fun ScoreScreen(
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(8.dp))
-        viewModel.playerScores.entries.forEachIndexed { index, (player, score) ->
+        viewModel.gameData.collectAsState().value.playerScores.entries.forEachIndexed { index, (player, score) ->
             PlayerScoreItem(
-                player = player,
-                score = score,
-                isCurrentPlayer = player == currentPlayerState.value
+                player = player, score = score, isCurrentPlayer = player == currentPlayerState.value
             )
-            if (index < viewModel.playerScores.entries.size - 1) {
+            if (index < viewModel.gameData.collectAsState().value.playerScores.entries.size - 1) {
                 Divider(
                     Modifier
                         .fillMaxWidth()
@@ -99,7 +100,7 @@ fun ScoreScreen(
                 )
             }
         }
-        if (viewModel.gameData.isHost!!) {
+        if (viewModel.gameData.collectAsState().value.isHost!!) {
             Spacer(modifier = Modifier.height(16.dp))
             Row {
                 Button(onClick = viewModel.onEndGameClick) {

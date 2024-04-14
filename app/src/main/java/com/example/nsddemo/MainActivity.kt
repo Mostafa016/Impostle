@@ -45,13 +45,14 @@ import com.example.nsddemo.ui.join_game.JoinGameViewModel
 import com.example.nsddemo.ui.lobby.LobbyScreen
 import com.example.nsddemo.ui.main_menu.MainMenuScreen
 import com.example.nsddemo.ui.main_menu.MainMenuViewModel
-import com.example.nsddemo.ui.question.ExtraQuestionsScreen
+import com.example.nsddemo.ui.question.ChooseExtraQuestionsScreen
 import com.example.nsddemo.ui.question.QuestionScreen
 import com.example.nsddemo.ui.score.ScoreScreen
 import com.example.nsddemo.ui.settings.SettingsScreen
 import com.example.nsddemo.ui.settings.SettingsViewModel
 import com.example.nsddemo.ui.voting.VotingScreen
 import com.example.nsddemo.ui.voting_results.VotingResultsScreen
+import com.google.gson.Gson
 import kotlinx.coroutines.launch
 
 
@@ -59,11 +60,17 @@ class MainActivity : AppCompatActivity() {
     @Suppress("UNCHECKED_CAST")
     private val factory = object : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            val gameRepository = GameRepository()
             return GameViewModel(
                 nsdManager = getSystemService(Context.NSD_SERVICE) as NsdManager,
                 wifiManager = getSystemService(Context.WIFI_SERVICE) as WifiManager,
                 sharedPreferences = getPreferences(Context.MODE_PRIVATE),
-                gameData = GameData(),
+                stateManager = StateManager(
+                    gameManager = GameManager(gameRepository = gameRepository),
+                    gameRepository = gameRepository,
+                    gson = Gson()
+                ),
+                gameRepository = gameRepository,
             ) as T
         }
     }
@@ -81,10 +88,6 @@ class MainActivity : AppCompatActivity() {
                 getSystemService(NSD_SERVICE) as NsdManager
             )
         )[JoinGameViewModel::class.java]
-        val chooseCategoryViewModel = ViewModelProvider(
-            this,
-            ChooseCategoryViewModel.Companion.ChooseCategoryViewModelFactory(gameViewModel)
-        )[ChooseCategoryViewModel::class.java]
         val settingsViewModel = ViewModelProvider(
             this,
             SettingsViewModel.Companion.SettingsViewModelFactory(getPreferences(Context.MODE_PRIVATE))
@@ -124,6 +127,7 @@ class MainActivity : AppCompatActivity() {
                                     )
                                 },
                                 onNavigateToJoinGame = {
+                                    gameViewModel.actAsClient()
                                     navController.popBackStackAndNavigateTo(
                                         ScreenRoutes.JoinGame.route
                                     )
@@ -154,9 +158,6 @@ class MainActivity : AppCompatActivity() {
                             )
                         }
                         composable(ScreenRoutes.JoinGameLoading.route) {
-                            //TODO: Add joined players messages to all players so lobby has a meaning
-                            // or just keep the loading until host starts game and popBackStackAndNavigateTo to AskQuestion
-                            // screen
                             JoinGameLoadingScreen(
                                 gameViewModel,
                                 joinGameViewModel,
@@ -181,7 +182,6 @@ class MainActivity : AppCompatActivity() {
                         composable(ScreenRoutes.Lobby.route) {
                             LobbyScreen(
                                 gameViewModel = gameViewModel,
-                                chooseCategoryViewModel = chooseCategoryViewModel,
                                 onChooseCategoryClick = {
                                     navController.popBackStackAndNavigateTo(ScreenRoutes.ChooseCategory.route)
                                 },
@@ -192,7 +192,12 @@ class MainActivity : AppCompatActivity() {
                         }
                         composable(ScreenRoutes.ChooseCategory.route) {
                             ChooseCategoryScreen(
-                                vm = chooseCategoryViewModel,
+                                vm = ViewModelProvider(
+                                    this@MainActivity,
+                                    ChooseCategoryViewModel.Companion.ChooseCategoryViewModelFactory(
+                                        gameViewModel
+                                    )
+                                )[ChooseCategoryViewModel::class.java],
                                 onNavigateToLobby = {
                                     navController.popBackStackAndNavigateTo(
                                         ScreenRoutes.Lobby.route
@@ -209,14 +214,14 @@ class MainActivity : AppCompatActivity() {
                         }
                         composable(ScreenRoutes.Question.route) {
                             QuestionScreen(gameViewModel,
-                                onNavigateToExtraQuestionsScreen = {
+                                onNavigateToChooseExtraQuestionsScreen = {
                                     navController.popBackStackAndNavigateTo(
-                                        ScreenRoutes.ExtraQuestions.route
+                                        ScreenRoutes.ChooseExtraQuestions.route
                                     )
                                 })
                         }
-                        composable(ScreenRoutes.ExtraQuestions.route) {
-                            ExtraQuestionsScreen(
+                        composable(ScreenRoutes.ChooseExtraQuestions.route) {
+                            ChooseExtraQuestionsScreen(
                                 gameViewModel,
                                 onNavigateToVotingScreen = {
                                     navController.popBackStackAndNavigateTo(

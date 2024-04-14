@@ -16,19 +16,19 @@ enum class PlayerColors(val argb: Long) {
 }
 
 fun String.toPlayerColors(): PlayerColors {
-    return when (this) {
-        "0xFFD71E22" -> PlayerColors.Red
-        "0xFF1D3CE9" -> PlayerColors.Blue
-        "0xFF023020" -> PlayerColors.DarkGreen
-        "0xFFFF63D4" -> PlayerColors.Pink
-        "0xFFFF8D1C" -> PlayerColors.Orange
-        "0xFFFFFF67" -> PlayerColors.Yellow
-        "0xFF783DD2" -> PlayerColors.Purple
-        "0xFF80582D" -> PlayerColors.Brown
-        "0xFF44FFF7" -> PlayerColors.Cyan
-        "0xFF5BFE4B" -> PlayerColors.Lime
-        "0xFF6C2B3D" -> PlayerColors.Maroon
-        "0xFFFFD6EC" -> PlayerColors.Rose
+    return when (this.toLong().toString(16).uppercase()) {
+        "FFD71E22" -> PlayerColors.Red
+        "FF1D3CE9" -> PlayerColors.Blue
+        "FF023020" -> PlayerColors.DarkGreen
+        "FFFF63D4" -> PlayerColors.Pink
+        "FFFF8D1C" -> PlayerColors.Orange
+        "FFFFFF67" -> PlayerColors.Yellow
+        "FF783DD2" -> PlayerColors.Purple
+        "FF80582D" -> PlayerColors.Brown
+        "FF44FFF7" -> PlayerColors.Cyan
+        "FF5BFE4B" -> PlayerColors.Lime
+        "FF6C2B3D" -> PlayerColors.Maroon
+        "FFFFD6EC" -> PlayerColors.Rose
         else -> throw IllegalArgumentException("Invalid color")
     }
 }

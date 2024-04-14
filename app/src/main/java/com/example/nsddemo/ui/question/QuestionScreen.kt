@@ -37,14 +37,17 @@ import com.example.nsddemo.GameState
 import com.example.nsddemo.R
 import com.example.nsddemo.ui.GameViewModel
 import com.example.nsddemo.ui.theme.englishTypography
+import kotlinx.coroutines.flow.map
 
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun QuestionScreen(
-    viewModel: GameViewModel, onNavigateToExtraQuestionsScreen: () -> Unit
+    viewModel: GameViewModel, onNavigateToChooseExtraQuestionsScreen: () -> Unit
 ) {
-    val currentPlayerState = viewModel.currentPlayer.collectAsState()
+    val currentPlayerState = viewModel.gameRepository.gameData.map {
+        it.currentPlayer
+    }.collectAsState(null)
     if (viewModel.wordDialogVisibilityState.value) {
         Dialog(onDismissRequest = { viewModel.onWordDialogOkClicked() }) {
             Column(
@@ -55,7 +58,7 @@ fun QuestionScreen(
                 Text(
                     text = stringResource(
                         R.string.category,
-                        stringResource(Categories.values()[viewModel.categoryOrdinal].nameResourceId)
+                        stringResource(Categories.values()[viewModel.gameRepository.gameData.collectAsState().value.categoryOrdinal].nameResourceId)
                     ),
                     Modifier.padding(4.dp),
                     style = MaterialTheme.typography.headlineLarge,
@@ -63,8 +66,13 @@ fun QuestionScreen(
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    text = if (viewModel.isImposter!!) stringResource(R.string.you_are_the_imposter)
-                    else stringResource(R.string.word, stringResource(viewModel.wordResId)),
+                    text = if (viewModel.gameRepository.gameData.collectAsState().value.isImposter!!) stringResource(
+                        R.string.you_are_the_imposter
+                    )
+                    else stringResource(
+                        R.string.word,
+                        stringResource(viewModel.gameRepository.gameData.collectAsState().value.wordResID)
+                    ),
                     Modifier.padding(4.dp),
                     style = MaterialTheme.typography.headlineLarge,
                     color = MaterialTheme.colorScheme.onBackground
@@ -103,9 +111,9 @@ fun QuestionScreen(
             verticalArrangement = Arrangement.Center
         ) {
             val gameState = viewModel.gameState.collectAsState()
-            if (gameState.value is GameState.AskExtraQuestions) {
+            if (gameState.value is GameState.ChooseExtraQuestions) {
                 LaunchedEffect(Unit) {
-                    onNavigateToExtraQuestionsScreen()
+                    onNavigateToChooseExtraQuestionsScreen()
                 }
             } else if (gameState.value is GameState.AskQuestion) {
                 val currentGameState = gameState.value as GameState.AskQuestion

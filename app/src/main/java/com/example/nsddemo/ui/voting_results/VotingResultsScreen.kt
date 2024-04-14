@@ -28,6 +28,7 @@ import com.example.nsddemo.Player
 import com.example.nsddemo.R
 import com.example.nsddemo.ui.GameViewModel
 import com.example.nsddemo.ui.theme.englishTypography
+import kotlinx.coroutines.flow.map
 
 // Maybe Use PreviewParameters for all screens
 @Composable
@@ -39,12 +40,14 @@ fun VotingResultsScreen(
     onNavigateToEndGameScreen: () -> Unit
 ) {
     val currentGameState = gameViewModel.gameState.collectAsState().value
-    val currentPlayerState = gameViewModel.currentPlayer.collectAsState()
+    val currentPlayerState = gameViewModel.gameRepository.gameData.map {
+        it.currentPlayer
+    }.collectAsState(null)
     if (currentGameState is GameState.Replay) {
         if (currentGameState.replay) {
             LaunchedEffect(Unit) {
                 gameViewModel.replayGame()
-                if (gameViewModel.gameData.isHost!!) {
+                if (gameViewModel.gameData.value.isHost!!) {
                     onNavigateToLobbyScreen()
                 } else {
                     onNavigateToJoinGameScreen()
@@ -56,8 +59,8 @@ fun VotingResultsScreen(
             }
         }
     }
-    val imposterPlayer = remember { gameViewModel.imposterPlayer }
-    val isImposter = remember { gameViewModel.isImposter!! }
+    val imposterPlayer = remember { gameViewModel.gameRepository.gameData.value.imposter }
+    val isImposter = remember { gameViewModel.gameRepository.gameData.value.isImposter!! }
     Column(
         Modifier
             .fillMaxSize()
@@ -73,9 +76,9 @@ fun VotingResultsScreen(
             )
             Spacer(Modifier.width(8.dp))
             Text(
-                if (isImposter) stringResource(R.string.you) else imposterPlayer.name,
+                if (isImposter) stringResource(R.string.you) else imposterPlayer!!.name,
                 style = MaterialTheme.typography.headlineLarge,
-                color = Color(imposterPlayer.color.toLong(radix = 16)),
+                color = Color(imposterPlayer!!.color.toLong(radix = 16)),
                 fontWeight = FontWeight.Bold,
             )
         }
@@ -86,13 +89,13 @@ fun VotingResultsScreen(
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(8.dp))
-        gameViewModel.votedPlayers.entries.forEachIndexed { index, (player, numberOfVotes) ->
+        gameViewModel.gameData.collectAsState().value.roundVotingCounts.entries.forEachIndexed { index, (player, numberOfVotes) ->
             PlayerVoteResultItem(
                 player = player,
                 numberOfVotes = numberOfVotes,
                 isCurrentPlayer = player == currentPlayerState.value
             )
-            if (index < gameViewModel.votedPlayers.entries.size - 1) {
+            if (index < gameViewModel.gameData.collectAsState().value.roundVotingCounts.entries.size - 1) {
                 Divider(
                     Modifier
                         .fillMaxWidth()

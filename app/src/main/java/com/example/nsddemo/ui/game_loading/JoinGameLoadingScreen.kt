@@ -45,7 +45,7 @@ fun JoinGameLoadingScreen(
     LaunchedEffect(Unit) {
         delay(5000L)
         if (!hasFoundGameState.value) {
-            joinGameViewModel.stopServiceDiscovery()
+            joinGameViewModel.stopSearchingForGame()
             onGameNotFound()
         }
     }

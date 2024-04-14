@@ -51,7 +51,13 @@ fun JoinGameScreen(
             value = joinGameViewModel.gameCodeTextFieldState.value,
             onValueChange = joinGameViewModel::onGameCodeTextFieldValueChange,
             textStyle = englishTypography.headlineMedium,
-            enabled = gameCodeTextFieldEnabledState.value
+            enabled = gameCodeTextFieldEnabledState.value,
+            onDonePressed = {
+                gameCodeTextFieldEnabledState.value = false
+                joinGameViewModel.onDiscoverAndResolveServicesClick()
+                gameViewModel.onJoinGamePressed(joinGameViewModel.gameCode)
+                onJoinGamePressed()
+            }
         )
         Spacer(modifier = Modifier.height(16.dp))
         Row {

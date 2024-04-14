@@ -61,7 +61,7 @@ fun CategoryAndWordScreen(gameViewModel: GameViewModel, onNavigateToQuestionScre
                 color = MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.height(16.dp))
-            if (gameViewModel.isImposter!!) {
+            if (gameViewModel.gameRepository.gameData.collectAsState().value.isImposter!!) {
                 Text(
                     stringResource(R.string.you_are_the_imposter),
                     style = MaterialTheme.typography.headlineLarge,

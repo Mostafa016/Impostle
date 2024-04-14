@@ -4,23 +4,41 @@ import com.example.nsddemo.ui.PlayerColors
 import com.example.nsddemo.ui.toPlayerColors
 
 data class GameData(
-    var gameCode: String? = null,
-    var isHost: Boolean? = null,
-    var currentPlayer: Player? = null,
-    var imposter: Player? = null,
-    var isFirstRound: Boolean = true,
-    var categoryOrdinal: Int = -1,
-    var wordResID: Int = -1,
-    var isAsking: Boolean? = null,
-    var currentPlayerPairIndex: Int = 0,
-    val players: MutableList<Player> = mutableListOf(),
-    val roundPlayerPairs: MutableList<Pair<Player, Player>> = mutableListOf(),
-    val roundPlayerVotes: MutableMap<Player, Player> = mutableMapOf(),
-    val roundVotingCounts: MutableMap<Player, Int> = mutableMapOf(),
-    val playerScores: MutableMap<Player, Int> = mutableMapOf(),
+    val gameCode: String? = null,
+    val isHost: Boolean? = null,
+    val currentPlayer: Player? = null,
+    val imposter: Player? = null,
+    val isFirstRound: Boolean = true,
+    val categoryOrdinal: Int = -1,
+    val wordResID: Int = -1,
+    val currentPlayerPairIndex: Int = 0,
+    val players: List<Player> = mutableListOf(),
+    val roundPlayerPairs: List<Pair<Player, Player>> = emptyList(),
+    val roundPlayerVotes: Map<Player, Player> = emptyMap(),
+    val roundVotingCounts: Map<Player, Int> = emptyMap(),
+    val playerScores: Map<Player, Int> = emptyMap(),
 ) {
+    val playersExcludingCurrent: List<Player>
+        get() = players.filter { it != currentPlayer }
+    val category: Categories?
+        get() = if (categoryOrdinal == -1) null else Categories.values()[categoryOrdinal]
     val isImposter: Boolean?
-        get() = if (currentPlayer == null || imposter == null) null else currentPlayer == imposter
+        get() = if (currentPlayer == null && imposter == null) {
+            null
+        } else if (imposter == null) {
+            false
+        } else {
+            currentPlayer == imposter
+        }
     val selectedPlayerColors: List<PlayerColors>
         get() = players.map { it.color.toPlayerColors() }
+    val currentPlayerPair: Pair<Player, Player>
+        get() = roundPlayerPairs[currentPlayerPairIndex]
+    val isAsking: Boolean
+        get() = currentPlayerPair.first == currentPlayer
+
+    val isLastQuestion: Boolean
+        get() = currentPlayerPairIndex == roundPlayerPairs.size - 1
+    val numberOfPlayersWhoVoted: Int
+        get() = roundPlayerVotes.size
 }
