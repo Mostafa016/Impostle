@@ -11,7 +11,6 @@ import io.ktor.network.sockets.openWriteChannel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlin.system.exitProcess
 
@@ -21,8 +20,7 @@ object Client {
     suspend fun run(
         hostName: String,
         port: Int,
-        hasFoundGame: MutableStateFlow<Boolean>,
-        handleMessages: suspend (connection: Connection, hasFoundGame: MutableStateFlow<Boolean>) -> Unit
+        handleMessages: suspend (connection: Connection) -> Unit
     ) = coroutineScope {
         val selectorManager = SelectorManager(Dispatchers.IO)
         Log.d(TAG, "Connecting to server...")
@@ -37,7 +35,7 @@ object Client {
         launch {
             try {
                 do {
-                    handleMessages(connection, hasFoundGame)
+                    handleMessages(connection)
                 } while (replay)
             } catch (e: Exception) {
                 Log.e(TAG, e.message.toString())

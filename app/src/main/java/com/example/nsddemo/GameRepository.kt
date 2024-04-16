@@ -10,11 +10,18 @@ class GameRepository {
     private val _gameState = MutableStateFlow<GameState>(GameState.StartGame)
     val gameState = _gameState.asStateFlow()
 
+    private val _clientGameState = MutableStateFlow<GameState.ClientGameState?>(null)
+    val clientGameState = _clientGameState.asStateFlow()
+
     fun updateGameData(gameData: GameData) {
         _gameData.value = gameData
     }
 
     fun updateGameState(gameState: GameState) {
         _gameState.value = gameState
+    }
+
+    fun updateClientGameState(clientGameState: GameState.ClientGameState?) {
+        _clientGameState.value = clientGameState
     }
 }

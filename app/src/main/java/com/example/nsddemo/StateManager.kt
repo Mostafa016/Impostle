@@ -33,9 +33,13 @@ class StateManager(
                     // presses a button like "start game"
                     is GameState.DisplayCategoryAndWord -> handleDisplayCategoryAndWordState()
 
+                    is GameState.ConfirmCurrentPlayerReadCategoryAndWord -> handleConfirmCurrentPlayerCategoryAndWord()
+
                     is GameState.GetPlayerReadCategoryAndWordConfirmation -> handleGetPlayerReadCategoryAndWordConfirmationState()
 
                     is GameState.AskQuestion -> handleAskQuestionState()
+
+                    is GameState.ConfirmCurrentPlayerQuestion -> handleConfirmCurrentPlayerQuestion()
 
                     GameState.ChooseExtraQuestions -> handleChooseExtraQuestionsState()
 
@@ -45,6 +49,8 @@ class StateManager(
                     // presses a button like "start vote"
                     // (The screen will be like any additional questions?)
                     GameState.StartVote -> handleStartVoteState()
+
+                    is GameState.GetCurrentPlayerVote -> handleGetCurrentPlayerVoteState()
 
                     is GameState.GetPlayerVote -> handleGetPlayerVoteState()
 
@@ -60,6 +66,10 @@ class StateManager(
                     // that the game will be continued.
                     // - For now also this will be determined by the server, no voting.
                     is GameState.Replay -> handleReplayState()
+
+                    else -> {
+                        Log.wtf(Debugging.TAG, "Illegal server state: $currentGameState")
+                    }
                 }
             }
         }
@@ -137,6 +147,16 @@ class StateManager(
         gameRepository.updateGameState(GameState.EndVote(playerWithHighestVotes))
     }
 
+    private fun handleGetCurrentPlayerVoteState() {
+        val currentGameState = gameRepository.gameState.value as GameState.GetCurrentPlayerVote
+        val gameData = gameRepository.gameData.value
+        gameRepository.updateGameState(
+            GameState.GetPlayerVote(
+                gameData.currentPlayer!!, currentGameState.voted
+            )
+        )
+    }
+
     private suspend fun handleStartVoteState() {
         // This is sent to exit "additional questions" loop on client side
         Log.d(
@@ -176,6 +196,29 @@ class StateManager(
         Log.d(Debugging.TAG, "ChooseExtraQuestions state: Sending TRUE message to clients")
         sendUtf8LineToAllPlayers {
             gson.toJson(true)
+        }
+    }
+
+    private fun handleConfirmCurrentPlayerQuestion() {
+        // TODO: this and AskQuestion state in updateStateOnMessageReceivedServerSide should be merged
+        val currentGameState =
+            gameRepository.gameState.value as GameState.ConfirmCurrentPlayerQuestion
+        val currentAskQuestionState = currentGameState.currentAskQuestionState
+        if (currentAskQuestionState.isLastQuestion) {
+            // Handles if the last question was asked by the host
+            Log.d(Debugging.TAG, "Choosing to either ask extra questions or start vote...")
+            gameRepository.updateGameState(GameState.ChooseExtraQuestions)
+        } else {
+            Log.d(Debugging.TAG, "Asking another question...")
+            val gameData = gameRepository.gameData.value
+            val (askingPlayer, askedPlayer) = gameData.currentPlayerPair
+            val isAsking = gameData.isAsking
+            val isLastQuestion = gameData.isLastQuestion
+            gameRepository.updateGameState(
+                GameState.AskQuestion(
+                    askingPlayer, askedPlayer, isAsking, isLastQuestion
+                )
+            )
         }
     }
 
@@ -224,6 +267,16 @@ class StateManager(
                 )
             )
         }
+    }
+
+    private fun handleConfirmCurrentPlayerCategoryAndWord() {
+        val currentGameState =
+            gameRepository.gameState.value as GameState.ConfirmCurrentPlayerReadCategoryAndWord
+        gameRepository.updateGameState(
+            GameState.GetPlayerReadCategoryAndWordConfirmation(
+                currentGameState.numberOfConfirmations
+            )
+        )
     }
 
     private suspend fun handleDisplayCategoryAndWordState() {
@@ -311,49 +364,9 @@ class StateManager(
     }
 
     // endregion
-    fun askNextQuestionOrGoToExtraQuestionsChoice() {
-        // TODO: this and AskQuestion state in updateStateOnMessageReceivedServerSide should be merged
-        val currentGameState = gameRepository.gameState.value as GameState.AskQuestion
-        if (currentGameState.isLastQuestion) {
-            // Handles if the last question was asked by the host
-            Log.d(Debugging.TAG, "Choosing to either extra questions or start vote...")
-            gameRepository.updateGameState(GameState.ChooseExtraQuestions)
-        } else {
-            Log.d(Debugging.TAG, "Asking another question...")
-            val gameData = gameRepository.gameData.value
-            val (askingPlayer, askedPlayer) = gameData.currentPlayerPair
-            val isAsking = gameData.isAsking
-            val isLastQuestion = gameData.isLastQuestion
-            gameRepository.updateGameState(
-                GameState.AskQuestion(
-                    askingPlayer, askedPlayer, isAsking, isLastQuestion
-                )
-            )
-        }
-    }
 
     fun startNewQuestionsRound() {
         gameRepository.updateGameState(GameState.AskExtraQuestions)
-    }
-
-    fun confirmReadCategoryAndWord() {
-        when (val currentGameState = gameRepository.gameState.value) {
-            is GameState.DisplayCategoryAndWord -> {
-                gameRepository.updateGameState(GameState.GetPlayerReadCategoryAndWordConfirmation(1))
-            }
-
-            is GameState.GetPlayerReadCategoryAndWordConfirmation -> {
-                gameRepository.updateGameState(
-                    GameState.GetPlayerReadCategoryAndWordConfirmation(
-                        currentGameState.numberOfConfirmations + 1
-                    )
-                )
-            }
-
-            else -> {
-                Log.wtf(Debugging.TAG, "onConfirmClick called in an invalid state.")
-            }
-        }
     }
 
     // region General utility functions (To be moved to GameManager)

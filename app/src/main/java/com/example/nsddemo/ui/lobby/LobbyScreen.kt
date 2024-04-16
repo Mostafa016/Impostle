@@ -1,5 +1,6 @@
 package com.example.nsddemo.ui.lobby
 
+import android.util.Log
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -32,6 +33,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.nsddemo.Categories
+import com.example.nsddemo.Debugging
+import com.example.nsddemo.GameState
 import com.example.nsddemo.Player
 import com.example.nsddemo.R
 import com.example.nsddemo.ui.GameViewModel
@@ -44,7 +47,7 @@ fun LobbyScreen(
     onStartRound: () -> Unit
 ) {
     LobbyScreen(
-        hasJoinedGame = gameViewModel.hasJoinedGame.collectAsState().value,
+        hasJoinedGame = gameViewModel.gameRepository.clientGameState.collectAsState().value is GameState.ClientGameStarted,
         players = gameViewModel.gameRepository.gameData.collectAsState().value.players,
         gameCode = gameViewModel.gameRepository.gameData.collectAsState().value.gameCode!!.uppercase(),
         isHost = gameViewModel.gameRepository.gameData.collectAsState().value.isHost!!,
@@ -69,6 +72,7 @@ private fun LobbyScreen(
 ) {
     if (hasJoinedGame) {
         LaunchedEffect(Unit) {
+            Log.d(Debugging.TAG, "Joined game")
             onStartRound()
         }
     }

@@ -161,7 +161,7 @@ class MainActivity : AppCompatActivity() {
                             JoinGameLoadingScreen(
                                 gameViewModel,
                                 joinGameViewModel,
-                                onGameJoined = {
+                                onGameStarted = {
                                     navController.popBackStackAndNavigateTo(ScreenRoutes.CategoryAndWord.route)
                                 },
                                 onGameFound = {

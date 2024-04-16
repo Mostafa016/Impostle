@@ -91,7 +91,7 @@ fun VotingScreen(
                     Log.e(TAG, "votedPlayer is null.")
                 }
             },
-            enabled = !gameViewModel.isVoteConfirmed.collectAsState().value
+            enabled = !gameViewModel.isVotedClicked.collectAsState().value
         ) {
             Text(
                 stringResource(R.string.confirm_vote),

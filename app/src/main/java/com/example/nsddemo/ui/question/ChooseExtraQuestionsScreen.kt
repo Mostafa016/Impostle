@@ -34,6 +34,7 @@ fun ChooseExtraQuestionsScreen(
         }
     } else if (gameState.value is GameState.AskQuestion) {
         LaunchedEffect(Unit) {
+            gameViewModel.resetUIStates()
             onNavigateToQuestionScreen()
         }
     }

@@ -32,8 +32,7 @@ fun CategoryAndWordScreen(gameViewModel: GameViewModel, onNavigateToQuestionScre
             onNavigateToQuestionScreen()
         }
     }
-    val isConfirmButtonPressedState =
-        gameViewModel.isDisplayCategoryAndWordConfirmationSent.collectAsState()
+    val isConfirmButtonPressedState = gameViewModel.isConfirmButtonPressed.collectAsState().value
     Column(
         Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
@@ -43,7 +42,7 @@ fun CategoryAndWordScreen(gameViewModel: GameViewModel, onNavigateToQuestionScre
             remember { (currentGameState as GameState.DisplayCategoryAndWord).categoryOrdinal }
         val wordResourceId: Int =
             remember { (currentGameState as GameState.DisplayCategoryAndWord).wordResourceId }
-        if (isConfirmButtonPressedState.value) {
+        if (isConfirmButtonPressedState) {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 stringResource(R.string.waiting_for_all_players_to_confirm),
@@ -78,7 +77,7 @@ fun CategoryAndWordScreen(gameViewModel: GameViewModel, onNavigateToQuestionScre
         Spacer(Modifier.height(16.dp))
         Button(
             onClick = gameViewModel.onConfirmClick,
-            enabled = !isConfirmButtonPressedState.value
+            enabled = !isConfirmButtonPressedState
         ) {
             Text(
                 stringResource(R.string.confirm),

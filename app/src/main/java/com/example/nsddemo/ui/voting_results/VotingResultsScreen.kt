@@ -47,11 +47,15 @@ fun VotingResultsScreen(
         if (currentGameState.replay) {
             LaunchedEffect(Unit) {
                 gameViewModel.replayGame()
-                if (gameViewModel.gameData.value.isHost!!) {
-                    onNavigateToLobbyScreen()
-                } else {
-                    onNavigateToJoinGameScreen()
-                }
+                // TODO: Both host and clients should be navigated to lobby since the players list
+                //  is already sent to players by then.
+                //  This might break something
+                onNavigateToLobbyScreen()
+//                if (gameViewModel.gameData.value.isHost!!) {
+//                    onNavigateToLobbyScreen()
+//                } else {
+//                    onNavigateToJoinGameScreen()
+//                }
             }
         } else {
             LaunchedEffect(Unit) {

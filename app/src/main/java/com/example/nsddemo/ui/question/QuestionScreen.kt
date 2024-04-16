@@ -159,7 +159,7 @@ fun QuestionScreen(
                 if (currentGameState.isAsking) {
                     Button(
                         onClick = viewModel.onDoneClick,
-                        enabled = !viewModel.isQuestionDone.collectAsState().value
+                        enabled = !(viewModel.isDoneClicked.collectAsState().value)
                     ) {
                         Text(
                             stringResource(R.string.done),

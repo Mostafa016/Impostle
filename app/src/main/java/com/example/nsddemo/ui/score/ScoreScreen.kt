@@ -46,11 +46,15 @@ fun ScoreScreen(
         if (currentGameState.replay) {
             LaunchedEffect(Unit) {
                 viewModel.replayGame()
-                if (viewModel.gameData.value.isHost!!) {
-                    onNavigateToLobbyScreen()
-                } else {
-                    onNavigateToJoinGameScreen()
-                }
+                // TODO: Both host and clients should be navigated to lobby since the players list
+                //  is already sent to players by then.
+                //  This might break something
+                onNavigateToLobbyScreen()
+//                if (viewModel.gameData.value.isHost!!) {
+//                    onNavigateToLobbyScreen()
+//                } else {
+//                    onNavigateToJoinGameScreen()
+//                }
             }
         } else {
             LaunchedEffect(Unit) {

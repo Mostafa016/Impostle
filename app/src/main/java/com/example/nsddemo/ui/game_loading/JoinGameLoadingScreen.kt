@@ -17,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.nsddemo.GameState
 import com.example.nsddemo.R
 import com.example.nsddemo.ui.GameViewModel
 import com.example.nsddemo.ui.join_game.JoinGameViewModel
@@ -26,25 +27,27 @@ import kotlinx.coroutines.delay
 fun JoinGameLoadingScreen(
     gameViewModel: GameViewModel,
     joinGameViewModel: JoinGameViewModel,
-    onGameJoined: () -> Unit,
+    onGameStarted: () -> Unit,
     onGameFound: () -> Unit,
     onGameNotFound: () -> Unit
 ) {
-    val hasFoundGameState = joinGameViewModel.hasFoundGame.collectAsState()
-    val hasJoinedGameState = gameViewModel.hasJoinedGame.collectAsState()
-    if (hasFoundGameState.value) {
+    val hasFoundGameState =
+        gameViewModel.gameRepository.clientGameState.collectAsState().value is GameState.ClientFoundGame
+    val hasJoinedGameState =
+        gameViewModel.gameRepository.clientGameState.collectAsState().value is GameState.ClientGameStarted
+    if (hasFoundGameState) {
         LaunchedEffect(Unit) {
             onGameFound()
         }
     }
-    if (hasJoinedGameState.value) {
+    if (hasJoinedGameState) {
         LaunchedEffect(Unit) {
-            onGameJoined()
+            onGameStarted()
         }
     }
     LaunchedEffect(Unit) {
         delay(5000L)
-        if (!hasFoundGameState.value) {
+        if (!hasFoundGameState) {
             joinGameViewModel.stopSearchingForGame()
             onGameNotFound()
         }

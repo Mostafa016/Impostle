@@ -44,11 +44,10 @@ class GameViewModel(
 ) : ViewModel() {
     // region Properties
     private var mServiceName: String = BASE_SERVICE_NAME
+
+    // TODO: Move to CreateGameViewModel
     private val _isGameCreated = MutableStateFlow(false)
     val isGameCreated = _isGameCreated.asStateFlow()
-
-    private val _hasJoinedGame = MutableStateFlow(false)
-    val hasJoinedGame = _hasJoinedGame.asStateFlow()
 
     val gameState = gameRepository.gameState
     val gameData = gameRepository.gameData
@@ -138,13 +137,24 @@ class GameViewModel(
     // endregion
 
     // region UI-related functions and properties
-    private val _isDisplayCategoryAndWordConfirmationSent = MutableStateFlow(false)
-    val isDisplayCategoryAndWordConfirmationSent =
-        _isDisplayCategoryAndWordConfirmationSent.asStateFlow()
+
+    // TODO: Move to DisplayCategoryAndWordViewModel
+    private val _isConfirmButtonPressed = MutableStateFlow(false)
+    val isConfirmButtonPressed = _isConfirmButtonPressed.asStateFlow()
 
     val onConfirmClick = fun() {
-        stateManager.confirmReadCategoryAndWord()
-        _isDisplayCategoryAndWordConfirmationSent.value = true
+        _isConfirmButtonPressed.value = true
+        when (val currentGameState = gameRepository.gameState.value) {
+            is GameState.GetPlayerReadCategoryAndWordConfirmation -> {
+                gameRepository.updateGameState(
+                    GameState.ConfirmCurrentPlayerReadCategoryAndWord(currentGameState.numberOfConfirmations + 1)
+                )
+            }
+
+            else -> {
+                gameRepository.updateGameState(GameState.ConfirmCurrentPlayerReadCategoryAndWord(1))
+            }
+        }
     }
 
     private val _wordDialogVisibilityState = mutableStateOf(false)
@@ -158,19 +168,17 @@ class GameViewModel(
         _wordDialogVisibilityState.value = false
     }
 
-    private val _isQuestionDone = MutableStateFlow(false)
-    val isQuestionDone = _isQuestionDone.asStateFlow()
+    // TODO: Move to QuestionsViewModel
+    private val _isDoneClicked = MutableStateFlow(false)
+    val isDoneClicked = _isDoneClicked.asStateFlow()
 
     val onDoneClick = fun() {
-        _isQuestionDone.value = true
-        if (!gameData.value.isHost!!) {
-            return
-        }
-        stateManager.askNextQuestionOrGoToExtraQuestionsChoice()
+        _isDoneClicked.value = true
+        val currentGameState = gameRepository.gameState.value as GameState.AskQuestion
+        gameRepository.updateGameState(GameState.ConfirmCurrentPlayerQuestion(currentGameState))
     }
 
     val onRestartQuestionsClick = fun() {
-        _isQuestionDone.value = false
         stateManager.startNewQuestionsRound()
     }
 
@@ -180,22 +188,16 @@ class GameViewModel(
 
     private val _votedPlayer = mutableStateOf<Player?>(null)
     val votedPlayer: State<Player?> = _votedPlayer
+
     val onVoteForPlayer = { player: Player ->
         _votedPlayer.value = player
     }
-
-    private val _isVoteConfirmed = MutableStateFlow(false)
-    val isVoteConfirmed = _isVoteConfirmed.asStateFlow()
+    val _isVotedClicked = MutableStateFlow(false)
+    val isVotedClicked = _isVotedClicked.asStateFlow()
 
     val onConfirmVoteClick = {
-        _isVoteConfirmed.value = true
-        if (gameData.value.isHost!!) {
-            gameRepository.updateGameState(
-                GameState.GetPlayerVote(
-                    gameData.value.currentPlayer!!, votedPlayer.value!!
-                )
-            )
-        }
+        _isVotedClicked.value = true
+        gameRepository.updateGameState(GameState.GetCurrentPlayerVote(votedPlayer.value!!))
     }
 
     val onShowScoreClick = {
@@ -237,11 +239,11 @@ class GameViewModel(
     // region Server messages handling
 
     suspend fun handleServerMessages(
-        connection: Connection, hasFoundGame: MutableStateFlow<Boolean>
+        connection: Connection
     ) {
         val gson = Gson()
         if (!Client.replay) {
-            handleClientSideGameInitialization(connection, gson, hasFoundGame)
+            handleClientSideGameInitialization(connection, gson)
         } else {
             // TODO: This is to trigger hasFoundGame to true for now
             readLastPlayerFlagFromServer(connection, gson)
@@ -261,8 +263,8 @@ class GameViewModel(
                 gameRepository.gameData.value.wordResID
             )
         )
-        _hasJoinedGame.value = true
-        isDisplayCategoryAndWordConfirmationSent.first { it }
+        gameRepository.updateClientGameState(GameState.ClientGameStarted)
+        gameState.first { it is GameState.ConfirmCurrentPlayerReadCategoryAndWord }
         sendCategoryAndWordConfirmationToServer(connection, gson)
         handleClientSideQuestionRoundsMessages(connection, gson)
         readStartVoteMessageFromServer(connection, gson)
@@ -324,7 +326,7 @@ class GameViewModel(
     }
 
     private suspend fun sendVoteToServer(connection: Connection, gson: Gson) {
-        isVoteConfirmed.first { it }
+        gameState.first { it is GameState.GetCurrentPlayerVote }
         Log.d(TAG, "Voted Player: ${votedPlayer.value}")
         Log.d(TAG, "Sending vote to server.")
         connection.output.writeLineUtf8(gson.toJson(votedPlayer.value))
@@ -343,8 +345,6 @@ class GameViewModel(
             // TODO: Replace this with ChooseExtraQuestions state
             gameRepository.updateGameState(GameState.ChooseExtraQuestions)
             val isAnotherQuestionsRound = readExtraQuestionsRoundFlagFromServer(connection, gson)
-            // Avoid skipping the current player's turn to ask a question in the next round
-            _isQuestionDone.value = false
         } while (isAnotherQuestionsRound)
     }
 
@@ -373,7 +373,7 @@ class GameViewModel(
             //      flag in the state it already sent, so why send it back to the server?
             // This is used to tell the server that the client has finished asking the question
             if (askQuestionState.isAsking) {
-                _isQuestionDone.first { it }
+                gameState.first { it is GameState.ConfirmCurrentPlayerQuestion }
                 Log.d(TAG, "Sending 'isLast' message to server.")
                 connection.output.writeStringUtf8(gson.toJson(askQuestionState.isLastQuestion) + '\n')
             }
@@ -408,7 +408,7 @@ class GameViewModel(
     }
 
     private suspend fun handleClientSideGameInitialization(
-        connection: Connection, gson: Gson, hasFoundGame: MutableStateFlow<Boolean>
+        connection: Connection, gson: Gson
     ) {
         sendPlayerNameToServer(connection, gson)
         val playerColor: String = readPlayerColorFromServer(connection, gson)
@@ -417,19 +417,22 @@ class GameViewModel(
                 currentPlayer = gameData.value.currentPlayer!!.copy(color = playerColor)
             )
         )
-        readPlayersListUpdatesFromServer(connection, gson, hasFoundGame)
+        readPlayersListUpdatesFromServer(connection, gson)
     }
 
     private suspend fun readPlayersListUpdatesFromServer(
-        connection: Connection, gson: Gson, hasFoundGame: MutableStateFlow<Boolean>
+        connection: Connection, gson: Gson
     ) {
         // This will always be false the first time it is sent to any client.
-        // As it will be sent right after the player joins; after sending the player color
-        var isLastPlayer = readLastPlayerFlagFromServer(connection, gson)
+        // As it will be sent right after the player joins; after sending the player color.
+        // Read players list once and go to lobby (Game Found!)
+        @Suppress("VARIABLE_WITH_REDUNDANT_INITIALIZER") var isLastPlayer =
+            readLastPlayerFlagFromServer(connection, gson)
+        readPlayersListUpdateFromServer(connection, gson)
+        gameRepository.updateClientGameState(GameState.ClientFoundGame)
+        isLastPlayer = readLastPlayerFlagFromServer(connection, gson)
         while (!isLastPlayer) {
             readPlayersListUpdateFromServer(connection, gson)
-            // Read players list once from server and then go to lobby screen
-            hasFoundGame.value = if (!hasFoundGame.value) true else hasFoundGame.value
             isLastPlayer = readLastPlayerFlagFromServer(connection, gson)
         }
     }
@@ -469,8 +472,8 @@ class GameViewModel(
     private suspend fun handleClientMessages(connection: Connection) {
         Log.d(TAG, "Waiting for client message...")
         val json = connection.input.readUTF8Line()
-        Log.d(TAG, "Received from client: $json")
         Log.d(TAG, "==========Message received on state: ${gameState.value}==========")
+        Log.d(TAG, "Received from client: $json")
         if (json == null) {
             throw IllegalArgumentException("Received null string from client.")
         }
@@ -489,6 +492,20 @@ class GameViewModel(
                 gameRepository.updateGameState(GameState.GetPlayerInfo(playerName, connection))
             }
 
+            GameState.ClientFoundGame -> {
+                Log.wtf(
+                    TAG,
+                    "Received a message while in GameState.ClientFoundGame. Server can't be in this state!"
+                )
+            }
+
+            GameState.ClientGameStarted -> {
+                Log.wtf(
+                    TAG,
+                    "Received a message while in GameState.ClientGameStarted. Server can't be in this state!"
+                )
+            }
+
             is GameState.DisplayCategoryAndWord -> {
                 val isConfirmed = gson.fromJson(json, Boolean::class.java)
                 Log.d(TAG, "isConfirmed: $isConfirmed")
@@ -497,7 +514,8 @@ class GameViewModel(
                 )
             }
 
-            is GameState.GetPlayerReadCategoryAndWordConfirmation -> {
+            // is GameState.GetPlayerReadCategoryAndWordConfirmation, is GameState.ConfirmCurrentPlayerReadCategoryAndWord
+            is GameState.ConfirmReadCategoryAndWord -> {
                 val isConfirmed = gson.fromJson(json, Boolean::class.java)
                 Log.d(TAG, "isConfirmed: $isConfirmed")
                 gameRepository.updateGameState(
@@ -511,7 +529,7 @@ class GameViewModel(
                 val isLastQuestionConfirmation = gson.fromJson(json, Boolean::class.java)
                 Log.d(TAG, "isLastQuestion = $isLastQuestionConfirmation received.")
                 if (isLastQuestionConfirmation) {
-                    Log.d(TAG, "Choosing to either extra questions or start vote...")
+                    Log.d(TAG, "Choosing to either ask extra questions or start vote...")
                     gameRepository.updateGameState(GameState.ChooseExtraQuestions)
                 } else {
                     Log.d(TAG, "Asking another question...")
@@ -527,6 +545,10 @@ class GameViewModel(
                 }
             }
 
+            is GameState.ConfirmCurrentPlayerQuestion -> {
+                Log.wtf(TAG, "Received a message while in GameState.ConfirmCurrentPlayerQuestion.")
+            }
+
             GameState.ChooseExtraQuestions -> {
                 Log.wtf(TAG, "Received a message while in GameState.ChooseExtraQuestions.")
             }
@@ -535,7 +557,7 @@ class GameViewModel(
                 Log.wtf(TAG, "Received a message while in GameState.AskExtraQuestions.")
             }
 
-            GameState.StartVote, is GameState.GetPlayerVote -> {
+            GameState.StartVote, is GameState.GetPlayerVote, is GameState.GetCurrentPlayerVote -> {
                 val votedPlayer = gson.fromJson(json, Player::class.java)
                 gameRepository.updateGameState(
                     GameState.GetPlayerVote(
@@ -576,7 +598,6 @@ class GameViewModel(
 
     private fun resetRoundParameters() {
         gameRepository.updateGameState(GameState.StartGame)
-        // TODO: Maybe reset category and word?
         gameRepository.updateGameData(
             gameRepository.gameData.value.copy(
                 currentPlayerPairIndex = 0,
@@ -610,20 +631,19 @@ class GameViewModel(
         mServiceName = BASE_SERVICE_NAME
     }
 
-    private fun resetUIStates() {
+    fun resetUIStates() {
+        // ClientGameState
+        gameRepository.updateClientGameState(null)
         // CreateGame Screen
         //TODO: Maybe this shouldn't be reset
         _isGameCreated.value = false
-        // JoinGame Screen
-        //TODO: Maybe this shouldn't be reset
-        _hasJoinedGame.value = false
-        // CategoryAndWord Screen
-        _isDisplayCategoryAndWordConfirmationSent.value = false
-        // Question Screen
-        _isQuestionDone.value = false
+        //DisplayCategoryAndWord Screen
+        _isConfirmButtonPressed.value = false
+        // Questions Screen
+        _isDoneClicked.value = false
         // Voting Screen
         _votedPlayer.value = null
-        _isVoteConfirmed.value = false
+        _isVotedClicked.value = false
     }
 
     fun updateCurrentPlayer(player: Player) {
