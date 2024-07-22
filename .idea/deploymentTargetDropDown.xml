@@ -10,13 +10,12 @@
               <deviceKey>
                 <Key>
                   <type value="SERIAL_NUMBER" />
-                  <value value="RFCW90FW3TH" />
+                  <value value="adb-RFCW90FW3TH-j29MQi._adb-tls-connect._tcp" />
                 </Key>
               </deviceKey>
             </Target>
           </runningDeviceTargetSelectedWithDropDown>
-          <timeTargetWasSelectedWithDropDown value="2024-04-16T15:39:59.013098800Z" />
-          <multipleDevicesSelectedInDropDown value="true" />
+          <timeTargetWasSelectedWithDropDown value="2024-04-30T11:35:07.640503200Z" />
           <runningDeviceTargetsSelectedWithDialog>
             <Target>
               <type value="RUNNING_DEVICE_TARGET" />
