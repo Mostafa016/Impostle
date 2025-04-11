@@ -53,6 +53,7 @@ class ServerViewModel(
 
     // region Client messages handling
     private suspend fun handleClientMessages(connection: Connection) {
+        // TODO: Need a way to debug easier
         Log.d(Debugging.TAG, "Waiting for client message...")
         val json = connection.input.readUTF8Line()
         Log.d(Debugging.TAG, "==========Message received on state: ${gameState.value}==========")

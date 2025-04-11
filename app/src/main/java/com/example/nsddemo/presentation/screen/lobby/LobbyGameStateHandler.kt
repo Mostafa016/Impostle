@@ -20,6 +20,10 @@ class LobbyGameStateHandler(
         }
         gameRepository.gameState.collect {
             when (it) {
+                is GameState.StartGame -> {
+                    // Ignore for now
+                }
+
                 is GameState.GetPlayerInfo -> {
                     // This is a hack to ignore the state(s) that were already handled in the
                     // previous screen (ChooseCategory screen)
@@ -39,6 +43,11 @@ class LobbyGameStateHandler(
                         throw InvalidStateException(it.to, gameRepository.screenAllowedStates.value)
                     }
                     gameRepository.updateGameState(it.to)
+                }
+
+                is GameState.StartNewRound -> {
+                    // Do nothing
+                    // Same concept as CategoryAndWordStateHandler
                 }
 
                 else -> {

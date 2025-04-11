@@ -1,9 +1,11 @@
 package com.example.nsddemo.data.repository
 
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import com.example.nsddemo.core.util.GameState
 import com.example.nsddemo.data.util.GameStateValidator
 import com.example.nsddemo.domain.model.GameData
+import com.example.nsddemo.domain.model.Player
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -22,22 +24,21 @@ class GameRepository(private val sharedPreferences: SharedPreferences) {
 
     var playerName: String? = null
         get() {
-            if (field != null) {
-                return field
-            }
             field = sharedPreferences.getString(PLAYER_NAME_KEY, null)
             return field
         }
         set(updatedPlayerName) {
             field = updatedPlayerName!!
             val currentPlayer = gameData.value.currentPlayer?.copy(name = updatedPlayerName)
+                ?: Player(name = updatedPlayerName, color = "")
             _gameData.value = gameData.value.copy(currentPlayer = currentPlayer)
-            sharedPreferences.edit().putString(PLAYER_NAME_KEY, field).apply()
+            sharedPreferences.edit { putString(PLAYER_NAME_KEY, field) }
         }
 
     init {
-        playerName?.let {
-            val currentPlayer = gameData.value.currentPlayer?.copy(name = it)
+        playerName?.let { name ->
+            val currentPlayer =
+                gameData.value.currentPlayer?.copy(name = name) ?: Player(name = name, color = "")
             _gameData.value = gameData.value.copy(currentPlayer = currentPlayer)
         }
     }

@@ -29,11 +29,15 @@ class VotingResultsViewModel(
         gameRepository.setAllowedStates(
             setOf(
                 GameState.ShowScoreboard::class.simpleName!!,
-                GameState.Transitioning::class.simpleName!!
+                GameState.Transitioning::class.simpleName!!,
+                GameState.Replay::class.simpleName!!, // For client to end game
+                GameState.StartGame::class.simpleName!!, // For client to end game
             )
         )
-        viewModelScope.launch {
-            gameStateHandler.handleGameStateChanges()
+        if (gameRepository.gameData.value.isHost!!) {
+            viewModelScope.launch {
+                gameStateHandler.handleGameStateChanges()
+            }
         }
     }
 

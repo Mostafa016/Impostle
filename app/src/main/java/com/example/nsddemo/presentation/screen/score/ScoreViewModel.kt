@@ -31,11 +31,15 @@ class ScoreViewModel(
         gameRepository.setAllowedStates(
             setOf(
                 GameState.Replay::class.simpleName!!,
-                GameState.Transitioning::class.simpleName!!
+                GameState.Transitioning::class.simpleName!!,
+                GameState.ShowScoreboard::class.simpleName!!, // For client to end game
+                GameState.StartGame::class.simpleName!!, // For client to end game
             )
         )
-        viewModelScope.launch(Dispatchers.IO) {
-            gameStateHandler.handleGameStateChanges()
+        if (isHost) {
+            viewModelScope.launch(Dispatchers.IO) {
+                gameStateHandler.handleGameStateChanges()
+            }
         }
     }
 

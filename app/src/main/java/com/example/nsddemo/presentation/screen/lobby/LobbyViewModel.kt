@@ -26,7 +26,7 @@ class LobbyViewModel(
 ) : ViewModel() {
     val clientGameState = gameRepository.clientGameState
     val gameCode = gameRepository.gameData.value.gameCode!!
-    val isHost = gameRepository.gameData.value.isHost!!
+    val isHost = gameRepository.gameData.value.isHost!! // TODO: RACE CONDITION HERE (HOW?)
 
     private val _state = MutableStateFlow(
         LobbyState(
@@ -44,7 +44,8 @@ class LobbyViewModel(
                 GameState.GetPlayerInfo::class.simpleName!!,
                 GameState.StartNewRound::class.simpleName!!,
                 GameState.DisplayCategoryAndWord::class.simpleName!!,
-                GameState.Transitioning::class.simpleName!!
+                GameState.Transitioning::class.simpleName!!,
+                GameState.StartGame::class.simpleName!!,
             )
         )
         viewModelScope.launch(Dispatchers.IO) {
@@ -63,6 +64,11 @@ class LobbyViewModel(
             is LobbyEvent.ChooseCategory -> chooseCategory(event.chosenCategory)
             is LobbyEvent.StartRound -> startRound()
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.d(TAG, "LobbyViewModel onCleared()")
     }
 
     private suspend fun listenToPlayersListChanges() {

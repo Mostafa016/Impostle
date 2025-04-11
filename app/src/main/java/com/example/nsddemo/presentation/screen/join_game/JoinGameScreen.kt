@@ -81,7 +81,7 @@ fun JoinGameScreen(
             DefaultButton(
                 stringResource(R.string.join_game),
                 onClick = { viewModel.onEvent(JoinGameEvent.JoinGame) },
-                enabled = state.gameCodeTextFieldText.length == GameConstants.CODE_LENGTH,
+                enabled = (state.gameCodeTextFieldText.length == GameConstants.CODE_LENGTH),
             )
         }
     }

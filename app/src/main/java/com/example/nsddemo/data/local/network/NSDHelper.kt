@@ -32,6 +32,7 @@ class NSDHelper(private val context: Context) {
             mServiceName = serviceInfo.serviceName
             Log.d(Debugging.TAG, "Service address: ${serviceInfo.host} ${serviceInfo.port}")
             Log.d(Debugging.TAG, "onServiceRegistered: serviceName = $mServiceName")
+            // When ending a game and starting another
             _isServiceRegistered.value = true
         }
 
@@ -43,10 +44,12 @@ class NSDHelper(private val context: Context) {
             // Service has been unregistered. This only happens when you call
             // NsdManager.unregisterService() and pass in this listener.
             Log.d(Debugging.TAG, "onServiceUnregistered")
+            _isServiceRegistered.value = false
         }
 
         override fun onUnregistrationFailed(serviceInfo: NsdServiceInfo, errorCode: Int) {
             Log.e(Debugging.TAG, "onUnregistrationFailed, Reason: ${errorCodeToString(errorCode)}")
+            _isServiceRegistered.value = false
         }
     }
 
@@ -133,10 +136,12 @@ class NSDHelper(private val context: Context) {
             // TODO: Figure out when this happens as it causes duplicate players in server
             //  when it happens from client
             Log.e(Debugging.TAG, "Service lost: $service")
+            _isServiceResolved.value = false
         }
 
         override fun onDiscoveryStopped(serviceType: String) {
             Log.i(Debugging.TAG, "Discovery stopped: $serviceType")
+            _isServiceResolved.value = false
         }
 
         override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {

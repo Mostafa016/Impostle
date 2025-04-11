@@ -48,11 +48,18 @@ sealed interface GameState {
     // TODO: Split into 3 states (ChooseEndGameOrReplay, EndGame, Replay)
     data class Replay(val replay: Boolean) : GameState
 
+    // TODO: This state is complex and adds no value, should be removed
     data class Transitioning(val from: GameState, val to: GameState) : GameState
 
     val GameState.validNextStates: Set<KClass<out GameState>>
         get() = when (this) {
-            is StartGame -> setOf(GetPlayerInfo::class)
+            is StartGame -> setOf(
+                GetPlayerInfo::class,
+                DisplayCategoryAndWord::class, // When the game is started for Client
+                Transitioning::class, // When the going to main menu after ending game for Client
+                StartGame::class, // Future me, forgive me but I need a quick workaround
+            )
+
             is GetPlayerInfo -> setOf(
                 GetPlayerInfo::class, DisplayCategoryAndWord::class
             )
@@ -70,7 +77,8 @@ sealed interface GameState {
             )
 
             is ConfirmCurrentPlayerReadCategoryAndWord -> setOf(
-                GetPlayerReadCategoryAndWordConfirmation::class
+                GetPlayerReadCategoryAndWordConfirmation::class,
+                AskQuestion::class, // For client side first question
             )
 
             is AskQuestion -> setOf(
@@ -81,17 +89,33 @@ sealed interface GameState {
                 AskQuestion::class, ChooseExtraQuestions::class
             )
 
-            ChooseExtraQuestions -> setOf(AskExtraQuestions::class, StartVote::class)
+            ChooseExtraQuestions -> setOf(
+                AskExtraQuestions::class, StartVote::class,
+                AskQuestion::class, // For client
+            )
             AskExtraQuestions -> setOf(AskQuestion::class)
             StartVote -> setOf(GetPlayerVote::class, GetCurrentPlayerVote::class)
             is GetPlayerVote -> setOf(
                 GetPlayerVote::class, GetCurrentPlayerVote::class, EndVote::class
             )
 
-            is GetCurrentPlayerVote -> setOf(GetPlayerVote::class)
+            is GetCurrentPlayerVote -> setOf(
+                GetPlayerVote::class,
+                EndVote::class, // For client to confirm vote
+            )
+
             is EndVote -> setOf(ShowScoreboard::class, Replay::class, Transitioning::class)
-            ShowScoreboard -> setOf(Replay::class, Transitioning::class)
-            is Replay -> setOf(Transitioning::class)
+            ShowScoreboard -> setOf(
+                Replay::class, Transitioning::class,
+            )
+
+            is Replay -> setOf(
+                Transitioning::class,
+                StartGame::class, // For client to end game
+                StartNewRound::class, // For server
+                DisplayCategoryAndWord::class, // For server that plays as a client next game
+                // ¯\_(ツ)_/¯
+            )
             is Transitioning -> emptySet()
 
             is ClientGameStarted -> setOf(ClientFoundGame::class)

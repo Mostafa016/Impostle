@@ -12,6 +12,11 @@ class VotingGameStateHandler(
     override suspend fun handleGameStateChanges() {
         gameRepository.gameState.collect {
             when (it) {
+                is GameState.StartVote -> {
+                    // Do nothing
+                    // Same concept as CategoryAndWordStateHandler
+                }
+
                 is GameState.GetCurrentPlayerVote -> serverGameStateManager.handleGetCurrentPlayerVoteState()
 
                 is GameState.GetPlayerVote -> serverGameStateManager.handleGetPlayerVoteState()

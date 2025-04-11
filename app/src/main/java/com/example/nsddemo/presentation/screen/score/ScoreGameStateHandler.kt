@@ -21,6 +21,21 @@ class ScoreGameStateHandler(
                     // Do nothing
                 }
 
+                is GameState.ShowScoreboard -> {
+                    // Do nothing
+                    // Same concept as CategoryAndWordStateHandler
+                }
+
+                is GameState.StartGame -> {
+                    // Do nothing
+                    // Same concept as CategoryAndWordStateHandler
+                }
+
+                is GameState.StartNewRound -> {
+                    // Do nothing
+                    // Same concept as CategoryAndWordStateHandler
+                }
+
                 else -> {
                     throw InvalidStateException(it, gameRepository.screenAllowedStates.value)
                 }

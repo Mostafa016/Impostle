@@ -16,6 +16,11 @@ class ChooseCategoryGameStateHandler(
     override suspend fun handleGameStateChanges() {
         gameRepository.gameState.collect {
             when (it) {
+                is GameState.StartGame -> {
+                    // Do nothing
+                    // This is allowed since you can choose a category before anyone joins
+                }
+
                 is GameState.GetPlayerInfo -> {
                     // This is a hack to ignore the state(s) that were already handled in the
                     // previous screen (Lobby screen)
@@ -25,7 +30,22 @@ class ChooseCategoryGameStateHandler(
                     }
                 }
 
+                is GameState.DisplayCategoryAndWord -> {
+                    // TODO: This is to avoid some race condition
+                    // serverGameStateManager.handleDisplayCategoryAndWordState()
+                }
+
+                is GameState.StartNewRound -> {
+                    // Do nothing
+                }
+
                 else -> {
+                    // TODO: This way of handling state changes can cause race conditions
+                    //  How: state updates happen independently of state checks in screens
+                    //  Possible fix: Just remove state checking in screens
+                    //  Only the sequence of events is important; already checked in validNextStates
+                    //  **BUT** some screens require certain states before navigating to it,
+                    //  e.x., ask question, so need a way to guarantee that
                     throw InvalidStateException(it, gameRepository.screenAllowedStates.value)
                 }
             }

@@ -22,6 +22,15 @@ class ChooseExtraQuestionsGameStateHandler(
                     _lastStateHandlerListener.value = true
                 }
 
+                GameState.ChooseExtraQuestions -> {
+                    // Do nothing
+                    // TODO: Same concept explained in CategoryAndWordStateHandler
+                }
+
+                is GameState.AskQuestion -> {
+                    // Do nothing
+                }
+
                 else -> {
                     throw InvalidStateException(it, gameRepository.screenAllowedStates.value)
                 }

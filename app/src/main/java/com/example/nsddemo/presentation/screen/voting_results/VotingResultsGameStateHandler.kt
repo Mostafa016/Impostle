@@ -16,6 +16,17 @@ class VotingResultsGameStateHandler(
                 // Do nothing
             }
 
+            is GameState.EndVote -> {
+                // Do nothing
+                // Same as CategoryAndWordStateHandler
+            }
+
+            is GameState.Replay -> serverGameStateManager.handleReplayState()
+
+            is GameState.StartGame -> {
+                // Do nothing
+            }
+
             else -> {
                 throw InvalidStateException(
                     currentGameState,

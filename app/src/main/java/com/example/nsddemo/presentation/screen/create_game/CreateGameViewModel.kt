@@ -1,8 +1,10 @@
 package com.example.nsddemo.presentation.screen.create_game
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.data.local.network.NSDHelper
 import com.example.nsddemo.presentation.ServerViewModel
 import com.example.nsddemo.presentation.util.Routes
@@ -18,7 +20,9 @@ class CreateGameViewModel(serverViewModel: ServerViewModel, nsdHelper: NSDHelper
     val eventFlow = _eventFlow.asSharedFlow()
 
     init {
+        Log.d(TAG, "isGameCreated Before Creating Server: ${isGameCreated.value}")
         serverViewModel.createServer()
+        Log.d(TAG, "isGameCreated After Creating Server: ${isGameCreated.value}")
     }
 
     fun onEvent(event: CreateGameEvent) {
@@ -27,6 +31,11 @@ class CreateGameViewModel(serverViewModel: ServerViewModel, nsdHelper: NSDHelper
                 navigateToLobby()
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.d(TAG, "CreateGameViewModel onCleared()")
     }
 
     private fun navigateToLobby() {

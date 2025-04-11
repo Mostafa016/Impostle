@@ -12,8 +12,19 @@ class CategoryAndWordGameStateHandler(
     override suspend fun handleGameStateChanges() {
         gameRepository.gameState.collect {
             when (it) {
+                is GameState.DisplayCategoryAndWord -> {
+//                    serverGameStateManager.handleDisplayCategoryAndWordState()
+                }
                 is GameState.ConfirmCurrentPlayerReadCategoryAndWord -> serverGameStateManager.handleConfirmCurrentPlayerCategoryAndWord()
                 is GameState.GetPlayerReadCategoryAndWordConfirmation -> serverGameStateManager.handleGetPlayerReadCategoryAndWordConfirmationState()
+                is GameState.AskQuestion -> {
+                    // Do nothing
+                    // This is to fix asking the first question when still on this screen
+                    // WITHOUT causing duplicate first question handling
+                    // So basically, handleGetPlayerReadCategoryAndWordConfirmationState()
+                    // updates the state to AskQuestion but we won't react to it here
+                    // we will in AskQuestionScreen
+                }
                 else -> {
                     throw InvalidStateException(it, gameRepository.screenAllowedStates.value)
                 }

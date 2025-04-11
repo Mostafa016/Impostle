@@ -19,6 +19,7 @@ import com.google.gson.reflect.TypeToken
 import io.ktor.network.sockets.Connection
 import io.ktor.utils.io.readUTF8Line
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -103,9 +104,11 @@ class ClientViewModel(
         val roundVotingCounts = gameRepository.gameData.value.roundVotingCounts
         gameRepository.updateGameState(GameState.EndVote(roundVotingCounts.maxBy { it.value }.key))
         Client.replay = readReplayFlagFromServer(connection, gson)
-        // This is called regardless to end the game
-        playAnotherRound()
         gameRepository.updateGameState(GameState.Replay(Client.replay))
+        // This is called regardless to end the game
+        // TODO: Replace this delay when refactoring this
+        delay(200L)
+        playAnotherRound()
     }
 
     private suspend fun readReplayFlagFromServer(connection: Connection, gson: Gson): Boolean {

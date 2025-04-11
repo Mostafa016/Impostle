@@ -39,7 +39,8 @@ class CategoryAndWordViewModel(
         gameRepository.setAllowedStates(
             setOf(
                 GameState.GetPlayerReadCategoryAndWordConfirmation::class.simpleName!!,
-                GameState.ConfirmCurrentPlayerReadCategoryAndWord::class.simpleName!!
+                GameState.ConfirmCurrentPlayerReadCategoryAndWord::class.simpleName!!,
+                GameState.AskQuestion::class.simpleName!!, // Check StateHandler for reason
             )
         )
         viewModelScope.launch(Dispatchers.IO) {

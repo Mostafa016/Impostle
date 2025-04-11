@@ -31,6 +31,7 @@ class ChooseExtraQuestionsViewModel(
             setOf(
                 GameState.StartVote::class.simpleName!!,
                 GameState.AskExtraQuestions::class.simpleName!!,
+                GameState.AskQuestion::class.simpleName!!, // For server
             )
         )
         viewModelScope.launch(Dispatchers.IO) {

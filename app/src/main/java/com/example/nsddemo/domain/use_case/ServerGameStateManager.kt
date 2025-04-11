@@ -177,6 +177,7 @@ class ServerGameStateManager(
                 gson.toJson(true)
             }
         }
+        Log.d(TAG, "Sending current question to all players")
         sendUtf8LineToAllPlayers { player ->
             gson.toJson(
                 currentGameState.copy(
@@ -225,6 +226,9 @@ class ServerGameStateManager(
     }
 
     // TODO: Sometimes this is called twice somehow to be fixed later
+    //  Generally, this is caused by two consecutive screens adding the same state in their handler
+    //  causing duplicate handling
+    //  Solution: Maybe centralize handling again but in a cleaner way
     suspend fun handleDisplayCategoryAndWordState() {
         // Send a message to players indicating that the lastPlayer has joined
         // and the game is ready to start
@@ -247,6 +251,7 @@ class ServerGameStateManager(
             )
         )
         Log.d(TAG, "Imposter: ${gameRepository.gameData.value.imposter}")
+        Log.d(TAG, "Sending category and word to all players")
         sendUtf8LineToAllPlayers { player ->
             gson.toJson(
                 if (player == gameRepository.gameData.value.imposter) mapOf("category" to gameRepository.gameData.value.categoryOrdinal)
