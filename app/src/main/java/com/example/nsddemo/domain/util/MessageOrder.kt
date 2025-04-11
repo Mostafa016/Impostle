@@ -13,8 +13,6 @@ enum class MessageOrder(private val isSentToServer: Boolean) {
     SERVER_IS_EXTRA_QUESTIONS_ROUND(false),
     SERVER_START_VOTE(false),
     CLIENT_VOTE(true),
-    SERVER_IMPOSTER(false),
     SERVER_VOTING_RESULTS(false),
-    SERVER_PLAYER_SCORES(false),
     SERVER_IS_REPLAY_GAME(false);
 }
