@@ -11,6 +11,7 @@ import com.example.nsddemo.data.local.network.WifiHelper
 import com.example.nsddemo.data.local.network.socket.Server
 import com.example.nsddemo.data.local.network.socket.Server.initServerSocket
 import com.example.nsddemo.data.repository.GameRepository
+import com.example.nsddemo.data.repository.ServerNetworkRepository
 import com.example.nsddemo.domain.model.Player
 import com.google.gson.Gson
 import io.ktor.network.sockets.Connection
@@ -22,7 +23,8 @@ import kotlinx.coroutines.launch
 class ServerViewModel(
     private val gameRepository: GameRepository,
     private val wifiHelper: WifiHelper,
-    private val nsdHelper: NSDHelper
+    private val nsdHelper: NSDHelper,
+    private val serverNetworkRepository: ServerNetworkRepository,
 ) : ViewModel() {
     // TODO: The logic for creating and managing the server should be moved to a repository
     //  to support online multiplayer games in the future
@@ -136,10 +138,11 @@ class ServerViewModel(
         class ServerViewModelFactory(
             private val gameRepository: GameRepository,
             private val wifiHelper: WifiHelper,
-            private val nsdHelper: NSDHelper
+            private val nsdHelper: NSDHelper,
+            private val serverNetworkRepository: ServerNetworkRepository
         ) : ViewModelProvider.NewInstanceFactory() {
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                ServerViewModel(gameRepository, wifiHelper, nsdHelper) as T
+                ServerViewModel(gameRepository, wifiHelper, nsdHelper, serverNetworkRepository) as T
         }
     }
 }

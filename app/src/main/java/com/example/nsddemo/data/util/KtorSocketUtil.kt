@@ -6,6 +6,7 @@ import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.writeStringUtf8
 
 object KtorSocketUtil {
+    // TODO: Remove this once the network layer is complete
     suspend fun sendUtf8LineToAllPlayers(messageFun: (Player) -> String) {
         for ((clientConnection, player) in Server.clients) {
             clientConnection.output.writeLineUtf8(messageFun(player))
@@ -18,5 +19,4 @@ object KtorSocketUtil {
     private fun String.appendNewLine(): String {
         return this + '\n'
     }
-
 }

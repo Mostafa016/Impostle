@@ -8,6 +8,7 @@ import com.example.nsddemo.core.util.Debugging
 import com.example.nsddemo.core.util.GameState
 import com.example.nsddemo.data.local.network.NSDHelper
 import com.example.nsddemo.data.local.network.socket.Client
+import com.example.nsddemo.data.repository.ClientNetworkRepository
 import com.example.nsddemo.data.repository.GameRepository
 import com.example.nsddemo.data.util.KtorSocketUtil.writeLineUtf8
 import com.example.nsddemo.domain.model.GameData
@@ -25,7 +26,8 @@ import kotlinx.coroutines.launch
 
 class ClientViewModel(
     private val gameRepository: GameRepository,
-    private val nsdHelper: NSDHelper
+    private val nsdHelper: NSDHelper,
+    private val clientNetworkRepository: ClientNetworkRepository
 ) : ViewModel() {
     // TODO: The logic for creating and managing the client should be moved to a repository
     //  to support online multiplayer games in the future
@@ -321,10 +323,11 @@ class ClientViewModel(
         @Suppress("UNCHECKED_CAST")
         class ClientViewModelFactory(
             private val gameRepository: GameRepository,
-            private val nsdHelper: NSDHelper
+            private val nsdHelper: NSDHelper,
+            private val clientNetworkRepository: ClientNetworkRepository,
         ) : ViewModelProvider.NewInstanceFactory() {
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                ClientViewModel(gameRepository, nsdHelper) as T
+                ClientViewModel(gameRepository, nsdHelper, clientNetworkRepository) as T
         }
     }
 }

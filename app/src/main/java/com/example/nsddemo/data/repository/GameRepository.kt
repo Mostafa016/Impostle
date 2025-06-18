@@ -8,8 +8,9 @@ import com.example.nsddemo.domain.model.GameData
 import com.example.nsddemo.domain.model.Player
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import javax.inject.Inject
 
-class GameRepository(private val sharedPreferences: SharedPreferences) {
+class GameRepository @Inject constructor(private val sharedPreferences: SharedPreferences) {
     private val _gameData = MutableStateFlow(GameData())
     val gameData = _gameData.asStateFlow()
 

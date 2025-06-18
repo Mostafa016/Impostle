@@ -1,7 +1,6 @@
 package com.example.nsddemo.presentation
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.Window
@@ -33,6 +32,8 @@ import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.data.local.network.NSDHelper
 import com.example.nsddemo.data.local.network.WifiHelper
 import com.example.nsddemo.data.repository.GameRepository
+import com.example.nsddemo.data.repository.KtorClientNetworkRepository
+import com.example.nsddemo.data.repository.KtorServerNetworkRepository
 import com.example.nsddemo.domain.use_case.ServerGameStateManager
 import com.example.nsddemo.presentation.screen.category_and_word.CategoryAndWordGameStateHandler
 import com.example.nsddemo.presentation.screen.category_and_word.CategoryAndWordScreen
@@ -84,7 +85,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        val sharedPreferences = getPreferences(Context.MODE_PRIVATE)
+        val sharedPreferences = getPreferences(MODE_PRIVATE)
         val gson = Gson()
         val gameRepository = GameRepository(sharedPreferences)
         // TODO: To be moved to its own function for debugging purposes
@@ -96,6 +97,10 @@ class MainActivity : AppCompatActivity() {
         val serverGameStateManager = ServerGameStateManager(gameRepository, gson)
         val nsdHelper = NSDHelper(this)
         val wifiHelper = WifiHelper(this)
+        val ktorServerNetworkRepository =
+            KtorServerNetworkRepository(nsdHelper = nsdHelper, wifiHelper = wifiHelper)
+        val ktorClientNetworkRepository =
+            KtorClientNetworkRepository(nsdHelper = nsdHelper, wifiHelper = wifiHelper)
         val settingsViewModel = ViewModelProvider(
             this, SettingsViewModel.Companion.SettingsViewModelFactory(sharedPreferences)
         )[SettingsViewModel::class.java]
@@ -175,7 +180,7 @@ class MainActivity : AppCompatActivity() {
                                         ClientViewModel::class.java,
                                         viewModelStoreOwner = gameSessionEntry,
                                         factory = ClientViewModel.Companion.ClientViewModelFactory(
-                                            gameRepository, nsdHelper
+                                            gameRepository, nsdHelper, ktorClientNetworkRepository
                                         )
                                     )
                                     JoinGameScreen(
@@ -195,7 +200,8 @@ class MainActivity : AppCompatActivity() {
                                         ClientViewModel::class.java,
                                         viewModelStoreOwner = gameSessionEntry,
                                         factory = ClientViewModel.Companion.ClientViewModelFactory(
-                                            gameRepository, nsdHelper
+                                            gameRepository, nsdHelper,
+                                            clientNetworkRepository = ktorClientNetworkRepository
                                         )
                                     )
                                     JoinGameLoadingScreen(
@@ -224,7 +230,10 @@ class MainActivity : AppCompatActivity() {
                                 val serverViewModel: ServerViewModel = viewModel(
                                     viewModelStoreOwner = gameSessionEntry,
                                     factory = ServerViewModel.Companion.ServerViewModelFactory(
-                                        gameRepository, wifiHelper, nsdHelper
+                                        gameRepository,
+                                        wifiHelper,
+                                        nsdHelper,
+                                        ktorServerNetworkRepository
                                     )
                                 )
                                 CreateGameLoadingScreen(
