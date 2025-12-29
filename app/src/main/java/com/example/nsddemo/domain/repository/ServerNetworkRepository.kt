@@ -1,4 +1,4 @@
-package com.example.nsddemo.data.repository
+package com.example.nsddemo.domain.repository
 
 import com.example.nsddemo.data.util.PlayerConnectionEvent
 import com.example.nsddemo.data.util.ServerState

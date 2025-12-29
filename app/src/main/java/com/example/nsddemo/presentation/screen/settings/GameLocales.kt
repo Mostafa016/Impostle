@@ -8,6 +8,6 @@ enum class GameLocales(val countryCode: String, val languageStringResId: Int) {
 
     companion object {
         fun toLocale(countryCode: String): GameLocales =
-            GameLocales.values().find { it.countryCode == countryCode }!!
+            entries.find { it.countryCode == countryCode }!!
     }
 }

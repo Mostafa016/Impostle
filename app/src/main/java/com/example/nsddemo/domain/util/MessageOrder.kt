@@ -1,5 +1,8 @@
 package com.example.nsddemo.domain.util
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class MessageOrder(private val isSentToServer: Boolean) {
     CLIENT_PLAYER_NAME(true),
     SERVER_PLAYER_COLOR(false),

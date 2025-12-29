@@ -8,11 +8,11 @@ import com.example.nsddemo.core.util.Debugging
 import com.example.nsddemo.core.util.GameState
 import com.example.nsddemo.data.local.network.NSDHelper
 import com.example.nsddemo.data.local.network.socket.Client
-import com.example.nsddemo.data.repository.ClientNetworkRepository
 import com.example.nsddemo.data.repository.GameRepository
 import com.example.nsddemo.data.util.KtorSocketUtil.writeLineUtf8
 import com.example.nsddemo.domain.model.GameData
 import com.example.nsddemo.domain.model.Player
+import com.example.nsddemo.domain.repository.ClientNetworkRepository
 import com.example.nsddemo.domain.util.Categories
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder

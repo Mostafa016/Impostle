@@ -1,6 +1,7 @@
 package com.example.nsddemo.presentation
 
 import android.annotation.SuppressLint
+import android.net.nsd.NsdManager
 import android.os.Bundle
 import android.util.Log
 import android.view.Window
@@ -31,6 +32,11 @@ import androidx.navigation.navigation
 import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.data.local.network.NSDHelper
 import com.example.nsddemo.data.local.network.WifiHelper
+import com.example.nsddemo.data.local.network.nsd.discovery.NsdNetworkDiscovery
+import com.example.nsddemo.data.local.network.nsd.registration.NsdNetworkRegistration
+import com.example.nsddemo.data.local.network.nsd.resolution.NsdNetworkResolution
+import com.example.nsddemo.data.local.network.socket.client.KtorSocketClient
+import com.example.nsddemo.data.local.network.socket.server.KtorSocketServer
 import com.example.nsddemo.data.repository.GameRepository
 import com.example.nsddemo.data.repository.KtorClientNetworkRepository
 import com.example.nsddemo.data.repository.KtorServerNetworkRepository
@@ -97,10 +103,27 @@ class MainActivity : AppCompatActivity() {
         val serverGameStateManager = ServerGameStateManager(gameRepository, gson)
         val nsdHelper = NSDHelper(this)
         val wifiHelper = WifiHelper(this)
+        val nsdManager: NsdManager by lazy {
+            this.getSystemService(NSD_SERVICE) as NsdManager
+        }
+        val nsdNetworkRegistration = NsdNetworkRegistration(nsdManager)
+        val socketServer = KtorSocketServer(
+            wifiHelper = wifiHelper
+        )
         val ktorServerNetworkRepository =
-            KtorServerNetworkRepository(nsdHelper = nsdHelper, wifiHelper = wifiHelper)
+            KtorServerNetworkRepository(
+                networkRegistration = nsdNetworkRegistration,
+                socketServer = socketServer
+            )
+        val networkDiscovery = NsdNetworkDiscovery(nsdManager)
+        val networkResolution = NsdNetworkResolution(nsdManager)
+        val socketClient = KtorSocketClient()
         val ktorClientNetworkRepository =
-            KtorClientNetworkRepository(nsdHelper = nsdHelper, wifiHelper = wifiHelper)
+            KtorClientNetworkRepository(
+                networkDiscovery = networkDiscovery,
+                networkResolution = networkResolution,
+                socketClient = socketClient
+            )
         val settingsViewModel = ViewModelProvider(
             this, SettingsViewModel.Companion.SettingsViewModelFactory(sharedPreferences)
         )[SettingsViewModel::class.java]

@@ -5,7 +5,8 @@ import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.data.local.network.WifiHelper
 import com.example.nsddemo.data.local.network.socket.ConnectionEvent
 import com.example.nsddemo.data.local.network.socket.MessageEvent
-import com.example.nsddemo.data.util.KtorSocketUtil.writeLineUtf8
+import com.example.nsddemo.data.util.KtorSocketUtil.readPacket
+import com.example.nsddemo.data.util.KtorSocketUtil.writePacket
 import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.Connection
 import io.ktor.network.sockets.ServerSocket
@@ -16,13 +17,12 @@ import io.ktor.network.sockets.openWriteChannel
 import io.ktor.network.sockets.toJavaAddress
 import io.ktor.util.network.port
 import io.ktor.utils.io.charsets.MalformedInputException
-import io.ktor.utils.io.readUTF8Line
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
@@ -37,11 +37,11 @@ class KtorSocketServer @Inject constructor(private val wifiHelper: WifiHelper) :
 
     private val _connectionEvents =
         MutableSharedFlow<ConnectionEvent>(extraBufferCapacity = EVENT_BUFFER_CAPACITY)
-    override val connectionEvents: Flow<ConnectionEvent> = _connectionEvents
+    override val connectionEvents = _connectionEvents.asSharedFlow()
 
     private val _messageEvent =
         MutableSharedFlow<MessageEvent>(extraBufferCapacity = EVENT_BUFFER_CAPACITY)
-    override val messageEvents: Flow<MessageEvent> = _messageEvent
+    override val messageEvents = _messageEvent.asSharedFlow()
 
     private var socketServer: ServerSocket? = null
     private var serverPort: Int? = null
@@ -73,13 +73,13 @@ class KtorSocketServer @Inject constructor(private val wifiHelper: WifiHelper) :
             Log.e(TAG, "Something went wrong in the server accept loop.", e)
             _listeningState.value =
                 ServerListeningState.Error("Something went wrong in the server: ${e.message}")
+        } finally {
+            cleanupResources()
         }
     }
 
     override fun stopListening() {
-        socketServer?.close()
-        socketServer = null
-        serverPort = null
+        cleanupResources()
         _listeningState.value = ServerListeningState.Idle
         Log.i(TAG, "Server Stopped listening.")
     }
@@ -90,7 +90,7 @@ class KtorSocketServer @Inject constructor(private val wifiHelper: WifiHelper) :
                 return Result.failure(MalformedInputException("Data sent cannot contain new lines."))
             }
             val clientSendChannel = clientConnections[clientId]!!.output
-            clientSendChannel.writeLineUtf8(data)
+            clientSendChannel.writePacket(data)
             _messageEvent.tryEmit(MessageEvent.Sent(clientId, data))
             return Result.success(Unit)
         } catch (e: NullPointerException) {
@@ -127,46 +127,41 @@ class KtorSocketServer @Inject constructor(private val wifiHelper: WifiHelper) :
     }
 
     private suspend fun launchServerAcceptLoop() = supervisorScope {
-        try {
-            while (socketServer?.isClosed == false) {
-                val clientSocket = socketServer!!.accept()
-                Log.d(TAG, "Server accepted connection: ${clientSocket.remoteAddress}")
+        while (socketServer?.isClosed == false) {
+            val clientSocket = socketServer!!.accept()
+            Log.d(TAG, "Server accepted connection: ${clientSocket.remoteAddress}")
 
-                val clientId = clientSocket.remoteAddress.toString() // Or a better unique ID
+            val clientId = clientSocket.remoteAddress.toString() // Or a better unique ID
 
-                // Prevent duplicate connections from same ID if cleanup was slow
-                if (clientConnections.containsKey(clientId)) {
-                    Log.e(TAG, "Client ($clientId) already connected to server. Closing.")
-                    clientSocket.close()
-                    continue
-                }
-
-                val connection = Connection(
-                    clientSocket,
-                    clientSocket.openReadChannel(),
-                    clientSocket.openWriteChannel(autoFlush = true)
-                )
-                clientConnections[clientId] = connection
-
-                // Launch a dedicated reader job for this client
-                val clientJob = launch { launchClientReadLoop(clientId, connection) }
-                clientJobs[clientId] = clientJob
+            // Prevent duplicate connections from same ID if cleanup was slow
+            if (clientConnections.containsKey(clientId)) {
+                Log.e(TAG, "Client ($clientId) already connected to server. Closing.")
+                clientSocket.close()
+                continue
             }
-        } finally {
-            Log.d(TAG, "Server accept loop finished. Cleaning up all clients.")
-            cleanupAllClients() // Ensure cleanup on exit
+
+            val connection = Connection(
+                clientSocket,
+                clientSocket.openReadChannel(),
+                clientSocket.openWriteChannel(autoFlush = true)
+            )
+            clientConnections[clientId] = connection
+
+            // Launch a dedicated reader job for this client
+            val clientJob = launch { launchClientReadLoop(clientId, connection) }
+            clientJobs[clientId] = clientJob
         }
     }
 
     private suspend fun launchClientReadLoop(clientId: String, connection: Connection) {
         try {
             while (!connection.socket.isClosed) {
-                val line = connection.input.readUTF8Line()
+                val line = connection.input.readPacket()
                 if (line == null) {
                     Log.w(TAG, "Client $clientId disconnected (read null).")
                     break // Exit loop on clean disconnect
                 }
-                Log.d(TAG, "Server Received from $clientId: $line")
+                Log.d(TAG, "Server received from $clientId: $line")
                 _connectionEvents.emit(ConnectionEvent.Connected(clientId))
                 _messageEvent.emit(MessageEvent.Received(clientId, line))
             }
@@ -184,16 +179,25 @@ class KtorSocketServer @Inject constructor(private val wifiHelper: WifiHelper) :
 
     //region General Helpers
     private fun cleanupClient(clientId: String) {
-        clientConnections.remove(clientId)?.socket?.close()
-        clientJobs.remove(clientId)?.cancel()
-        _connectionEvents.tryEmit(ConnectionEvent.Disconnected(clientId))
-        Log.i(TAG, "Cleaned up client: $clientId")
+        clientConnections.remove(clientId)?.also { connection ->
+            connection.socket.close()
+            clientJobs.remove(clientId)?.cancel()
+            _connectionEvents.tryEmit(ConnectionEvent.Disconnected(clientId))
+            Log.i(TAG, "Cleaned up client: $clientId")
+        }
     }
 
     private fun cleanupAllClients() {
         Log.d(TAG, "Cleaning up all clients...")
         clientJobs.keys.toList().forEach { cleanupClient(it) }
         Log.d(TAG, "Cleaned up all clients.")
+    }
+
+    private fun cleanupResources() {
+        cleanupAllClients()
+        socketServer?.close()
+        socketServer = null
+        serverPort = null
     }
 
     //endregion

@@ -34,27 +34,26 @@ class NsdNetworkResolution @Inject constructor(private val nsdManager: NsdManage
         }
 
         override fun onServiceResolved(serviceInfo: NsdServiceInfo) {
-            // Handle same device advertising and discovering
-//            if (serviceInfo.serviceName == mServiceName) {
-//                Log.d(Debugging.TAG, "Same IP.")
-//                return
-//            }
-            // Host of another game
             val fullServiceNameSegmented = serviceInfo.serviceName.split("_")
             val resolvedServiceGameCode = fullServiceNameSegmented[1]
+
+            // Host of another game
             if (resolvedServiceGameCode != gameCode) {
                 Log.w(
                     Debugging.TAG, "${serviceInfo.serviceName} Host of another game $gameCode"
                 )
+                _resolutionState.value = NsdResolutionState.Failed("Service name mismatch")
                 return
             }
-            // Save port and ip address for communication with sockets
+
+            // Correct host
             _resolutionState.value = NsdResolutionState.Success(
                 host = serviceInfo.host.hostAddress!!,
                 port = serviceInfo.port,
-            )
+            ) // Save port and ip address for communication with sockets
             Log.i(Debugging.TAG, "Resolve Succeeded: $serviceInfo")
         }
+
     }
     // endregion
 }

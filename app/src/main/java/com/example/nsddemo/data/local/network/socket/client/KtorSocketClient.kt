@@ -4,7 +4,8 @@ import android.util.Log
 import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.data.local.network.socket.ConnectionEvent
 import com.example.nsddemo.data.local.network.socket.MessageEvent
-import com.example.nsddemo.data.util.KtorSocketUtil.writeLineUtf8
+import com.example.nsddemo.data.util.KtorSocketUtil.readPacket
+import com.example.nsddemo.data.util.KtorSocketUtil.writePacket
 import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.Connection
 import io.ktor.network.sockets.aSocket
@@ -13,13 +14,11 @@ import io.ktor.network.sockets.openReadChannel
 import io.ktor.network.sockets.openWriteChannel
 import io.ktor.utils.io.charsets.MalformedInputException
 import io.ktor.utils.io.errors.IOException
-import io.ktor.utils.io.readUTF8Line
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -27,15 +26,17 @@ import kotlin.coroutines.cancellation.CancellationException
 
 class KtorSocketClient : SocketClient {
 
-    private val _connectionEvents = MutableSharedFlow<ConnectionEvent>()
-    override val connectionEvents: Flow<ConnectionEvent> = _connectionEvents
+    private val _connectionEvents =
+        MutableSharedFlow<ConnectionEvent>(extraBufferCapacity = EVENT_BUFFER_CAPACITY)
+    override val connectionEvents = _connectionEvents.asSharedFlow()
 
-    private val _messageEvent = MutableSharedFlow<MessageEvent>()
-    override val messageEvents: Flow<MessageEvent> = _messageEvent
+    private val _messageEvent =
+        MutableSharedFlow<MessageEvent>(extraBufferCapacity = EVENT_BUFFER_CAPACITY)
+    override val messageEvents = _messageEvent.asSharedFlow()
 
     private lateinit var serverConnection: Connection
 
-    override suspend fun connect(host: String, port: Int): Boolean {
+    override suspend fun startSession(host: String, port: Int) {
         try {
             setupClient(host, port)
             launchServerReadLoop()
@@ -48,21 +49,19 @@ class KtorSocketClient : SocketClient {
         } catch (e: Exception) {
             Log.e(TAG, "An unhandled exception occurred.", e)
             _connectionEvents.emit(ConnectionEvent.Error(host, e.message.toString()))
-            return false
         } finally {
-            if (!serverConnection.socket.isClosed) {
+            if (::serverConnection.isInitialized && !serverConnection.socket.isClosed) {
                 withContext(NonCancellable) {
                     serverConnection.socket.close()
                 }
             }
         }
-        return true
     }
 
     override suspend fun disconnect() = coroutineScope {
-        _connectionEvents.emit(ConnectionEvent.Disconnected(serverConnection.socket.remoteAddress.toString()))
         if (serverConnection.socket.isClosed) return@coroutineScope
         launch { serverConnection.socket.close() }
+        _connectionEvents.emit(ConnectionEvent.Disconnected(serverConnection.socket.remoteAddress.toString()))
     }
 
     override suspend fun sendToServer(data: String): Boolean {
@@ -70,7 +69,7 @@ class KtorSocketClient : SocketClient {
             if (data.contains("\n")) {
                 throw MalformedInputException("Data sent cannot contain new lines.")
             }
-            serverConnection.output.writeLineUtf8(data)
+            serverConnection.output.writePacket(data)
             _messageEvent.emit(
                 MessageEvent.Sent(
                     serverConnection.socket.remoteAddress.toString(), data
@@ -91,24 +90,22 @@ class KtorSocketClient : SocketClient {
         Log.d(TAG, "Connecting to server...")
         val selectorManager = SelectorManager(Dispatchers.IO)
         val socket = aSocket(selectorManager).tcp().connect(host, port)
-        Log.d(TAG, "Client address: ${socket.localAddress}")
-        Log.d(TAG, "Connected to server: ${socket.remoteAddress}")
         serverConnection =
             Connection(socket, socket.openReadChannel(), socket.openWriteChannel(autoFlush = true))
         _connectionEvents.emit(ConnectionEvent.Connected(host))
+        Log.d(TAG, "Client address: ${socket.localAddress}")
+        Log.d(TAG, "Connected to server: ${socket.remoteAddress}")
     }
 
     private suspend fun launchServerReadLoop() = coroutineScope {
         launch {
             try {
                 while (isActive && !serverConnection.socket.isClosed) {
-                    val line = serverConnection.input.readUTF8Line()
-                    if (line == null) {
-                        cancel(CancellationException("Server disconnected, terminating connection."))
-                    }
+                    val line = serverConnection.input.readPacket()
+                        ?: throw CancellationException("Server disconnected, terminating connection.")
                     _messageEvent.emit(
                         MessageEvent.Received(
-                            serverConnection.socket.remoteAddress.toString(), line!!
+                            serverConnection.socket.remoteAddress.toString(), line
                         )
                     )
                 }
@@ -132,4 +129,8 @@ class KtorSocketClient : SocketClient {
         }
     }
     //endregion
+
+    private companion object {
+        const val EVENT_BUFFER_CAPACITY = 64
+    }
 }

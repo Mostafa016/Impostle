@@ -23,7 +23,7 @@ sealed class Message(private val messageOrder: MessageOrder) {
 }
 
 @Serializable
-sealed class ServerMessage(private val globalOrder: MessageOrder) : Message(globalOrder) {
+sealed class ServerMessage(val globalOrder: MessageOrder) : Message(globalOrder) {
     @Serializable
     data class PlayerColor(val playerColor: String) :
         ServerMessage(MessageOrder.SERVER_PLAYER_COLOR)
@@ -73,14 +73,19 @@ sealed class ServerMessage(private val globalOrder: MessageOrder) : Message(glob
 }
 
 @Serializable
-sealed class ClientMessage(private val globalOrder: MessageOrder) : Message(globalOrder) {
+sealed class ClientMessage(val globalOrder: MessageOrder) : Message(globalOrder) {
+    @Serializable
     data class RegisterPlayer(val playerName: String) :
         ClientMessage(MessageOrder.CLIENT_PLAYER_NAME)
 
+    @Serializable
     data object ConfirmRoleReceived :
         ClientMessage(MessageOrder.CLIENT_CATEGORY_AND_WORD_CONFIRMATION)
 
+    @Serializable
     data object ConfirmQuestionFinished : ClientMessage(MessageOrder.CLIENT_QUESTION_CONFIRMATION)
+
+    @Serializable
     data class SubmitVote(val vote: Player) : ClientMessage(MessageOrder.CLIENT_VOTE)
 }
 

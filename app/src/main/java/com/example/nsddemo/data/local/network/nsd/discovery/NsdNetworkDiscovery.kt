@@ -6,12 +6,11 @@ import android.util.Log
 import com.example.nsddemo.core.util.Debugging
 import com.example.nsddemo.data.util.NSDConstants
 import com.example.nsddemo.data.util.NSDConstants.nsdErrorCodeToString
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
 import javax.inject.Inject
 
 
@@ -22,9 +21,10 @@ class NsdNetworkDiscovery @Inject constructor(private val nsdManager: NsdManager
     override val discoveryProcessState: StateFlow<NsdDiscoveryState> =
         _discoveryProcessState.asStateFlow()
 
-    private val _discoveredServiceEvent = Channel<NsdDiscoveryEvent>(Channel.BUFFERED)
+    private val _discoveredServiceEvent =
+        MutableSharedFlow<NsdDiscoveryEvent>(extraBufferCapacity = 64)
     override val discoveredServiceEvent: Flow<NsdDiscoveryEvent> =
-        _discoveredServiceEvent.receiveAsFlow()
+        _discoveredServiceEvent
 
     private lateinit var gameCode: String
 
@@ -49,43 +49,11 @@ class NsdNetworkDiscovery @Inject constructor(private val nsdManager: NsdManager
 
         override fun onServiceFound(service: NsdServiceInfo) {
             // A service was found! Do something with it.
-            Log.d(Debugging.TAG, "Service discovery success: $service")
-            when {
-                service.serviceType != NSDConstants.SERVICE_TYPE ->
-                    // Service type is the string containing the protocol and
-                    // transport layer for this service.
-                    Log.d(Debugging.TAG, "Unknown Service Type: ${service.serviceType}")
-
-//                service.serviceName == mServiceName ->
-                // This handles if the same device is advertising and discovering
-                // at the same time
-//                    Log.d(Debugging.TAG, "Same machine: $mServiceName")
-
-                service.serviceName.contains(NSDConstants.BASE_SERVICE_NAME) -> {
-                    // Could be used for a feature where the client says they're interested
-                    // to join a game and a list of players appears to the host to choose which one
-                    // to invite
-                    // Not a host
-                    val fullServiceNameSegmented = service.serviceName.split("_")
-                    if (fullServiceNameSegmented.size != 2) {
-                        Log.d(Debugging.TAG, "${service.serviceName} does not belong to a host")
-                        return
-                    }
-                    // Not the host of the lobby I want to join
-                    val serviceGameCode = fullServiceNameSegmented.last()
-                    if (serviceGameCode != gameCode) {
-                        Log.d(
-                            Debugging.TAG,
-                            "${service.serviceName} is not the host of the game I want to join with code $gameCode"
-                        )
-                        return
-                    }
-                    Log.d(
-                        Debugging.TAG, "Found service with code ($gameCode): ${service.serviceName}"
-                    )
-                    _discoveredServiceEvent.trySend(NsdDiscoveryEvent.Found(service))
-                }
+            if (!isCurrentGameService(service)) {
+                return
             }
+            Log.d(Debugging.TAG, "Service discovery success: $service")
+            _discoveredServiceEvent.tryEmit(NsdDiscoveryEvent.Found(service))
         }
 
         override fun onServiceLost(service: NsdServiceInfo) {
@@ -93,8 +61,11 @@ class NsdNetworkDiscovery @Inject constructor(private val nsdManager: NsdManager
             // Internal bookkeeping code goes here.
             // TODO: Figure out when this happens as it causes duplicate players in server
             //  when it happens from client
+            if (!isCurrentGameService(service)) {
+                return
+            }
             Log.e(Debugging.TAG, "Lost Service: ${service.serviceName}")
-            _discoveredServiceEvent.trySend(NsdDiscoveryEvent.Lost(service))
+            _discoveredServiceEvent.tryEmit(NsdDiscoveryEvent.Lost(service))
         }
 
         override fun onDiscoveryStopped(serviceType: String) {
@@ -114,10 +85,45 @@ class NsdNetworkDiscovery @Inject constructor(private val nsdManager: NsdManager
             Log.e(Debugging.TAG, "Stop discovery failed: Error code:$errorMessage")
             _discoveryProcessState.value =
                 NsdDiscoveryState.Failed("Stop discovery failed: Error code:$errorMessage")
-            if (errorCode != NsdManager.FAILURE_OPERATION_NOT_RUNNING) {
-                nsdManager.stopServiceDiscovery(this)
-            }
         }
     }
+
+    private fun isCurrentGameService(service: NsdServiceInfo): Boolean {
+        if (service.serviceType != NSDConstants.SERVICE_TYPE) {
+            // Service type is the string containing the protocol and
+            // transport layer for this service.
+            Log.d(Debugging.TAG, "Unknown Service Type: ${service.serviceType}")
+            return false
+        } else if (service.serviceName.contains(NSDConstants.BASE_SERVICE_NAME)) {
+            // Could be used for a feature where the client says they're interested
+            // to join a game and a list of players appears to the host to choose which one
+            // to invite
+
+            // Not a host
+            val fullServiceNameSegmented = service.serviceName.split("_")
+            if (fullServiceNameSegmented.size != 2) {
+                Log.d(Debugging.TAG, "${service.serviceName} does not belong to a host")
+                return false
+            }
+
+            // Not the host of the lobby I want to join
+            val serviceGameCode = fullServiceNameSegmented.last()
+            if (serviceGameCode != gameCode) {
+                Log.d(
+                    Debugging.TAG,
+                    "${service.serviceName} is not the host of the game I want to join with code $gameCode"
+                )
+                return false
+            }
+
+            // Correct host found
+            Log.d(
+                Debugging.TAG, "Found service with code ($gameCode): ${service.serviceName}"
+            )
+            return true
+        }
+        return false
+    }
+
     // endregion
 }

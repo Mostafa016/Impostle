@@ -11,8 +11,8 @@ import com.example.nsddemo.data.local.network.WifiHelper
 import com.example.nsddemo.data.local.network.socket.Server
 import com.example.nsddemo.data.local.network.socket.Server.initServerSocket
 import com.example.nsddemo.data.repository.GameRepository
-import com.example.nsddemo.data.repository.ServerNetworkRepository
 import com.example.nsddemo.domain.model.Player
+import com.example.nsddemo.domain.repository.ServerNetworkRepository
 import com.google.gson.Gson
 import io.ktor.network.sockets.Connection
 import io.ktor.utils.io.readUTF8Line
