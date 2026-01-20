@@ -7,7 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.core.util.GameState
 import com.example.nsddemo.data.repository.GameRepository
-import com.example.nsddemo.domain.util.Categories
+import com.example.nsddemo.domain.model.Categories
 import com.example.nsddemo.domain.util.PlayerCountLimits
 import com.example.nsddemo.presentation.util.GameStateHandler
 import com.example.nsddemo.presentation.util.Routes

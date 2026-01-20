@@ -1,7 +1,8 @@
 package com.example.nsddemo.domain.model
 
-import com.example.nsddemo.domain.util.Categories
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class NewGameData(
     // --- Identity ---
     val localPlayerId: String = "",
@@ -14,18 +15,21 @@ data class NewGameData(
     // --- Game Logic State ---
     val roundNumber: Int = 1,
     val imposterId: String? = null,
-    val category: Categories? = null,
-    val wordKey: String? = null, // String Key (e.g. "LION"), NOT Resource ID
+    val category: GameCategory? = null,
+    val word: String? = null,
+    val readyPlayerIds: Set<String> = emptySet(),
 
-    // Turn Management (AskerID -> AskedID)
-    val roundPairs: List<Pair<String, String>> = emptyList(), // [(AskerID, TargetID), ...]
-    val currentPairIndex: Int = 0,
+    // Game Mode Specific Turn Management
+    val roundData: RoundData = RoundData.Idle,
 
     // Voting State (VoterID -> TargetID)
     val votes: Map<String, String> = emptyMap(),
 
     // Scoreboard (PlayerID -> Score)
-    val scores: Map<String, Int> = emptyMap()
+    val scores: Map<String, Int> = emptyMap(),
+
+    // phase we were in before the FIRST disconnect
+    val phaseBeforePause: GamePhase? = null
 ) {
     //region --- Identity Helpers ---
     val localPlayer: Player?
@@ -40,22 +44,28 @@ data class NewGameData(
     val otherPlayers: List<Player>
         get() = players.values.filter { it.id != localPlayerId }
 
-    val usedColors: Set<String> // Or Set<PlayerColors> if mapped
+    val usedColors: Set<String>
         get() = players.values.map { it.color }.toSet()
     //endregion
 
+    //region --- Role Assignment Helpers ---
+    val readyPlayers: List<Player>
+        get() = readyPlayerIds.map { players[it]!! }
+    val readyCount: Int
+        get() = readyPlayerIds.size
+    val isLocalPlayerReady: Boolean
+        get() = localPlayerId in readyPlayerIds
+    //endregion
+
     //region --- Turn Helpers ---
-    val currentAskerId: String?
-        get() = roundPairs.getOrNull(currentPairIndex)?.first
-    val currentAskedId: String?
-        get() = roundPairs.getOrNull(currentPairIndex)?.second
-    val isLocalPlayerAsking: Boolean
-        get() = localPlayerId.isNotEmpty() && localPlayerId == currentAskerId
-    val isLastQuestion: Boolean
-        get() = roundPairs.isNotEmpty() && currentPairIndex == roundPairs.lastIndex
+    val isMyTurn: Boolean
+        get() = roundData.isPlayerTurn(localPlayerId)
     //endregion
 
     //region --- Voting Helpers ---
+    val voters: Set<String>
+        get() = votes.keys
+
     val voteCounts: Map<String, Int>
         get() = votes.values.groupingBy { it }.eachCount()
 
@@ -79,4 +89,34 @@ data class NewGameData(
     val isFirstRound: Boolean
         get() = roundNumber == 1
     //endregion
+}
+
+@Serializable
+sealed interface RoundData {
+
+    fun isPlayerTurn(playerId: String): Boolean
+
+    @Serializable
+    data object Idle : RoundData {
+        override fun isPlayerTurn(playerId: String): Boolean = false
+    }
+
+    @Serializable
+    data class QuestionRoundData(
+        val roundPairs: List<Pair<String, String>> = emptyList(), // [(AskerID, TargetID), ...]
+        val currentPairIndex: Int = 0,
+    ) : RoundData {
+        //region --- Turn Helpers ---
+        val currentAskerId: String?
+            get() = roundPairs.getOrNull(currentPairIndex)?.first
+        val currentAskedId: String?
+            get() = roundPairs.getOrNull(currentPairIndex)?.second
+        val isLastQuestion: Boolean
+            get() = roundPairs.isNotEmpty() && currentPairIndex == roundPairs.lastIndex
+
+        override fun isPlayerTurn(playerId: String): Boolean {
+            return playerId.isNotEmpty() && playerId == currentAskerId
+        }
+        //endregion
+    }
 }

@@ -1,4 +1,4 @@
-package com.example.nsddemo.domain.use_case
+package com.example.nsddemo.domain.legacy
 
 import android.util.Log
 import com.example.nsddemo.core.util.Debugging.TAG
@@ -8,7 +8,6 @@ import com.example.nsddemo.data.repository.GameRepository
 import com.example.nsddemo.data.util.KtorSocketUtil.sendUtf8LineToAllPlayers
 import com.example.nsddemo.data.util.KtorSocketUtil.writeLineUtf8
 import com.example.nsddemo.domain.model.Player
-import com.example.nsddemo.domain.util.generateRoundPlayerPairs
 import com.example.nsddemo.presentation.util.PlayerColors
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder

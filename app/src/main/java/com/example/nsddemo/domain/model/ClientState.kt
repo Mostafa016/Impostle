@@ -1,4 +1,4 @@
-package com.example.nsddemo.data.util
+package com.example.nsddemo.domain.model
 
 sealed interface ClientState {
     data object Idle : ClientState

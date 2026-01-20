@@ -19,7 +19,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.nsddemo.domain.util.Categories
+import com.example.nsddemo.domain.model.Categories
 
 @Composable
 fun CategoryCard(modifier: Modifier, category: Categories, onClick: () -> Unit) {

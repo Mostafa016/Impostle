@@ -11,11 +11,11 @@ import com.example.nsddemo.data.local.network.nsd.resolution.NsdResolutionState
 import com.example.nsddemo.data.local.network.socket.ConnectionEvent
 import com.example.nsddemo.data.local.network.socket.MessageEvent
 import com.example.nsddemo.data.local.network.socket.client.SocketClient
-import com.example.nsddemo.data.util.ClientState
+import com.example.nsddemo.domain.model.ClientMessage
+import com.example.nsddemo.domain.model.ClientState
+import com.example.nsddemo.domain.model.NetworkJson
+import com.example.nsddemo.domain.model.ServerMessage
 import com.example.nsddemo.domain.repository.ClientNetworkRepository
-import com.example.nsddemo.domain.util.ClientMessage
-import com.example.nsddemo.domain.util.NetworkJson
-import com.example.nsddemo.domain.util.ServerMessage
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -31,7 +31,7 @@ import kotlinx.serialization.encodeToString
 import java.io.IOException
 import javax.inject.Inject
 
-class KtorClientNetworkRepository @Inject constructor(
+class RemoteClientNetworkRepository @Inject constructor(
     private val networkDiscovery: NetworkDiscovery,
     private val networkResolution: NetworkResolution,
     private val socketClient: SocketClient
@@ -41,20 +41,20 @@ class KtorClientNetworkRepository @Inject constructor(
     override val clientState = _clientState.asStateFlow()
 
     // Mapping Raw Socket events to Domain Sealed Classes
-    override val incomingMessages: Flow<Pair<String, ClientMessage>> =
+    override val incomingMessages: Flow<Pair<String, ServerMessage>> =
         socketClient.messageEvents.filterIsInstance(MessageEvent.Received::class)
             .mapNotNull { event ->
                 try {
-                    event.clientId to NetworkJson.decodeFromString<ClientMessage>(event.data)
+                    event.clientId to NetworkJson.decodeFromString<ServerMessage>(event.data)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to parse message: ${e.message}")
                     null // Drop bad packet, keep connection alive
                 }
             }
 
-    override val outGoingMessages: Flow<Pair<String, ServerMessage>> =
+    override val outGoingMessages: Flow<Pair<String, ClientMessage>> =
         socketClient.messageEvents.filterIsInstance(MessageEvent.Sent::class)
-            .map { it.clientId to NetworkJson.decodeFromString<ServerMessage>(it.data) }
+            .map { it.clientId to NetworkJson.decodeFromString<ClientMessage>(it.data) }
 
     override suspend fun connect(gameCode: String) = coroutineScope {
         try {
@@ -66,7 +66,6 @@ class KtorClientNetworkRepository @Inject constructor(
 
             // 3. Connection Phase
             performSocketConnection(host, port)
-
         } catch (e: TimeoutCancellationException) {
             Log.e(TAG, "Connection process timed out.")
             _clientState.value =
@@ -148,21 +147,21 @@ class KtorClientNetworkRepository @Inject constructor(
     private suspend fun performSocketConnection(host: String, port: Int) = coroutineScope {
         launch { socketClient.startSession(host, port) }
 
-        withTimeout(TIMEOUT_MS) {
-            val event = socketClient.connectionEvents
+        val event = withTimeout(TIMEOUT_MS) {
+            socketClient.connectionEvents
                 .first { it is ConnectionEvent.Connected || it is ConnectionEvent.Error }
+        }
 
-            when (event) {
-                is ConnectionEvent.Connected -> {
-                    _clientState.value = ClientState.Connected
-                }
+        when (event) {
+            is ConnectionEvent.Connected -> {
+                _clientState.value = ClientState.Connected
+            }
 
-                is ConnectionEvent.Error -> {
-                    throw IOException("Handshake Failed: ${event.message}")
-                }
+            is ConnectionEvent.Error -> {
+                throw IOException("Handshake Failed: ${event.message}")
+            }
 
-                else -> { /* Ignore Disconnected events during startup */
-                }
+            else -> { /* Ignore Disconnected events during startup */
             }
         }
     }
@@ -174,6 +173,6 @@ class KtorClientNetworkRepository @Inject constructor(
     //endregion
 
     companion object {
-        const val TIMEOUT_MS = 10_000L
+        const val TIMEOUT_MS = 1_000L
     }
 }

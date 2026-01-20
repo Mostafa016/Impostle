@@ -30,6 +30,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
 import com.example.nsddemo.core.util.Debugging.TAG
+import com.example.nsddemo.data.local.network.LoopbackDataSource
 import com.example.nsddemo.data.local.network.NSDHelper
 import com.example.nsddemo.data.local.network.WifiHelper
 import com.example.nsddemo.data.local.network.nsd.discovery.NsdNetworkDiscovery
@@ -38,9 +39,9 @@ import com.example.nsddemo.data.local.network.nsd.resolution.NsdNetworkResolutio
 import com.example.nsddemo.data.local.network.socket.client.KtorSocketClient
 import com.example.nsddemo.data.local.network.socket.server.KtorSocketServer
 import com.example.nsddemo.data.repository.GameRepository
-import com.example.nsddemo.data.repository.KtorClientNetworkRepository
-import com.example.nsddemo.data.repository.KtorServerNetworkRepository
-import com.example.nsddemo.domain.use_case.ServerGameStateManager
+import com.example.nsddemo.data.repository.HostServerNetworkRepository
+import com.example.nsddemo.data.repository.RemoteClientNetworkRepository
+import com.example.nsddemo.domain.legacy.ServerGameStateManager
 import com.example.nsddemo.presentation.screen.category_and_word.CategoryAndWordGameStateHandler
 import com.example.nsddemo.presentation.screen.category_and_word.CategoryAndWordScreen
 import com.example.nsddemo.presentation.screen.category_and_word.CategoryAndWordViewModel
@@ -110,16 +111,17 @@ class MainActivity : AppCompatActivity() {
         val socketServer = KtorSocketServer(
             wifiHelper = wifiHelper
         )
-        val ktorServerNetworkRepository =
-            KtorServerNetworkRepository(
+        val hostServerNetworkRepository =
+            HostServerNetworkRepository(
                 networkRegistration = nsdNetworkRegistration,
-                socketServer = socketServer
+                socketServer = socketServer,
+                loopbackDataSource = LoopbackDataSource()
             )
         val networkDiscovery = NsdNetworkDiscovery(nsdManager)
         val networkResolution = NsdNetworkResolution(nsdManager)
         val socketClient = KtorSocketClient()
-        val ktorClientNetworkRepository =
-            KtorClientNetworkRepository(
+        val remoteClientNetworkRepository =
+            RemoteClientNetworkRepository(
                 networkDiscovery = networkDiscovery,
                 networkResolution = networkResolution,
                 socketClient = socketClient
@@ -203,7 +205,7 @@ class MainActivity : AppCompatActivity() {
                                         ClientViewModel::class.java,
                                         viewModelStoreOwner = gameSessionEntry,
                                         factory = ClientViewModel.Companion.ClientViewModelFactory(
-                                            gameRepository, nsdHelper, ktorClientNetworkRepository
+                                            gameRepository, nsdHelper, remoteClientNetworkRepository
                                         )
                                     )
                                     JoinGameScreen(
@@ -224,7 +226,7 @@ class MainActivity : AppCompatActivity() {
                                         viewModelStoreOwner = gameSessionEntry,
                                         factory = ClientViewModel.Companion.ClientViewModelFactory(
                                             gameRepository, nsdHelper,
-                                            clientNetworkRepository = ktorClientNetworkRepository
+                                            clientNetworkRepository = remoteClientNetworkRepository
                                         )
                                     )
                                     JoinGameLoadingScreen(
@@ -256,7 +258,7 @@ class MainActivity : AppCompatActivity() {
                                         gameRepository,
                                         wifiHelper,
                                         nsdHelper,
-                                        ktorServerNetworkRepository
+                                        hostServerNetworkRepository
                                     )
                                 )
                                 CreateGameLoadingScreen(

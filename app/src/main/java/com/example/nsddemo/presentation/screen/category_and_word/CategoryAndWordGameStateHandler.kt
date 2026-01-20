@@ -3,7 +3,7 @@ package com.example.nsddemo.presentation.screen.category_and_word
 import com.example.nsddemo.core.util.GameState
 import com.example.nsddemo.data.repository.GameRepository
 import com.example.nsddemo.data.util.InvalidStateException
-import com.example.nsddemo.domain.use_case.ServerGameStateManager
+import com.example.nsddemo.domain.legacy.ServerGameStateManager
 import com.example.nsddemo.presentation.util.BaseGameStateHandler
 
 class CategoryAndWordGameStateHandler(
@@ -15,6 +15,7 @@ class CategoryAndWordGameStateHandler(
                 is GameState.DisplayCategoryAndWord -> {
 //                    serverGameStateManager.handleDisplayCategoryAndWordState()
                 }
+
                 is GameState.ConfirmCurrentPlayerReadCategoryAndWord -> serverGameStateManager.handleConfirmCurrentPlayerCategoryAndWord()
                 is GameState.GetPlayerReadCategoryAndWordConfirmation -> serverGameStateManager.handleGetPlayerReadCategoryAndWordConfirmationState()
                 is GameState.AskQuestion -> {
@@ -25,6 +26,7 @@ class CategoryAndWordGameStateHandler(
                     // updates the state to AskQuestion but we won't react to it here
                     // we will in AskQuestionScreen
                 }
+
                 else -> {
                     throw InvalidStateException(it, gameRepository.screenAllowedStates.value)
                 }

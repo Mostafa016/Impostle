@@ -9,7 +9,7 @@ interface GameSessionRepository {
     val gameData: StateFlow<NewGameData>
     val gameState: StateFlow<GamePhase>
 
-    fun updateGameState(newState: GamePhase)
+    fun updateGamePhase(newState: GamePhase)
     fun updateGameData(transform: (NewGameData) -> NewGameData)
 
     fun reset()

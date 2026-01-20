@@ -24,7 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.nsddemo.R
-import com.example.nsddemo.domain.util.Categories
+import com.example.nsddemo.domain.model.Categories
 import com.example.nsddemo.presentation.screen.choose_category.components.CategoryCard
 import com.example.nsddemo.presentation.util.NavigationUtil.popBackStackAndNavigateTo
 import com.example.nsddemo.presentation.util.UiEvent

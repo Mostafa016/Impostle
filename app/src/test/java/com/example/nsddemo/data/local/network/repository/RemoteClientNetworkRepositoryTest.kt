@@ -10,9 +10,9 @@ import com.example.nsddemo.data.local.network.nsd.resolution.NetworkResolution
 import com.example.nsddemo.data.local.network.nsd.resolution.NsdResolutionState
 import com.example.nsddemo.data.local.network.socket.ConnectionEvent
 import com.example.nsddemo.data.local.network.socket.client.SocketClient
-import com.example.nsddemo.data.repository.KtorClientNetworkRepository
-import com.example.nsddemo.data.util.ClientState
+import com.example.nsddemo.data.repository.RemoteClientNetworkRepository
 import com.example.nsddemo.data.util.NSDConstants
+import com.example.nsddemo.domain.model.ClientState
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -41,9 +41,9 @@ import org.junit.Before
 import org.junit.Test
 
 @ExperimentalCoroutinesApi
-class KtorClientNetworkRepositoryTest {
+class RemoteClientNetworkRepositoryTest {
 
-    private lateinit var repository: KtorClientNetworkRepository
+    private lateinit var repository: RemoteClientNetworkRepository
 
     @MockK(relaxed = true)
     private lateinit var networkDiscovery: NetworkDiscovery
@@ -76,7 +76,8 @@ class KtorClientNetworkRepositoryTest {
         every { networkResolution.resolutionState } returns resolutionStateFlow
         every { socketClient.connectionEvents } returns socketConnectionEvents
 
-        repository = KtorClientNetworkRepository(networkDiscovery, networkResolution, socketClient)
+        repository =
+            RemoteClientNetworkRepository(networkDiscovery, networkResolution, socketClient)
     }
 
     @After
@@ -151,7 +152,7 @@ class KtorClientNetworkRepositoryTest {
 
                 // 3. Now Simulate the Hang: The OS never sends a "Found Service" event.
                 // Fast forward time past the timeout limit.
-                advanceTimeBy(KtorClientNetworkRepository.TIMEOUT_MS + 1)
+                advanceTimeBy(RemoteClientNetworkRepository.TIMEOUT_MS + 1)
 
                 // 4. Assert Timeout Error
                 val error = awaitItem()
@@ -173,7 +174,7 @@ class KtorClientNetworkRepositoryTest {
             // We do NOT update discoveryStateFlow. It remains Idle.
 
             // Fast forward time
-            advanceTimeBy(KtorClientNetworkRepository.TIMEOUT_MS + 1)
+            advanceTimeBy(RemoteClientNetworkRepository.TIMEOUT_MS + 1)
 
             val error = awaitItem()
             assertTrue(error is ClientState.Error)

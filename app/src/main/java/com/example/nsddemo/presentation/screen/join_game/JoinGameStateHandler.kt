@@ -1,7 +1,7 @@
 package com.example.nsddemo.presentation.screen.join_game
 
 import com.example.nsddemo.data.repository.GameRepository
-import com.example.nsddemo.domain.use_case.ServerGameStateManager
+import com.example.nsddemo.domain.legacy.ServerGameStateManager
 import com.example.nsddemo.presentation.util.BaseGameStateHandler
 
 class JoinGameStateHandler(

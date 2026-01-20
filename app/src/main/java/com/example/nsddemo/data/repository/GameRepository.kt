@@ -4,7 +4,7 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.example.nsddemo.core.util.GameState
 import com.example.nsddemo.data.util.GameStateValidator
-import com.example.nsddemo.domain.model.GameData
+import com.example.nsddemo.domain.legacy.GameData
 import com.example.nsddemo.domain.model.Player
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

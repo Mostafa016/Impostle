@@ -1,7 +1,7 @@
 package com.example.nsddemo.presentation.util
 
 import com.example.nsddemo.data.repository.GameRepository
-import com.example.nsddemo.domain.use_case.ServerGameStateManager
+import com.example.nsddemo.domain.legacy.ServerGameStateManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

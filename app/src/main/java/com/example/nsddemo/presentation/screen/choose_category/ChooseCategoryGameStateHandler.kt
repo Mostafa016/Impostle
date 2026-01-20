@@ -6,7 +6,7 @@ import com.example.nsddemo.core.util.GameState
 import com.example.nsddemo.data.local.network.socket.Server
 import com.example.nsddemo.data.repository.GameRepository
 import com.example.nsddemo.data.util.InvalidStateException
-import com.example.nsddemo.domain.use_case.ServerGameStateManager
+import com.example.nsddemo.domain.legacy.ServerGameStateManager
 import com.example.nsddemo.presentation.util.BaseGameStateHandler
 
 class ChooseCategoryGameStateHandler(

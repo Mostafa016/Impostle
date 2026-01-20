@@ -1,6 +1,7 @@
-package com.example.nsddemo.domain.model
+package com.example.nsddemo.domain.legacy
 
-import com.example.nsddemo.domain.util.Categories
+import com.example.nsddemo.domain.model.Categories
+import com.example.nsddemo.domain.model.Player
 import com.example.nsddemo.presentation.util.PlayerColors
 import com.example.nsddemo.presentation.util.toPlayerColors
 

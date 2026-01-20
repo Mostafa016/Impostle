@@ -148,6 +148,7 @@ class KtorSocketServer @Inject constructor(private val wifiHelper: WifiHelper) :
             clientConnections[clientId] = connection
 
             // Launch a dedicated reader job for this client
+            _connectionEvents.emit(ConnectionEvent.Connected(clientId))
             val clientJob = launch { launchClientReadLoop(clientId, connection) }
             clientJobs[clientId] = clientJob
         }
@@ -162,7 +163,6 @@ class KtorSocketServer @Inject constructor(private val wifiHelper: WifiHelper) :
                     break // Exit loop on clean disconnect
                 }
                 Log.d(TAG, "Server received from $clientId: $line")
-                _connectionEvents.emit(ConnectionEvent.Connected(clientId))
                 _messageEvent.emit(MessageEvent.Received(clientId, line))
             }
         } catch (e: CancellationException) {

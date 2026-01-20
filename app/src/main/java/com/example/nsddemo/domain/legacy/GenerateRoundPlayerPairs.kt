@@ -1,4 +1,4 @@
-package com.example.nsddemo.domain.util
+package com.example.nsddemo.domain.legacy
 
 import com.example.nsddemo.domain.model.Player
 

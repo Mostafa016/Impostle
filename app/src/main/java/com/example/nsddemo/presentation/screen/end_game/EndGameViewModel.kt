@@ -8,7 +8,7 @@ import com.example.nsddemo.core.util.GameState
 import com.example.nsddemo.data.local.network.NSDHelper
 import com.example.nsddemo.data.local.network.socket.Server
 import com.example.nsddemo.data.repository.GameRepository
-import com.example.nsddemo.domain.model.GameData
+import com.example.nsddemo.domain.legacy.GameData
 import com.example.nsddemo.presentation.util.Routes
 import com.example.nsddemo.presentation.util.UiEvent
 import kotlinx.coroutines.flow.MutableSharedFlow

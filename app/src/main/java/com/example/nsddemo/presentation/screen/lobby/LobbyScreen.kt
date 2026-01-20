@@ -27,8 +27,8 @@ import androidx.navigation.NavHostController
 import com.example.nsddemo.R
 import com.example.nsddemo.core.util.Debugging
 import com.example.nsddemo.core.util.GameState
+import com.example.nsddemo.domain.model.Categories
 import com.example.nsddemo.domain.model.Player
-import com.example.nsddemo.domain.util.Categories
 import com.example.nsddemo.presentation.components.DefaultButton
 import com.example.nsddemo.presentation.screen.lobby.components.CategoryText
 import com.example.nsddemo.presentation.screen.lobby.components.GameCodeText

@@ -1,8 +1,25 @@
 package com.example.nsddemo.domain.model
 
+import kotlinx.serialization.Serializable
 import kotlin.reflect.KClass
 
 // 1. The Root FSM Interface
+
+//region Marker Interfaces (Logical Grouping)
+/** Indicates the app is connected to a session (Lobby or Game) */
+interface Connected : GamePhase
+
+/** Indicates the game loop is active (Prevent Back Button, Keep Screen On) */
+interface InGame : GamePhase, Connected
+
+/**
+ * Marker for phases where a missing player breaks the game flow.
+ * Disconnects here trigger PAUSE. Disconnects elsewhere trigger DELETE.
+ */
+interface Active : GamePhase, InGame
+//endregion
+
+@Serializable
 sealed interface GamePhase {
     val validNextStates: Set<KClass<out GamePhase>>
 
@@ -17,41 +34,63 @@ sealed interface GamePhase {
     private fun isTransitionValid(newState: GamePhase): Boolean {
         return newState::class in validNextStates
     }
+
+    //region Phases
+    @Serializable
+    data object Idle : GamePhase {
+        override val validNextStates = setOf(Lobby::class)
+    }
+
+    @Serializable
+    data object Lobby : GamePhase, Connected {
+        override val validNextStates = setOf(Idle::class, RoleDistribution::class)
+    }
+
+    @Serializable
+    data object RoleDistribution : GamePhase, Active {
+        override val validNextStates = setOf(InRound::class, Idle::class)
+    }
+
+    @Serializable
+    data object InRound : GamePhase, Active {
+        override val validNextStates = setOf(RoundReplayChoice::class, Idle::class)
+    }
+
+    @Serializable
+    data object RoundReplayChoice : GamePhase, Active {
+        override val validNextStates = setOf(GameVoting::class, InRound::class, Idle::class)
+    }
+
+    @Serializable
+    data object GameVoting : GamePhase, Active {
+        override val validNextStates = setOf(GameResults::class, Idle::class)
+    }
+
+    @Serializable
+    data object GameResults : GamePhase, Active {
+        override val validNextStates = setOf(GameReplayChoice::class, Idle::class)
+    }
+
+    @Serializable
+    data object GameReplayChoice : GamePhase, Active {
+        override val validNextStates = setOf(Lobby::class, Idle::class)
+    }
+
+    @Serializable
+    data object Paused : GamePhase, Connected {
+        override val validNextStates: Set<KClass<out GamePhase>>
+            get() = setOf(
+                // Resuming
+                RoleDistribution::class,
+                InRound::class,
+                RoundReplayChoice::class,
+                GameVoting::class,
+                GameResults::class,
+
+                // End game
+                Idle::class
+            )
+    }
+    //endregion
 }
 
-// 2. The Marker Interfaces (Logical Grouping)
-/** Indicates the app is connected to a session (Lobby or Game) */
-interface Connected : GamePhase
-
-/** Indicates the game loop is active (Prevent Back Button, Keep Screen On) */
-interface InGame : GamePhase, Connected
-
-// 3. The States
-data object Idle : GamePhase {
-    override val validNextStates = setOf(Lobby::class)
-}
-
-data object Lobby : GamePhase, Connected {
-    override val validNextStates = setOf(Idle::class, CategorySelection::class)
-}
-
-data object CategorySelection : GamePhase, Connected {
-    override val validNextStates = setOf(Lobby::class, RoleDistribution::class, Idle::class)
-}
-
-data object RoleDistribution : GamePhase, InGame {
-    override val validNextStates = setOf(RoundQuestions::class, Idle::class)
-}
-
-data object RoundQuestions : GamePhase, InGame {
-    override val validNextStates = setOf(RoundVoting::class, Idle::class)
-}
-
-data object RoundVoting : GamePhase, InGame {
-    override val validNextStates = setOf(RoundResults::class, Idle::class)
-}
-
-data object RoundResults : GamePhase, InGame {
-    override val validNextStates = setOf(Lobby::class, RoundQuestions::class, Idle::class)
-    // Note: To "Replay", we go back to Lobby or start Questions again.
-}

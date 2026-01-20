@@ -10,10 +10,10 @@ import com.example.nsddemo.data.local.network.NSDHelper
 import com.example.nsddemo.data.local.network.socket.Client
 import com.example.nsddemo.data.repository.GameRepository
 import com.example.nsddemo.data.util.KtorSocketUtil.writeLineUtf8
-import com.example.nsddemo.domain.model.GameData
+import com.example.nsddemo.domain.legacy.GameData
+import com.example.nsddemo.domain.model.Categories
 import com.example.nsddemo.domain.model.Player
 import com.example.nsddemo.domain.repository.ClientNetworkRepository
-import com.example.nsddemo.domain.util.Categories
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken

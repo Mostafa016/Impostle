@@ -1,11 +1,10 @@
 package com.example.nsddemo.data.local.network.repository
 
 import com.example.nsddemo.data.repository.GameSessionRepositoryImpl
-import com.example.nsddemo.domain.model.Idle
-import com.example.nsddemo.domain.model.Lobby
+import com.example.nsddemo.domain.model.GamePhase
 import com.example.nsddemo.domain.model.NewGameData
 import com.example.nsddemo.domain.model.Player
-import com.example.nsddemo.domain.model.RoundQuestions
+import com.example.nsddemo.domain.model.RoundData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.joinAll
@@ -14,6 +13,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -31,8 +31,11 @@ class GameSessionRepositoryTest {
     // --- State Initialization Tests ---
     @Test
     fun `GIVEN new repository WHEN checked THEN starts in Idle state with empty data`() {
-        assertEquals("Initial state should be Idle", Idle, repository.gameState.value)
+        assertEquals("Initial state should be Idle", GamePhase.Idle, repository.gameState.value)
         assertEquals("Initial data should be empty", NewGameData(), repository.gameData.value)
+
+        // Verify RoundData is Idle by default
+        assertTrue(repository.gameData.value.roundData is RoundData.Idle)
     }
 
     // --- Data Update Tests ---
@@ -58,20 +61,31 @@ class GameSessionRepositoryTest {
             // Arrange
             val numberOfUpdates = 100
 
-            // We use 'currentTurnIndex' as a counter to verify atomic accumulation
-            assertEquals(0, repository.gameData.value.currentPairIndex)
+            // Initialize with QuestionRoundData so we have an index to increment
+            repository.updateGameData {
+                it.copy(
+                    roundData = RoundData.QuestionRoundData(
+                        roundPairs = emptyList(),
+                        currentPairIndex = 0
+                    )
+                )
+            }
 
             // Act
             // Switch to Dispatchers.Default to ensure we are using a REAL thread pool.
-            // runTest's standard dispatcher is single-threaded, which wouldn't trigger race conditions.
             withContext(Dispatchers.Default) {
                 val jobs = List(numberOfUpdates) {
                     launch {
                         repository.updateGameData { oldData ->
-                            // This lambda runs inside the spin-lock.
-                            // Even if multiple threads enter here, only one wins,
-                            // and others re-run with the updated data.
-                            oldData.copy(currentPairIndex = oldData.currentPairIndex + 1)
+                            // This lambda runs inside the spin-lock/mutex.
+                            // We cast safely here because we know the state is QuestionRoundData
+                            val currentRound = oldData.roundData as RoundData.QuestionRoundData
+
+                            oldData.copy(
+                                roundData = currentRound.copy(
+                                    currentPairIndex = currentRound.currentPairIndex + 1
+                                )
+                            )
                         }
                     }
                 }
@@ -79,11 +93,13 @@ class GameSessionRepositoryTest {
             }
 
             // Assert
+            val finalRoundData = repository.gameData.value.roundData as RoundData.QuestionRoundData
+
             // If race conditions existed, this number would be < 100 (lost updates)
             assertEquals(
                 "Expected $numberOfUpdates incremental updates",
                 numberOfUpdates,
-                repository.gameData.value.currentPairIndex
+                finalRoundData.currentPairIndex
             )
         }
 
@@ -91,22 +107,22 @@ class GameSessionRepositoryTest {
     @Test
     fun `GIVEN Idle state WHEN updating to Lobby (Valid) THEN state changes successfully`() {
         // Idle -> Lobby is valid
-        repository.updateGameState(Lobby)
-        assertEquals(Lobby, repository.gameState.value)
+        repository.updateGamePhase(GamePhase.Lobby)
+        assertEquals(GamePhase.Lobby, repository.gameState.value)
     }
 
     @Test
-    fun `GIVEN Idle state WHEN updating to RoundQuestions (Invalid) THEN throws IllegalStateException`() {
-        // Idle -> RoundQuestions is NOT allowed in GameState.validNextStates
+    fun `GIVEN Idle state WHEN updating to InRound (Invalid) THEN throws IllegalStateException`() {
+        // Idle -> InRound is NOT allowed in GamePhase.validNextStates
 
-        val exception = assertThrows(IllegalStateException::class.java) {
-            repository.updateGameState(RoundQuestions)
+        assertThrows(IllegalStateException::class.java) {
+            repository.updateGamePhase(GamePhase.InRound)
         }
 
         // Verify the state remains unchanged
         assertEquals(
             "State should stay Idle after failed transition",
-            Idle,
+            GamePhase.Idle,
             repository.gameState.value
         )
     }
@@ -114,11 +130,11 @@ class GameSessionRepositoryTest {
     @Test
     fun `GIVEN Lobby state WHEN updating to Lobby (Self-Transition) THEN throws IllegalStateException`() {
         // Transition to Lobby first
-        repository.updateGameState(Lobby)
+        repository.updateGamePhase(GamePhase.Lobby)
 
         // Update to Lobby again
         assertThrows(IllegalStateException::class.java) {
-            repository.updateGameState(Lobby)
+            repository.updateGamePhase(GamePhase.Lobby)
         }
     }
 
@@ -126,16 +142,26 @@ class GameSessionRepositoryTest {
     @Test
     fun `GIVEN active game state WHEN reset is called THEN state becomes Idle and data is cleared`() {
         // Arrange: Dirty the state
-        repository.updateGameState(Lobby)
-        repository.updateGameData { oldGameData -> oldGameData.copy(localPlayerId = "123") }
-        repository.updateGameData { it.copy(gameCode = "ABCD") }
+        repository.updateGamePhase(GamePhase.Lobby)
+        repository.updateGameData { oldGameData ->
+            oldGameData.copy(
+                localPlayerId = "123",
+                gameCode = "ABCD",
+                // Set round data to something other than Idle
+                roundData = RoundData.QuestionRoundData(emptyList(), 5)
+            )
+        }
 
         // Act
         repository.reset()
 
         // Assert
-        assertEquals("State should be reset to Idle", Idle, repository.gameState.value)
+        assertEquals("State should be reset to Idle", GamePhase.Idle, repository.gameState.value)
         assertEquals("Data should be reset to default", NewGameData(), repository.gameData.value)
         assertEquals("Local Player ID should be empty", "", repository.gameData.value.localPlayerId)
+        assertTrue(
+            "RoundData should be reset to Idle",
+            repository.gameData.value.roundData is RoundData.Idle
+        )
     }
 }

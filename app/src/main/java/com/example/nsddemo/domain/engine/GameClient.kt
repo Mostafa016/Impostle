@@ -1,0 +1,141 @@
+package com.example.nsddemo.domain.engine
+
+import com.example.nsddemo.domain.logic.ClientStateReducer
+import com.example.nsddemo.domain.model.ClientEvent
+import com.example.nsddemo.domain.model.ClientMessage
+import com.example.nsddemo.domain.model.ClientState
+import com.example.nsddemo.domain.model.GameCategory
+import com.example.nsddemo.domain.model.ServerMessage
+import com.example.nsddemo.domain.repository.ClientNetworkRepository
+import com.example.nsddemo.domain.repository.GameSessionRepository
+import com.example.nsddemo.domain.util.GameFlowRegistry
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
+
+class GameClient @AssistedInject constructor(
+    private val gameSessionRepository: GameSessionRepository,
+    @Assisted private val clientNetworkRepository: ClientNetworkRepository
+) {
+    val gameData = gameSessionRepository.gameData
+    val gameState = gameSessionRepository.gameState
+
+    val clientState = clientNetworkRepository.clientState
+
+    private val _clientEvent = MutableSharedFlow<ClientEvent>()
+    val clientEvent = _clientEvent.asSharedFlow()
+
+    suspend fun start(gameCode: String) = coroutineScope {
+        val listeningJob = launch(start = CoroutineStart.UNDISPATCHED) { startListening() }
+
+        clientNetworkRepository.connect(gameCode)
+
+        try {
+            withTimeout(TIMEOUT_MS) {
+                clientState.first { it is ClientState.Connected }
+            }
+        } catch (e: TimeoutCancellationException) {
+            listeningJob.cancel()
+            stop()
+        }
+    }
+
+    private suspend fun startListening() {
+        clientNetworkRepository.incomingMessages.collect { (_, message) ->
+            handleServerMessage(message)
+        }
+    }
+
+    private suspend fun handleServerMessage(message: ServerMessage) {
+        // A. Update Data
+        gameSessionRepository.updateGameData { currentData ->
+            ClientStateReducer.reduce(currentData, message)
+        }
+
+        // B. Update Phase
+        val nextPhase = GameFlowRegistry.getTransitionFor(message)
+        if (nextPhase != null) {
+            gameSessionRepository.updateGamePhase(nextPhase)
+        }
+
+        // C. Emit Domain Events
+        when (message) {
+            is ServerMessage.GameFull -> _clientEvent.emit(ClientEvent.LobbyFull)
+            is ServerMessage.GameAlreadyStarted -> _clientEvent.emit(ClientEvent.GameAlreadyStarted)
+            is ServerMessage.PlayerDisconnected -> _clientEvent.emit(ClientEvent.PlayerLeft(message.playerId))
+            is ServerMessage.PlayerReconnected -> _clientEvent.emit(
+                ClientEvent.PlayerRejoined(
+                    message.player.id
+                )
+            )
+
+            else -> {}
+        }
+    }
+
+    //region --- Actions ---
+    suspend fun registerPlayer(name: String, playerId: String) {
+        clientNetworkRepository.sendToServer(ClientMessage.RegisterPlayer(name, playerId))
+    }
+
+    suspend fun selectCategory(category: GameCategory) {
+        clientNetworkRepository.sendToServer(ClientMessage.RequestSelectCategory(category))
+    }
+
+    suspend fun startGame() {
+        clientNetworkRepository.sendToServer(ClientMessage.RequestStartGame)
+    }
+
+    suspend fun confirmRole() {
+        clientNetworkRepository.sendToServer(ClientMessage.ConfirmRoleReceived)
+    }
+
+    suspend fun endTurn() {
+        clientNetworkRepository.sendToServer(ClientMessage.EndTurn)
+    }
+
+    suspend fun startVote() {
+        clientNetworkRepository.sendToServer(ClientMessage.RequestStartVote)
+    }
+
+    suspend fun replayRound() {
+        clientNetworkRepository.sendToServer(ClientMessage.RequestReplayRound)
+    }
+
+    suspend fun submitVote(targetPlayerId: String) {
+        clientNetworkRepository.sendToServer(ClientMessage.SubmitVote(targetPlayerId))
+    }
+
+    suspend fun continueToGameChoice() {
+        clientNetworkRepository.sendToServer(ClientMessage.RequestContinueToGameChoice)
+    }
+
+    suspend fun replayGame() {
+        clientNetworkRepository.sendToServer(ClientMessage.RequestReplayGame)
+    }
+
+    suspend fun endGame() {
+        clientNetworkRepository.sendToServer(ClientMessage.RequestEndGame)
+    }
+    //endregion
+
+    suspend fun stop() {
+        gameSessionRepository.reset()
+        clientNetworkRepository.disconnect()
+    }
+
+    companion object {
+        const val TIMEOUT_MS = 7_000L
+    }
+
+    interface GameClientFactory {
+        fun create(clientNetworkRepository: ClientNetworkRepository): GameClient
+    }
+}
