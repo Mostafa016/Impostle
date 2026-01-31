@@ -1,5 +1,7 @@
 package com.example.nsddemo.domain.engine
 
+import android.util.Log
+import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.domain.logic.ClientStateReducer
 import com.example.nsddemo.domain.model.ClientEvent
 import com.example.nsddemo.domain.model.ClientMessage
@@ -10,6 +12,7 @@ import com.example.nsddemo.domain.repository.ClientNetworkRepository
 import com.example.nsddemo.domain.repository.GameSessionRepository
 import com.example.nsddemo.domain.util.GameFlowRegistry
 import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.TimeoutCancellationException
@@ -25,17 +28,23 @@ class GameClient @AssistedInject constructor(
     @Assisted private val clientNetworkRepository: ClientNetworkRepository
 ) {
     val gameData = gameSessionRepository.gameData
-    val gameState = gameSessionRepository.gameState
+    val gamePhase = gameSessionRepository.gameState
 
     val clientState = clientNetworkRepository.clientState
 
     private val _clientEvent = MutableSharedFlow<ClientEvent>()
     val clientEvent = _clientEvent.asSharedFlow()
 
-    suspend fun start(gameCode: String) = coroutineScope {
+    suspend fun start(gameCode: String, playerId: String) = coroutineScope {
+        gameSessionRepository.updateGameData {
+            it.copy(
+                gameCode = gameCode,
+                localPlayerId = playerId
+            )
+        }
         val listeningJob = launch(start = CoroutineStart.UNDISPATCHED) { startListening() }
 
-        clientNetworkRepository.connect(gameCode)
+        launch { clientNetworkRepository.connect(gameCode) }
 
         try {
             withTimeout(TIMEOUT_MS) {
@@ -48,20 +57,26 @@ class GameClient @AssistedInject constructor(
     }
 
     private suspend fun startListening() {
+        Log.d(TAG, "GameClient: startListening STARTED")
         clientNetworkRepository.incomingMessages.collect { (_, message) ->
+            Log.d(TAG, "GameClient: Received message $message")
             handleServerMessage(message)
         }
+        Log.d(TAG, "GameClient: startListening ENDED")
     }
 
     private suspend fun handleServerMessage(message: ServerMessage) {
         // A. Update Data
         gameSessionRepository.updateGameData { currentData ->
-            ClientStateReducer.reduce(currentData, message)
+            val gameData = ClientStateReducer.reduce(currentData, message)
+            Log.i(TAG, "GameClient: gameData after $message: $gameData")
+            gameData
         }
 
         // B. Update Phase
         val nextPhase = GameFlowRegistry.getTransitionFor(message)
-        if (nextPhase != null) {
+        if (nextPhase != null && nextPhase != gamePhase.value) {
+            Log.i(TAG, "GameClient: gamePhase after $message: $nextPhase")
             gameSessionRepository.updateGamePhase(nextPhase)
         }
 
@@ -132,9 +147,10 @@ class GameClient @AssistedInject constructor(
     }
 
     companion object {
-        const val TIMEOUT_MS = 7_000L
+        const val TIMEOUT_MS = 15_000L
     }
 
+    @AssistedFactory
     interface GameClientFactory {
         fun create(clientNetworkRepository: ClientNetworkRepository): GameClient
     }

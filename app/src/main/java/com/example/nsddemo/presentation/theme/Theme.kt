@@ -79,10 +79,10 @@ fun AppTheme(
     locale: GameLocales = GameLocales.English,
     content: @Composable () -> Unit
 ) {
-    val colors = if (!useDarkTheme) {
-        LightColors
-    } else {
+    val colors = if (useDarkTheme) {
         DarkColors
+    } else {
+        LightColors
     }
     val appTypography = when (locale) {
         GameLocales.English -> englishTypography

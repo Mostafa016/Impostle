@@ -15,7 +15,7 @@ import com.example.nsddemo.domain.model.Player
 fun PlayersList(modifier: Modifier = Modifier, players: List<Player>) {
     LazyColumn(modifier = modifier) {
         itemsIndexed(players) { index, player ->
-            PlayerNameItem(modifier = Modifier.animateItemPlacement(), player)
+            PlayerNameItem(modifier = Modifier.animateItem(), player)
             if (index != players.lastIndex) Spacer(Modifier.height(8.dp))
         }
     }

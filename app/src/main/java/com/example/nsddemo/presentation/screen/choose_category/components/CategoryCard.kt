@@ -19,15 +19,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.nsddemo.domain.model.Categories
+import com.example.nsddemo.presentation.util.UiCategory
 
 @Composable
-fun CategoryCard(modifier: Modifier, category: Categories, onClick: () -> Unit) {
+fun CategoryCard(modifier: Modifier, category: UiCategory, onClick: () -> Unit) {
     Box(
         modifier
             .clip(CircleShape)
             .paint(
-                painterResource(category.imageDrawableID), contentScale = ContentScale.Crop
+                painterResource(category.iconResId), contentScale = ContentScale.Crop
             )
             .background(
                 Brush.verticalGradient(
@@ -37,10 +37,9 @@ fun CategoryCard(modifier: Modifier, category: Categories, onClick: () -> Unit) 
                 )
             )
             .clickable { onClick() },
-
-        ) {
+    ) {
         Text(
-            stringResource(category.nameResourceId),
+            stringResource(category.nameResId),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 16.dp),

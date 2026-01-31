@@ -9,19 +9,23 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import com.example.nsddemo.presentation.util.PlayerColors
+import com.example.nsddemo.domain.model.NewPlayerColors
+import com.example.nsddemo.presentation.util.toComposeColor
 
 @Composable
 fun AnimatedRandomColorText(text: String, style: TextStyle) {
     val titleTransition = rememberInfiniteTransition(label = "title")
-    val titleAnimationInitialColor = remember { PlayerColors.values().random() }
+    val titleAnimationInitialColor =
+        remember { NewPlayerColors.entries.map { it.toComposeColor() }.random() }
     val titleAnimationTargetColor =
-        remember { PlayerColors.values().filter { it != titleAnimationInitialColor }.random() }
+        remember {
+            NewPlayerColors.entries.map { it.toComposeColor() }
+                .filter { it != titleAnimationInitialColor }.random()
+        }
     val titleColor by titleTransition.animateColor(
-        initialValue = Color(titleAnimationInitialColor.argb),
-        targetValue = Color(titleAnimationTargetColor.argb),
+        initialValue = titleAnimationInitialColor,
+        targetValue = titleAnimationTargetColor,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 5000, delayMillis = 1000),
             repeatMode = RepeatMode.Reverse

@@ -1,63 +1,41 @@
 package com.example.nsddemo.presentation.screen.end_game
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.nsddemo.core.util.GameConstants
-import com.example.nsddemo.core.util.GameState
-import com.example.nsddemo.data.local.network.NSDHelper
-import com.example.nsddemo.data.local.network.socket.Server
-import com.example.nsddemo.data.repository.GameRepository
-import com.example.nsddemo.domain.legacy.GameData
+import com.example.nsddemo.domain.engine.GameSession
+import com.example.nsddemo.presentation.service.SessionController
+import com.example.nsddemo.presentation.util.BaseGameViewModel
 import com.example.nsddemo.presentation.util.Routes
 import com.example.nsddemo.presentation.util.UiEvent
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class EndGameViewModel(
-    private val gameRepository: GameRepository, private val nsdHelper: NSDHelper
-) : ViewModel() {
-    private val isHost = gameRepository.gameData.value.isHost!!
+@HiltViewModel
+class EndGameViewModel @Inject constructor(
+    gameSession: GameSession,
+    private val sessionController: SessionController
+) : BaseGameViewModel(gameSession) {
+    private val _state = MutableStateFlow(EndGameState())
+    val state = _state.asStateFlow()
 
     private val _eventFlow = MutableSharedFlow<UiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
 
     fun onEvent(event: EndGameEvent) {
         when (event) {
-            EndGameEvent.EndGame -> endGame()
+            EndGameEvent.EndGame -> quitToMainMenu()
         }
     }
 
-    private fun endGame() {
-        resetGameParameters()
+    private fun quitToMainMenu() {
+        _state.value = state.value.copy(isGoToMainMenuButtonEnabled = false)
+        sessionController.stopSession()
         viewModelScope.launch {
             _eventFlow.emit(UiEvent.NavigateTo(Routes.MainMenu.route))
-        }
-    }
-
-    private fun resetGameParameters() {
-        if (isHost) {
-            nsdHelper.unregisterService()
-            Server.clients.clear()
-        }
-        gameRepository.updateGameData(
-            GameData(
-                currentPlayer = gameRepository.gameData.value.currentPlayer!!.copy(color = GameConstants.DEFAULT_PLAYER_COLOR),
-            )
-        )
-        gameRepository.updateGameState(
-            GameState.Transitioning(gameRepository.gameState.value, GameState.StartGame)
-        )
-    }
-
-    companion object {
-        @Suppress("UNCHECKED_CAST")
-        class EndGameViewModelFactory(
-            private val gameRepository: GameRepository, private val nsdHelper: NSDHelper
-        ) : ViewModelProvider.NewInstanceFactory() {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                EndGameViewModel(gameRepository, nsdHelper) as T
         }
     }
 }

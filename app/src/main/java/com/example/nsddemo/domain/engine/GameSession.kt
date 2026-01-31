@@ -40,15 +40,15 @@ class GameSession @Inject constructor(
     val sessionState = _sessionState.asStateFlow()
 
     // --- HOST MODE ---
-    suspend fun startHostSession(gameCode: String) = coroutineScope {
+    suspend fun startHostSession(gameCode: String, playerId: String) = coroutineScope {
         reset()
 
         _sessionState.value = SessionState.Connecting
         gameServer = serverProvider.get()
         activeClient = clientFactory.create(loopbackClientRepo)
 
-        launch { gameServer!!.start(gameCode) }
-        launch { activeClient!!.start(gameCode) }
+        launch { gameServer!!.start(gameCode, playerId) }
+        launch { activeClient!!.start(gameCode, playerId) }
 
         try {
             val serverState =
@@ -86,13 +86,13 @@ class GameSession @Inject constructor(
     }
 
     // --- CLIENT MODE ---
-    suspend fun startJoinSession(gameCode: String) = coroutineScope {
+    suspend fun startJoinSession(gameCode: String, playerId: String) = coroutineScope {
         reset()
 
         _sessionState.value = SessionState.Connecting
         activeClient = clientFactory.create(remoteClientRepo)
 
-        launch { activeClient!!.start(gameCode) }
+        launch { activeClient!!.start(gameCode, playerId) }
 
         try {
             val clientState =

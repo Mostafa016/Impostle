@@ -15,6 +15,7 @@ object GameFlowRegistry {
         // Data updates that occur within the Lobby (UI updates, no navigation)
         // PlayerList can also be used to signal players leaving in Lobby
         is ServerMessage.PlayerList -> null
+        is ServerMessage.RegisterHost -> GamePhase.Lobby
         is ServerMessage.CategorySelected -> null
 
         // Trigger to move from Lobby -> Role Distribution

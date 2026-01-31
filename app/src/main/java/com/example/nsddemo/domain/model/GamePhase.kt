@@ -48,32 +48,33 @@ sealed interface GamePhase {
 
     @Serializable
     data object RoleDistribution : GamePhase, Active {
-        override val validNextStates = setOf(InRound::class, Idle::class)
+        override val validNextStates = setOf(InRound::class, Idle::class, Paused::class)
     }
 
     @Serializable
     data object InRound : GamePhase, Active {
-        override val validNextStates = setOf(RoundReplayChoice::class, Idle::class)
+        override val validNextStates = setOf(RoundReplayChoice::class, Idle::class, Paused::class)
     }
 
     @Serializable
     data object RoundReplayChoice : GamePhase, Active {
-        override val validNextStates = setOf(GameVoting::class, InRound::class, Idle::class)
+        override val validNextStates =
+            setOf(GameVoting::class, InRound::class, Idle::class, Paused::class)
     }
 
     @Serializable
     data object GameVoting : GamePhase, Active {
-        override val validNextStates = setOf(GameResults::class, Idle::class)
+        override val validNextStates = setOf(GameResults::class, Idle::class, Paused::class)
     }
 
     @Serializable
     data object GameResults : GamePhase, Active {
-        override val validNextStates = setOf(GameReplayChoice::class, Idle::class)
+        override val validNextStates = setOf(GameReplayChoice::class, Idle::class, Paused::class)
     }
 
     @Serializable
     data object GameReplayChoice : GamePhase, Active {
-        override val validNextStates = setOf(Lobby::class, Idle::class)
+        override val validNextStates = setOf(Lobby::class, Idle::class, Paused::class)
     }
 
     @Serializable

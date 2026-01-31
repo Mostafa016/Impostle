@@ -8,7 +8,7 @@ import com.example.nsddemo.domain.model.NewGameData
 import com.example.nsddemo.domain.model.RoundData
 import com.example.nsddemo.domain.model.ServerMessage
 import com.example.nsddemo.domain.repository.WordRepository
-import jakarta.inject.Inject
+import javax.inject.Inject
 
 class QuestionGameModeStrategy @Inject constructor(wordRepository: WordRepository) :
     BaseGameModeStrategy(wordRepository) {
@@ -25,7 +25,8 @@ class QuestionGameModeStrategy @Inject constructor(wordRepository: WordRepositor
     }
 
     override fun onRoundStart(data: NewGameData): GameStateTransition {
-        val roundData = data.roundData as RoundData.QuestionRoundData
+        val roundData = data.roundData as? RoundData.QuestionRoundData
+            ?: return GameStateTransition.Invalid("Round Data is not QuestionRoundData (It is ${data.roundData})")
 
         return GameStateTransition.Valid(
             data,
@@ -42,12 +43,12 @@ class QuestionGameModeStrategy @Inject constructor(wordRepository: WordRepositor
     }
 
     override fun onTurnEnd(data: NewGameData, playerID: String): GameStateTransition {
-        val roundData = data.roundData as RoundData.QuestionRoundData
-        if (roundData.currentAskerId != playerID) {
-            return GameStateTransition.Invalid("Only the asking player can end turn")
+        val currentRoundData = data.roundData as RoundData.QuestionRoundData
+        if (currentRoundData.currentAskerId != playerID) {
+            return GameStateTransition.Invalid("Only the asking player can end turn: askerId: ${currentRoundData.currentAskerId} playerID: $playerID")
         }
 
-        if (roundData.isLastQuestion) {
+        if (currentRoundData.isLastQuestion) {
             return GameStateTransition.Valid(
                 newGameData = data,
                 newPhase = GamePhase.RoundReplayChoice,
@@ -56,19 +57,18 @@ class QuestionGameModeStrategy @Inject constructor(wordRepository: WordRepositor
         }
 
         val updatedData =
-            data.copy(roundData = roundData.copy(currentPairIndex = roundData.currentPairIndex + 1))
+            data.copy(roundData = currentRoundData.copy(currentPairIndex = currentRoundData.currentPairIndex + 1))
+        val updatedRoundData = updatedData.roundData as RoundData.QuestionRoundData
         return GameStateTransition.Valid(
             updatedData,
             envelopes = listOf(
                 Envelope.Broadcast(
                     ServerMessage.Question(
-                        roundData.currentAskerId!!,
-                        roundData.currentAskedId!!,
+                        updatedRoundData.currentAskerId!!,
+                        updatedRoundData.currentAskedId!!,
                     )
                 )
             )
         )
     }
-
-
 }

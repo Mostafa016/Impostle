@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
@@ -49,8 +50,19 @@ class HostServerNetworkRepository @Inject constructor(
                     try {
                         val message = NetworkJson.decodeFromString<ClientMessage>(event.data)
                         handleIncomingSession(message, TransportEndpoint.Network(event.clientId))
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to parse message from ${event.clientId}: ${e.message}")
+                    } catch (e: SerializationException) {
+                        Log.e(
+                            TAG,
+                            "Failed to parse message from ${event.clientId}: ${e.message},",
+                            e
+                        )
+                        null
+                    } catch (e: IllegalArgumentException) {
+                        Log.e(
+                            TAG,
+                            "Failed to parse message from ${event.clientId}: ${e.message}",
+                            e
+                        )
                         null
                     }
                 },
@@ -141,13 +153,18 @@ class HostServerNetworkRepository @Inject constructor(
 
     override suspend fun sendToPlayer(playerId: String, message: ServerMessage) {
         val transport = sessionManager.getTransport(playerId) ?: return
+        Log.d(TAG, "sendToPlayer: Sending to $playerId")
 
         when (transport) {
-            is TransportEndpoint.Loopback -> loopbackDataSource.serverToClient.emit(
-                LoopbackDataSource.LOCAL_HOST_CLIENT_ID to message
-            )
+            is TransportEndpoint.Loopback -> {
+                Log.d(TAG, "sendToPlayer: [Loopback] Sending to $playerId")
+                loopbackDataSource.serverToClient.emit(
+                    LoopbackDataSource.LOCAL_HOST_CLIENT_ID to message
+                )
+            }
 
             is TransportEndpoint.Network -> {
+                Log.d(TAG, "sendToPlayer: [Remote] Sending to $playerId")
                 socketServer.sendToClient(transport.clientId, NetworkJson.encodeToString(message))
             }
         }

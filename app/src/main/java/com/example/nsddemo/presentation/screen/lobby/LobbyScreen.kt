@@ -1,6 +1,5 @@
 package com.example.nsddemo.presentation.screen.lobby
 
-import android.util.Log
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -23,11 +22,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.nsddemo.R
-import com.example.nsddemo.core.util.Debugging
-import com.example.nsddemo.core.util.GameState
-import com.example.nsddemo.domain.model.Categories
 import com.example.nsddemo.domain.model.Player
 import com.example.nsddemo.presentation.components.DefaultButton
 import com.example.nsddemo.presentation.screen.lobby.components.CategoryText
@@ -36,12 +33,14 @@ import com.example.nsddemo.presentation.screen.lobby.components.PlayerListTitle
 import com.example.nsddemo.presentation.screen.lobby.components.PlayersList
 import com.example.nsddemo.presentation.util.ConditionalComposable
 import com.example.nsddemo.presentation.util.NavigationUtil.popBackStackAndNavigateTo
+import com.example.nsddemo.presentation.util.UiCategory
 import com.example.nsddemo.presentation.util.UiEvent
+import com.example.nsddemo.presentation.util.uiCategory
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun LobbyScreen(
-    viewModel: LobbyViewModel,
+    viewModel: LobbyViewModel = hiltViewModel<LobbyViewModel>(),
     navController: NavHostController,
 ) {
     LaunchedEffect(true) {
@@ -59,11 +58,10 @@ fun LobbyScreen(
     }
     val state = viewModel.state.collectAsState()
     LobbyScreen(
-        hasJoinedGame = viewModel.clientGameState.collectAsState().value is GameState.ClientGameStarted,
         players = state.value.players,
         gameCode = viewModel.gameCode.uppercase(),
         isHost = viewModel.isHost,
-        chosenCategory = state.value.chosenCategory,
+        chosenCategory = state.value.chosenCategory?.uiCategory,
         onChooseCategoryClick = { viewModel.onEvent(LobbyEvent.ChooseCategoryButtonClick) },
         onStartRound = { viewModel.onEvent(LobbyEvent.StartRound) },
         isStartRoundButtonEnabled = state.value.isStartRoundButtonEnabled,
@@ -72,21 +70,14 @@ fun LobbyScreen(
 
 @Composable
 private fun LobbyScreen(
-    hasJoinedGame: Boolean,
     players: List<Player>,
     gameCode: String,
     isHost: Boolean,
-    chosenCategory: Categories? = null,
+    chosenCategory: UiCategory? = null,
     onChooseCategoryClick: () -> Unit,
     onStartRound: () -> Unit,
     isStartRoundButtonEnabled: Boolean,
 ) {
-    if (hasJoinedGame) {
-        LaunchedEffect(Unit) {
-            Log.d(Debugging.TAG, "Joined game")
-            onStartRound()
-        }
-    }
     Column(
         Modifier
             .fillMaxSize()
@@ -115,7 +106,7 @@ private fun LobbyScreen(
             Spacer(modifier = Modifier.height(16.dp))
             GameCodeText(text = gameCode)
             Spacer(modifier = Modifier.height(8.dp))
-            CategoryText(chosenCategory?.nameResourceId?.let { stringResource(it) })
+            CategoryText(chosenCategory?.nameResId?.let { stringResource(it) })
             ConditionalComposable(condition = isHost) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -144,7 +135,6 @@ private fun LobbyScreen(
 @Composable
 private fun LobbyScreenPreview() {
     LobbyScreen(
-        hasJoinedGame = false,
         players = listOf(
             Player("Player_1", "FFFF0000"),
             Player("Player_2", "FF0000FF"),

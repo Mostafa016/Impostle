@@ -22,7 +22,7 @@ class NsdNetworkDiscovery @Inject constructor(private val nsdManager: NsdManager
         _discoveryProcessState.asStateFlow()
 
     private val _discoveredServiceEvent =
-        MutableSharedFlow<NsdDiscoveryEvent>(extraBufferCapacity = 64)
+        MutableSharedFlow<NsdDiscoveryEvent>(replay = 16, extraBufferCapacity = 64)
     override val discoveredServiceEvent: Flow<NsdDiscoveryEvent> =
         _discoveredServiceEvent
 
@@ -36,6 +36,9 @@ class NsdNetworkDiscovery @Inject constructor(private val nsdManager: NsdManager
     }
 
     override fun stopDiscovery() {
+        val discoveryProcessState = discoveryProcessState.value
+        if (discoveryProcessState is NsdDiscoveryState.Stopping || discoveryProcessState is NsdDiscoveryState.Stopped) return
+        _discoveryProcessState.value = NsdDiscoveryState.Stopping
         nsdManager.stopServiceDiscovery(discoveryListener)
     }
 
@@ -69,7 +72,7 @@ class NsdNetworkDiscovery @Inject constructor(private val nsdManager: NsdManager
         }
 
         override fun onDiscoveryStopped(serviceType: String) {
-            Log.i(Debugging.TAG, "Discovery stopped: $serviceType")
+            Log.d(Debugging.TAG, "Discovery stopped: $serviceType")
             _discoveryProcessState.value = NsdDiscoveryState.Stopped(serviceType)
         }
 

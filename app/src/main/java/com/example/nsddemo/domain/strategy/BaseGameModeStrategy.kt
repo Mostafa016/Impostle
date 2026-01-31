@@ -1,5 +1,7 @@
 package com.example.nsddemo.domain.strategy
 
+import android.util.Log
+import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.domain.model.ClientMessage
 import com.example.nsddemo.domain.model.Envelope
 import com.example.nsddemo.domain.model.GameCategory
@@ -32,7 +34,7 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
                 data, playerID
             )
 
-            ClientMessage.ConfirmRoleReceived -> handleRoleConfirm(
+            is ClientMessage.ConfirmRoleReceived -> handleRoleConfirm(
                 data, playerID
             )
 
@@ -66,6 +68,7 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
         data: NewGameData, category: GameCategory, playerID: String
     ): GameStateTransition {
         if (data.hostId != playerID) {
+            Log.i(TAG, "hostId: ${data.hostId} playerID: $playerID")
             return GameStateTransition.Invalid("Only host can choose a category")
         }
 
@@ -194,19 +197,23 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
         val currentGameScores = calculatePlayerScores(
             dataWithVote.votes, dataWithVote.imposterId!!
         )
-        val totalScores = dataWithVote.scores + currentGameScores
-        if (dataWithVote.hasEveryoneVoted) {
+        val totalScores = (dataWithVote.scores.toList() + currentGameScores.toList())
+            .groupBy({ it.first }, { it.second })
+            .map { (key, values) -> key to values.sum() }
+            .toMap()
+        val dataWithScores = dataWithVote.copy(scores = totalScores)
+        if (dataWithScores.hasEveryoneVoted) {
             return GameStateTransition.Valid(
-                newGameData = dataWithVote,
+                newGameData = dataWithScores,
                 newPhase = GamePhase.GameResults,
                 envelopes = listOf(
                     Envelope.Broadcast(
                         ServerMessage.PlayerVoted(playerID, votedPlayerID)
                     ), Envelope.Broadcast(
                         ServerMessage.VoteResult(
-                            voteResult = dataWithVote.votes,
-                            imposterId = dataWithVote.imposterId,
-                            playerScores = totalScores
+                            voteResult = dataWithScores.votes,
+                            imposterId = dataWithScores.imposterId!!,
+                            playerScores = dataWithScores.scores
                         )
                     )
                 )

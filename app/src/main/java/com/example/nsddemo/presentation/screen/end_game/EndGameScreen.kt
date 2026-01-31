@@ -9,11 +9,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.nsddemo.R
 import com.example.nsddemo.presentation.components.DefaultButton
@@ -22,7 +25,10 @@ import com.example.nsddemo.presentation.util.UiEvent
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
-fun EndGameScreen(viewModel: EndGameViewModel, navController: NavHostController) {
+fun EndGameScreen(
+    viewModel: EndGameViewModel = hiltViewModel<EndGameViewModel>(),
+    navController: NavHostController
+) {
     LaunchedEffect(true) {
         viewModel.eventFlow.collectLatest { event ->
             when (event) {
@@ -36,6 +42,7 @@ fun EndGameScreen(viewModel: EndGameViewModel, navController: NavHostController)
             }
         }
     }
+    val state by viewModel.state.collectAsState()
     Column(
         Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -53,6 +60,7 @@ fun EndGameScreen(viewModel: EndGameViewModel, navController: NavHostController)
             onClick = {
                 viewModel.onEvent(EndGameEvent.EndGame)
             },
+            enabled = state.isGoToMainMenuButtonEnabled
         )
     }
 

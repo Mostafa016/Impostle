@@ -15,23 +15,22 @@ import com.example.nsddemo.domain.model.ServerState
 import com.example.nsddemo.domain.model.SystemEvent
 import com.example.nsddemo.domain.repository.ServerNetworkRepository
 import com.example.nsddemo.domain.strategy.GameModeStrategy
-import jakarta.inject.Inject
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
+import javax.inject.Inject
 
 class GameServer @Inject constructor(
     private val serverNetworkRepository: ServerNetworkRepository,
-    private val strategies: Map<GameMode, GameModeStrategy>,
+    private val strategies: Map<GameMode, @JvmSuppressWildcards GameModeStrategy>,
     private val sessionManager: SessionManager
 ) {
     private var gameModeStrategy: GameModeStrategy = strategies[GameMode.Question]!!
@@ -52,7 +51,8 @@ class GameServer @Inject constructor(
             }
         }
 
-    suspend fun start(gameCode: String) = coroutineScope {
+    suspend fun start(gameCode: String, playerId: String) = coroutineScope {
+        masterGameData.update { it.copy(gameCode = gameCode, localPlayerId = playerId) }
         val processingJob = launch(start = CoroutineStart.UNDISPATCHED) { processActions() }
 
         serverNetworkRepository.start(gameCode)
@@ -67,12 +67,21 @@ class GameServer @Inject constructor(
         }
     }
 
-    private suspend fun processActions(): Nothing = coroutineScope {
+    private suspend fun processActions() = coroutineScope {
         merge(serverNetworkRepository.incomingMessages.map { (id, msg) ->
             GameAction.User(id, msg)
-        }, playerDisconnectionEvents).shareIn(this, SharingStarted.WhileSubscribed(5000L))
+        }, playerDisconnectionEvents)
             .collect { action ->
-                processAction(action)
+                try {
+                    // Log that we are attempting to process an action
+                    Log.d(TAG, "GameServer: Processing action: $action")
+                    processAction(action)
+                    Log.d(TAG, "GameServer: Finished processing action: $action")
+                } catch (e: Exception) {
+                    // THIS IS THE CRITICAL LOG
+                    Log.e(TAG, "GameServer: CRITICAL LOGIC CRASH processing $action", e)
+                    throw e // Re-throw to ensure we don't hide the crash, just log it
+                }
             }
     }
 
@@ -80,6 +89,7 @@ class GameServer @Inject constructor(
         val transition = when (action) {
             is GameAction.User -> {
                 if (action.message is ClientMessage.RegisterPlayer) {
+                    Log.d(TAG, "Registering player ${action.playerId}")
                     sessionManager.registerPlayer(
                         data = masterGameData.value,
                         phase = masterGamePhase.value,
@@ -132,6 +142,7 @@ class GameServer @Inject constructor(
     }
 
     suspend fun stop() {
+        Log.d(TAG, "GameServer: Stopping server...")
         masterGameData.value = NewGameData()
         masterGamePhase.value = GamePhase.Lobby
         serverNetworkRepository.stop()

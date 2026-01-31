@@ -16,16 +16,22 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.nsddemo.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel) {
+fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel<SettingsViewModel>()) {
+    val isDarkTheme by viewModel.darkThemeSetting.collectAsState()
+    val language by viewModel.languageSetting.collectAsState()
+    val isDropdownExpanded by viewModel.languageSettingDropdownExpanded.collectAsState()
     Column(
         Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -41,7 +47,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 fontWeight = FontWeight.SemiBold
             )
             Switch(
-                checked = viewModel.darkThemeSetting.value,
+                checked = isDarkTheme,
                 onCheckedChange = viewModel::onThemeChange
             )
         }
@@ -58,27 +64,27 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             )
             ExposedDropdownMenuBox(
                 modifier = Modifier.weight(1.25f),
-                expanded = viewModel.languageSettingDropdownExpanded.value,
+                expanded = isDropdownExpanded,
                 onExpandedChange = viewModel::onLanguageDropDownExpandedChange
             ) {
                 TextField(
                     modifier = Modifier.menuAnchor(),
                     readOnly = true,
-                    value = stringResource(viewModel.languageSetting.value.languageStringResId),
+                    value = stringResource(language.languageStringResId),
                     onValueChange = { },
                     label = { Text(stringResource(R.string.language)) },
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(
-                            expanded = viewModel.languageSettingDropdownExpanded.value
+                            expanded = isDropdownExpanded
                         )
                     },
                     colors = ExposedDropdownMenuDefaults.textFieldColors()
                 )
                 ExposedDropdownMenu(
-                    expanded = viewModel.languageSettingDropdownExpanded.value,
+                    expanded = isDropdownExpanded,
                     onDismissRequest = viewModel::onLanguageDropDownDismiss
                 ) {
-                    for (locale in GameLocales.values()) {
+                    for (locale in GameLocales.entries) {
                         DropdownMenuItem(
                             text = { Text(text = stringResource(locale.languageStringResId)) },
                             onClick = { viewModel.onLanguageChange(locale) },

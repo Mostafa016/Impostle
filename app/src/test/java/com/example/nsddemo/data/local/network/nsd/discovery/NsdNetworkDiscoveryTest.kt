@@ -41,7 +41,7 @@ class NsdNetworkDiscoveryTest {
         // Capture the listener whenever discoverServices is called
         every {
             nsdManagerMock.discoverServices(
-                any(),
+                any<String>(),
                 any(),
                 capture(discoveryListenerSlot)
             )

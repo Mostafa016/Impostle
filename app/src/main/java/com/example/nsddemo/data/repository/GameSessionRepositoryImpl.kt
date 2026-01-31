@@ -3,10 +3,10 @@ package com.example.nsddemo.data.repository
 import com.example.nsddemo.domain.model.GamePhase
 import com.example.nsddemo.domain.model.NewGameData
 import com.example.nsddemo.domain.repository.GameSessionRepository
-import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import javax.inject.Inject
 
 class GameSessionRepositoryImpl @Inject constructor() : GameSessionRepository {
     private val _gameData: MutableStateFlow<NewGameData> = MutableStateFlow(NewGameData())

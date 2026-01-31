@@ -1,134 +1,97 @@
 package com.example.nsddemo.presentation.screen.question
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.nsddemo.core.util.GameState
-import com.example.nsddemo.data.repository.GameRepository
-import com.example.nsddemo.presentation.util.GameStateHandler
+import com.example.nsddemo.domain.engine.GameSession
+import com.example.nsddemo.domain.model.GamePhase
+import com.example.nsddemo.domain.model.Player
+import com.example.nsddemo.domain.model.RoundData
+import com.example.nsddemo.presentation.util.BaseGameViewModel
 import com.example.nsddemo.presentation.util.Routes
 import com.example.nsddemo.presentation.util.UiEvent
-import kotlinx.coroutines.Dispatchers
+import com.example.nsddemo.presentation.util.uiCategory
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class QuestionViewModel(
-    private val gameRepository: GameRepository, private val gameStateHandler: GameStateHandler
-) : ViewModel() {
-    private val gameData = gameRepository.gameData
-    private val gameState = gameRepository.gameState
-
-    private val currentPlayer = gameData.value.currentPlayer!!
-    val categoryResID = gameData.value.category!!.nameResourceId
-    val wordResID = gameData.value.wordResID
-    val isImposter = gameData.value.isImposter!!
-
-    private val _state = (gameState.value as GameState.AskQuestion).let { askQuestionGameState ->
-        MutableStateFlow(
-            QuestionState(
-                isWordDialogVisible = false,
-                askingPlayer = askQuestionGameState.asker,
-                askedPlayer = askQuestionGameState.asked,
-                isCurrentPlayerAsking = askQuestionGameState.asker == currentPlayer,
-                isCurrentPlayerAsked = askQuestionGameState.asked == currentPlayer
-            )
-        )
-    }
-    val state = _state.asStateFlow()
+@HiltViewModel
+class QuestionViewModel @Inject constructor(
+    gameSession: GameSession
+) : BaseGameViewModel(gameSession) {
 
     private val _eventFlow = MutableSharedFlow<UiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
 
-    init {
-        gameRepository.setAllowedStates(
-            setOf(
-                GameState.AskQuestion::class.simpleName!!,
-                GameState.ConfirmCurrentPlayerQuestion::class.simpleName!!,
-                GameState.ChooseExtraQuestions::class.simpleName!!
-            )
+    // --- Static Data (Fetched Synchronously) ---
+    // Safe because we only navigate here after the data is set in the previous phase
+    val categoryNameResId: Int = gameData.value.category!!.uiCategory.nameResId
+    val word: String? = gameData.value.word?.lowercase()
+    val isImposter: Boolean = gameData.value.isImposter
+
+    // --- Dynamic Data (Changes per turn) ---
+    private val _uiState = MutableStateFlow(
+        QuestionState(
+            askingPlayer = Player("Loading...", "FF000000"),
+            askedPlayer = Player("Loading...", "FF000000"),
+            isCurrentPlayerAsking = false,
+            isCurrentPlayerAsked = false
         )
-        viewModelScope.launch(Dispatchers.IO) {
-            if (gameRepository.gameData.value.isHost!!) {
-                launch {
-                    gameStateHandler.handleGameStateChanges()
+    )
+    val state = _uiState.asStateFlow()
+
+    init {
+        // Observe Round Changes (Next Question)
+        viewModelScope.launch {
+            gameData.collect { data ->
+                val round = data.roundData
+                if (round is RoundData.QuestionRoundData) {
+                    val askerId = round.currentAskerId!!
+                    val askedId = round.currentAskedId!!
+
+                    val asker = data.players[askerId]!!
+                    val asked = data.players[askedId]!!
+                    val localId = data.localPlayerId
+
+                    _uiState.value = _uiState.value.copy(
+                        askingPlayer = asker,
+                        askedPlayer = asked,
+                        isCurrentPlayerAsking = data.isMyTurn,
+                        isCurrentPlayerAsked = askedId == localId,
+                        isDoneAskingQuestionClicked = false
+                    )
                 }
             }
-            listenToGameStateChanges()
+        }
+
+        // Navigation
+        viewModelScope.launch {
+            gamePhase.collectLatest { phase ->
+                if (phase is GamePhase.RoundReplayChoice) {
+                    _eventFlow.emit(UiEvent.NavigateTo(Routes.ReplayRoundChoice.route))
+                }
+            }
         }
     }
 
     fun onEvent(event: QuestionEvent) {
         when (event) {
-            QuestionEvent.ShowWordDialog -> showWordDialog()
-            QuestionEvent.DismissWordDialog -> dismissWordDialog()
-            QuestionEvent.ConfirmWordDialog -> confirmWordDialog()
-            QuestionEvent.FinishAskingYourQuestion -> finishAskingYourQuestion()
-        }
-    }
-
-    private suspend fun listenToGameStateChanges() {
-        gameState.collect { gameState ->
-            when (gameState) {
-                is GameState.AskQuestion -> {
-                    _state.value = _state.value.copy(
-                        askingPlayer = gameState.asker,
-                        askedPlayer = gameState.asked,
-                        isCurrentPlayerAsking = gameState.asker == currentPlayer,
-                        isCurrentPlayerAsked = gameState.asked == currentPlayer
-                    )
-                }
-
-                is GameState.ChooseExtraQuestions -> {
-                    if (gameRepository.gameData.value.isHost!!) {
-                        gameStateHandler.lastStateHandlerListener.first { it }
-                    }
-                    _eventFlow.emit(UiEvent.NavigateTo(Routes.ChooseExtraQuestions.route))
-                }
-
-                else -> {
-                    // Do nothing
-                }
+            QuestionEvent.ShowWordDialog -> {
+                _uiState.value = _uiState.value.copy(isWordDialogVisible = true)
             }
-        }
-    }
 
-    private fun showWordDialog() {
-        _state.value = _state.value.copy(isWordDialogVisible = true)
-    }
+            QuestionEvent.DismissWordDialog, QuestionEvent.ConfirmWordDialog -> {
+                _uiState.value = _uiState.value.copy(isWordDialogVisible = false)
+            }
 
-    private fun dismissWordDialog() {
-        _state.value = _state.value.copy(isWordDialogVisible = false)
-    }
-
-    private fun confirmWordDialog() {
-        _state.value = _state.value.copy(isWordDialogVisible = false)
-    }
-
-    private fun finishAskingYourQuestion() {
-        _state.value = state.value.copy(
-            isDoneAskingQuestionClicked = true
-        )
-        (gameRepository.gameState.value as GameState.AskQuestion).also { currentAskQuestionState ->
-            gameRepository.updateGameState(
-                GameState.ConfirmCurrentPlayerQuestion(
-                    currentAskQuestionState
-                )
-            )
-        }
-    }
-
-    companion object {
-        @Suppress("UNCHECKED_CAST")
-        class QuestionViewModelFactory(
-            private val gameRepository: GameRepository,
-            private val gameStateHandler: GameStateHandler
-        ) : ViewModelProvider.NewInstanceFactory() {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return QuestionViewModel(gameRepository, gameStateHandler) as T
+            QuestionEvent.FinishAskingYourQuestion -> {
+                _uiState.value = _uiState.value.copy(isDoneAskingQuestionClicked = true)
+                viewModelScope.launch {
+                    activeClient?.endTurn()
+                }
             }
         }
     }

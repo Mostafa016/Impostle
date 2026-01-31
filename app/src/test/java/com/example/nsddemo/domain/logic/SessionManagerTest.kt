@@ -72,7 +72,8 @@ class SessionManagerTest {
         assertTrue(result is GameStateTransition.Valid)
         val valid = result as GameStateTransition.Valid
         assertEquals(2, valid.newGameData.players.size)
-        assertTrue(valid.envelopes.first() is Envelope.Broadcast)
+        assertTrue(valid.envelopes[0] is Envelope.Unicast)
+        assertTrue(valid.envelopes[1] is Envelope.Broadcast)
     }
 
     @Test

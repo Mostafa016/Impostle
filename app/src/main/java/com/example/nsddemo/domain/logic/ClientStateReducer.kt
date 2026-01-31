@@ -14,6 +14,10 @@ object ClientStateReducer {
                 data.copy(players = playerMap)
             }
 
+            is ServerMessage.RegisterHost -> {
+                data.copy(hostId = message.hostId)
+            }
+
             is ServerMessage.CategorySelected -> {
                 data.copy(category = message.category)
             }

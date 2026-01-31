@@ -22,16 +22,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.nsddemo.R
-import com.example.nsddemo.domain.model.Categories
 import com.example.nsddemo.presentation.screen.choose_category.components.CategoryCard
 import com.example.nsddemo.presentation.util.NavigationUtil.popBackStackAndNavigateTo
+import com.example.nsddemo.presentation.util.UiCategory
 import com.example.nsddemo.presentation.util.UiEvent
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
-fun ChooseCategoryScreen(viewModel: ChooseCategoryViewModel, navController: NavHostController) {
+fun ChooseCategoryScreen(
+    viewModel: ChooseCategoryViewModel = hiltViewModel<ChooseCategoryViewModel>(),
+    navController: NavHostController
+) {
     LaunchedEffect(true) {
         viewModel.eventFlow.collectLatest { event ->
             when (event) {
@@ -65,11 +69,11 @@ fun ChooseCategoryScreen(viewModel: ChooseCategoryViewModel, navController: NavH
             horizontalArrangement = spacedBy(16.dp),
             verticalArrangement = spacedBy(16.dp),
         ) {
-            items(Categories.values()) { category ->
+            items(UiCategory.entries.toTypedArray()) { category ->
                 CategoryCard(
                     modifier = Modifier.requiredSize(150.dp),
                     category = category,
-                    onClick = { viewModel.onEvent(ChooseCategoryEvent.CategoryChosen(category)) },
+                    onClick = { viewModel.onEvent(ChooseCategoryEvent.CategoryChosen(category.domainCategory)) },
                 )
             }
         }

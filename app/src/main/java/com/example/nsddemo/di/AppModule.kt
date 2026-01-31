@@ -1,7 +1,6 @@
 package com.example.nsddemo.di
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.net.nsd.NsdManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.datastore.core.DataStore
@@ -9,13 +8,15 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.nsddemo.data.local.network.WifiHelper
 import com.example.nsddemo.data.local.settings.AppLocaleHelper
-import com.example.nsddemo.data.repository.GameRepository
+import com.example.nsddemo.presentation.service.AndroidSessionController
+import com.example.nsddemo.presentation.service.SessionController
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import jakarta.inject.Singleton
+import javax.inject.Singleton
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(
     name = "impostle_game_settings"
@@ -24,18 +25,6 @@ private val Context.settingsDataStore: DataStore<Preferences> by preferencesData
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
-    @Provides
-    @Singleton
-    fun provideSharedPreferences(@ApplicationContext context: Context): SharedPreferences {
-        return context.getSharedPreferences("impostle_game_prefs", Context.MODE_PRIVATE)
-    }
-
-    @Provides
-    @Singleton
-    fun provideGameRepository(sharedPreferences: SharedPreferences): GameRepository {
-        return GameRepository(sharedPreferences)
-    }
-
     @Provides
     @Singleton
     fun provideNsdManager(@ApplicationContext context: Context): NsdManager {
@@ -58,5 +47,15 @@ object AppModule {
     @Singleton
     fun provideAppLocaleHelper(): AppLocaleHelper {
         return AppLocaleHelper()
+    }
+
+    @Module
+    @InstallIn(SingletonComponent::class)
+    abstract class ControllerModule {
+        @Binds
+        @Singleton
+        abstract fun bindSessionController(
+            impl: AndroidSessionController
+        ): SessionController
     }
 }

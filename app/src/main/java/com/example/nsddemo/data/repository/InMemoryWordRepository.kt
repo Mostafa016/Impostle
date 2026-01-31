@@ -2,8 +2,9 @@ package com.example.nsddemo.data.repository
 
 import com.example.nsddemo.domain.model.GameCategory
 import com.example.nsddemo.domain.repository.WordRepository
+import javax.inject.Inject
 
-class InMemoryWordRepository : WordRepository {
+class InMemoryWordRepository @Inject constructor() : WordRepository {
     override fun getWordsForCategory(category: GameCategory): List<String> {
         return when (category) {
             GameCategory.ANIMALS -> listOf(

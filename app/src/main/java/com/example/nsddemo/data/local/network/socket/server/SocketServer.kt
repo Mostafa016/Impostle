@@ -12,7 +12,7 @@ interface SocketServer {
 
     suspend fun startListening()
     fun stopListening()
-    suspend fun sendToClient(clientId: String, data: String): Result<Unit>
-    suspend fun sendToAll(data: String): Result<Unit>
+    suspend fun sendToClient(clientId: String, data: String): Boolean
+    suspend fun sendToAll(data: String): Boolean
     fun disconnectClient(clientId: String)
 }

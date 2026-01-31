@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.nsddemo.R
 import com.example.nsddemo.presentation.components.DefaultButton
@@ -34,13 +35,15 @@ import com.example.nsddemo.presentation.screen.question.components.ShowWordButto
 import com.example.nsddemo.presentation.theme.englishTypography
 import com.example.nsddemo.presentation.util.NavigationUtil.popBackStackAndNavigateTo
 import com.example.nsddemo.presentation.util.UiEvent
+import com.example.nsddemo.presentation.util.WordResourceMapper
 import kotlinx.coroutines.flow.collectLatest
 
 
 @SuppressLint("UnusedContentLambdaTargetStateParameter")
 @Composable
 fun QuestionScreen(
-    viewModel: QuestionViewModel, navController: NavHostController
+    viewModel: QuestionViewModel = hiltViewModel<QuestionViewModel>(),
+    navController: NavHostController
 ) {
     LaunchedEffect(true) {
         viewModel.eventFlow.collectLatest { event ->
@@ -57,8 +60,13 @@ fun QuestionScreen(
     }
     val state = viewModel.state.collectAsState()
     if (state.value.isWordDialogVisible) {
-        CategoryAndWordDialog(category = stringResource(viewModel.categoryResID),
-            word = if (viewModel.wordResID == -1) null else stringResource(viewModel.wordResID),
+        CategoryAndWordDialog(
+            category = stringResource(viewModel.categoryNameResId),
+            word = if (viewModel.isImposter) null else stringResource(
+                WordResourceMapper.getResId(
+                    viewModel.word!!
+                )
+            ),
             isImposter = viewModel.isImposter,
             onDismissRequest = { viewModel.onEvent(QuestionEvent.DismissWordDialog) },
             onOkClick = { viewModel.onEvent(QuestionEvent.ConfirmWordDialog) })

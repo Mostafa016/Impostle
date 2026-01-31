@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.nsddemo.R
 import com.example.nsddemo.core.util.GameConstants
@@ -35,19 +36,18 @@ import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun MainMenuScreen(
-    viewModel: MainMenuViewModel,
+    viewModel: MainMenuViewModel = hiltViewModel<MainMenuViewModel>(),
     navController: NavHostController,
 ) {
     LaunchedEffect(true) {
         viewModel.eventFlow.collectLatest { event ->
             when (event) {
                 is UiEvent.NavigateTo -> {
-                    navController.popBackStackAndNavigateTo(
-                        route = event.destination,
-                        dynamicStartDestination = event.dynamicStartRoute,
-                        graphWithDynamicDestinationRoute = event.graphWithDynamicDestinationRoute,
-                        isPopInclusive = event.isPopInclusive
-                    )
+                    if (event.popPrevious) {
+                        navController.popBackStackAndNavigateTo(route = event.destination)
+                    } else {
+                        navController.navigate(route = event.destination)
+                    }
                 }
 
                 else -> {
@@ -78,11 +78,9 @@ fun MainMenuScreen(
             }
             Spacer(Modifier.weight(1f))
             ChangePlayerNameButton(
-                playerName = playerName,
-                onClick = {
+                playerName = playerName, onClick = {
                     viewModel.onEvent(MainMenuEvent.PlayerNameClick)
-                }
-            )
+                })
         }
         Column(
             modifier = Modifier.fillMaxSize(),

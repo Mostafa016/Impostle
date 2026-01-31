@@ -12,7 +12,6 @@ import io.ktor.network.sockets.aSocket
 import io.ktor.network.sockets.isClosed
 import io.ktor.network.sockets.openReadChannel
 import io.ktor.network.sockets.openWriteChannel
-import io.ktor.utils.io.charsets.MalformedInputException
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -22,78 +21,78 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
-class KtorSocketClient : SocketClient {
+class KtorSocketClient @Inject constructor() : SocketClient {
 
     private val _connectionEvents =
-        MutableSharedFlow<ConnectionEvent>(extraBufferCapacity = EVENT_BUFFER_CAPACITY)
+        MutableSharedFlow<ConnectionEvent>(replay = 16, extraBufferCapacity = 64)
     override val connectionEvents = _connectionEvents.asSharedFlow()
 
     private val _messageEvent =
-        MutableSharedFlow<MessageEvent>(extraBufferCapacity = EVENT_BUFFER_CAPACITY)
+        MutableSharedFlow<MessageEvent>(replay = 16, extraBufferCapacity = 64)
     override val messageEvents = _messageEvent.asSharedFlow()
 
     private lateinit var serverConnection: Connection
+    private var selectorManager: SelectorManager? = null
 
     override suspend fun startSession(host: String, port: Int) {
         try {
             setupClient(host, port)
             launchServerReadLoop()
         } catch (e: CancellationException) {
-            Log.w(TAG, "Client connection attempt cancelled by parent job.")
+            Log.w(TAG, "Client connection attempt cancelled.")
             withContext(NonCancellable) {
                 _connectionEvents.emit(ConnectionEvent.Disconnected(host))
             }
             throw e
         } catch (e: Exception) {
-            Log.e(TAG, "An unhandled exception occurred.", e)
+            Log.e(TAG, "SocketClient: Exception in session: ${e.message}", e)
             _connectionEvents.emit(ConnectionEvent.Error(host, e.message.toString()))
         } finally {
-            if (::serverConnection.isInitialized && !serverConnection.socket.isClosed) {
-                withContext(NonCancellable) {
-                    serverConnection.socket.close()
-                }
-            }
+            cleanup()
         }
     }
 
     override suspend fun disconnect() = coroutineScope {
-        if (serverConnection.socket.isClosed) return@coroutineScope
-        launch { serverConnection.socket.close() }
-        _connectionEvents.emit(ConnectionEvent.Disconnected(serverConnection.socket.remoteAddress.toString()))
+        cleanup()
+        // Emit disconnected if we had a connection
+        if (::serverConnection.isInitialized) {
+            _connectionEvents.emit(ConnectionEvent.Disconnected("Legacy"))
+        }
     }
 
     override suspend fun sendToServer(data: String): Boolean {
-        try {
-            if (data.contains("\n")) {
-                throw MalformedInputException("Data sent cannot contain new lines.")
+        return try {
+            if (!::serverConnection.isInitialized || serverConnection.socket.isClosed) {
+                Log.e(TAG, "SocketClient: Cannot send, socket closed.")
+                return false
             }
             serverConnection.output.writePacket(data)
             _messageEvent.emit(
-                MessageEvent.Sent(
-                    serverConnection.socket.remoteAddress.toString(), data
-                )
+                MessageEvent.Sent(serverConnection.socket.remoteAddress.toString(), data)
             )
-        } catch (e: MalformedInputException) {
-            Log.e(TAG, "Data sent cannot contain new lines. Check serialization output.")
-            return false
-        } catch (e: NullPointerException) {
-            Log.e(TAG, "Not connected to server.")
-            return false
+            Log.d(TAG, "sendToServer: NOT DEADLOCKED!")
+            true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "SocketClient: Failed to send data", e)
+            false
         }
-        return true
     }
 
-    //region connect() Helpers
     private suspend fun setupClient(host: String, port: Int) {
-        Log.d(TAG, "Connecting to server...")
-        val selectorManager = SelectorManager(Dispatchers.IO)
-        val socket = aSocket(selectorManager).tcp().connect(host, port)
+        Log.d(TAG, "Connecting to server at $host:$port...")
+        selectorManager = SelectorManager(Dispatchers.IO)
+        val socket = aSocket(selectorManager!!).tcp().connect(host, port) {
+            keepAlive = true
+            noDelay = true
+        }
         serverConnection =
             Connection(socket, socket.openReadChannel(), socket.openWriteChannel(autoFlush = true))
         _connectionEvents.emit(ConnectionEvent.Connected(host))
-        Log.d(TAG, "Client address: ${socket.localAddress}")
         Log.d(TAG, "Connected to server: ${socket.remoteAddress}")
     }
 
@@ -102,35 +101,42 @@ class KtorSocketClient : SocketClient {
             try {
                 while (isActive && !serverConnection.socket.isClosed) {
                     val line = serverConnection.input.readPacket()
-                        ?: throw CancellationException("Server disconnected, terminating connection.")
+                    if (line == null) {
+                        Log.w(TAG, "SocketClient: Server closed connection (EOF).")
+                        throw CancellationException("Server disconnected.")
+                    }
+                    Log.d(TAG, "SocketClient: Read packet: $line")
                     _messageEvent.emit(
                         MessageEvent.Received(
-                            serverConnection.socket.remoteAddress.toString(), line
+                            serverConnection.socket.remoteAddress.toString(),
+                            line
                         )
                     )
                 }
             } catch (e: CancellationException) {
-                Log.w(TAG, "Server disconnected.")
-                withContext(NonCancellable) {
-                    _connectionEvents.emit(ConnectionEvent.Disconnected(serverConnection.socket.remoteAddress.toString()))
-                }
                 throw e
-            } catch (e: IOException) {
-                Log.e(TAG, "An IO error occurred.")
-                _connectionEvents.emit(
-                    ConnectionEvent.Error(
-                        serverConnection.socket.remoteAddress.toString(), e.message.toString()
-                    )
-                )
-            } finally {
-                Log.w(TAG, "Server read loop finished. Closing socket.")
-                serverConnection.socket.close()
+            } catch (e: Exception) {
+                Log.e(TAG, "SocketClient: Read Loop Error: ${e.message}")
+                throw IOException("Read Error", e)
             }
         }
     }
-    //endregion
 
-    private companion object {
-        const val EVENT_BUFFER_CAPACITY = 64
+    private suspend fun cleanup() {
+        withContext(NonCancellable) {
+            try {
+                if (::serverConnection.isInitialized && !serverConnection.socket.isClosed) {
+                    serverConnection.socket.close()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error closing socket", e)
+            }
+
+            try {
+                selectorManager?.close()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error closing selector", e)
+            }
+        }
     }
 }

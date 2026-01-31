@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.nsddemo.R
 import com.example.nsddemo.presentation.util.NavigationUtil.popBackStackAndNavigateTo
@@ -26,8 +27,11 @@ import com.example.nsddemo.presentation.util.UiEvent
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
-fun CreateGameLoadingScreen(viewModel: CreateGameViewModel, navController: NavHostController) {
-    val isGameCreatedState = viewModel.isGameCreated.collectAsState()
+fun CreateGameLoadingScreen(
+    viewModel: CreateGameViewModel = hiltViewModel<CreateGameViewModel>(),
+    navController: NavHostController
+) {
+    val state = viewModel.state.collectAsState()
     LaunchedEffect(true) {
         viewModel.eventFlow.collectLatest { event ->
             when (event) {
@@ -35,9 +39,7 @@ fun CreateGameLoadingScreen(viewModel: CreateGameViewModel, navController: NavHo
                     navController.popBackStackAndNavigateTo(event.destination)
                 }
 
-                else -> {
-                    // Do nothing
-                }
+                else -> {}
             }
         }
     }
@@ -48,9 +50,14 @@ fun CreateGameLoadingScreen(viewModel: CreateGameViewModel, navController: NavHo
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        if (isGameCreatedState.value) {
+        if (state.value is GameCreationState.Success) {
             LaunchedEffect(Unit) {
                 viewModel.onEvent(CreateGameEvent.GameCreated)
+            }
+        }
+        if (state.value is GameCreationState.Error) {
+            LaunchedEffect(Unit) {
+                viewModel.onEvent(CreateGameEvent.GameCreationFailed)
             }
         }
         Text(

@@ -62,5 +62,9 @@ abstract class RepositoryModule {
         fun provideLoopbackClientNetworkRepository(
             loopbackDataSource: LoopbackDataSource
         ) = LoopbackClientNetworkRepository(loopbackDataSource)
+
+        @Provides
+        @Singleton
+        fun provideLoopbackDataSource() = LoopbackDataSource()
     }
 }

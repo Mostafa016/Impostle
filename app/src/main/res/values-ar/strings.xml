@@ -20,7 +20,7 @@
     <string name="are_asking">" تسأل "</string>
     <string name="is_asking">" يسأل "</string>
     <string name="done">تم</string>
-    <string name="ask_extra_questions">اسأل اسئله إضافيه</string>
+    <string name="decide_on_playing_another_round_or_start_voting">قررواإذا كنتم ستلعبون جولة أخرى أو ستبدأون التصويت</string>
     <string name="start_vote">ابدأ التصريت</string>
     <string name="vote_for_the_person_you_suspect">قم بالتصويت ضد الشخص الذي تشك به</string>
     <string name="confirm_vote">تأكيد التصويت</string>
@@ -102,11 +102,14 @@
     <string name="confirm">تأكيد</string>
     <string name="is_asking_you">" يسألك "</string>
     <string name="you_asked">أنت</string>
-    <string name="additional_round">ابدأ جولة أخرى من الأسئلة</string>
+    <string name="additional_round">ابدأ جولة أخرى</string>
     <string name="show_word">أظهر الكلمة</string>
     <string name="ok">تمام</string>
     <string name="imposter">المدعي:</string>
     <string name="start_round">ابدأ الجولة</string>
     <string name="no_category_chosen">غير مختار</string>
     <string name="choose_a_category">اختر الموضوع</string>
+    <string name="couldn_t_create_game_try_again_later">لم نستطع انشاء لعبه، حاول في وقت لاحق</string>
+    <string name="game_found_joining">تم إيجاد الغرفة، جاري الدخول</string>
+    <string name="continuing_playing">استكمال اللعب</string>
 </resources>

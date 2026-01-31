@@ -25,6 +25,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -93,7 +94,7 @@ class DataStoreSettingsRepositoryTest {
             repository.userSettings.test {
                 val settings = awaitItem()
 
-                assertEquals("DEFAULT_PLAYER_NAME", settings.playerName)
+                assertNull(settings.playerName)
                 assertFalse("Default theme should be false (Light)", settings.isDarkTheme)
                 assertEquals("en", settings.languageCode)
                 assertTrue("Player ID should be generated", settings.playerId.isNotEmpty())
@@ -121,7 +122,7 @@ class DataStoreSettingsRepositoryTest {
     @Test
     fun `WHEN setPlayerName called THEN userSettings emits new name`() = runTest(testDispatcher) {
         repository.userSettings.test {
-            assertEquals("DEFAULT_PLAYER_NAME", awaitItem().playerName)
+            assertNull(awaitItem().playerName)
 
             repository.setPlayerName("SuperPlayer")
 
@@ -172,7 +173,7 @@ class DataStoreSettingsRepositoryTest {
 
             brokenRepo.userSettings.test {
                 val settings = awaitItem()
-                assertEquals("DEFAULT_PLAYER_NAME", settings.playerName)
+                assertNull(settings.playerName)
                 cancelAndIgnoreRemainingEvents()
             }
         }

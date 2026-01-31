@@ -13,15 +13,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.nsddemo.R
-import com.example.nsddemo.core.util.GameState
 import com.example.nsddemo.presentation.components.DefaultButton
 import com.example.nsddemo.presentation.components.ListTitleText
 import com.example.nsddemo.presentation.screen.score.components.PlayerScoreList
@@ -32,7 +33,7 @@ import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun ScoreScreen(
-    viewModel: ScoreViewModel, navController: NavHostController
+    viewModel: ScoreViewModel = hiltViewModel<ScoreViewModel>(), navController: NavHostController
 ) {
     LaunchedEffect(true) {
         viewModel.eventFlow.collectLatest { event ->
@@ -47,18 +48,7 @@ fun ScoreScreen(
             }
         }
     }
-    val currentGameState = viewModel.gameState.collectAsState().value
-    if (currentGameState is GameState.Replay) {
-        if (currentGameState.replay) {
-            LaunchedEffect(Unit) {
-                viewModel.onEvent(ScoreEvent.ReplayGame)
-            }
-        } else {
-            LaunchedEffect(Unit) {
-                viewModel.onEvent(ScoreEvent.EndGame)
-            }
-        }
-    }
+    val state by viewModel.state.collectAsState()
     Column(
         Modifier
             .fillMaxSize()
@@ -92,12 +82,14 @@ fun ScoreScreen(
             Row {
                 DefaultButton(
                     stringResource(R.string.end_game),
-                    onClick = { viewModel.onEvent(ScoreEvent.EndGameServerSide) },
+                    onClick = { viewModel.onEvent(ScoreEvent.EndGame) },
+                    enabled = state.isEndGameButtonEnabled,
                 )
                 Spacer(Modifier.width(16.dp))
                 DefaultButton(
                     stringResource(R.string.play_again),
-                    onClick = { viewModel.onEvent(ScoreEvent.ReplayGameServerSide) },
+                    onClick = { viewModel.onEvent(ScoreEvent.ReplayGame) },
+                    enabled = state.isReplayGameButtonEnabled,
                 )
             }
         }

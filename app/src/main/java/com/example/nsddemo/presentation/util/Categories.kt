@@ -1,16 +1,16 @@
-package com.example.nsddemo.domain.model
+package com.example.nsddemo.presentation.util
 
 import androidx.compose.ui.graphics.Color
 import com.example.nsddemo.R
 
 enum class Categories(
-    val wordResourceIds: List<Int>,
+    val wordResourceIds: Set<Int>,
     val color: Color,
     val imageDrawableID: Int,
     val nameResourceId: Int
 ) {
     Animals(
-        wordResourceIds = listOf(
+        wordResourceIds = setOf(
             R.string.lion,
             R.string.tiger,
             R.string.cheetah,
@@ -43,7 +43,7 @@ enum class Categories(
         nameResourceId = R.string.animals
     ),
     Food(
-        listOf(
+        setOf(
             R.string.pizza,
             R.string.burger,
             R.string.fries,
@@ -67,7 +67,7 @@ enum class Categories(
         nameResourceId = R.string.food
     ),
     Jobs(
-        listOf(
+        setOf(
             R.string.teacher,
             R.string.doctor,
             R.string.waiter,

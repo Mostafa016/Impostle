@@ -16,7 +16,6 @@ import io.ktor.network.sockets.openReadChannel
 import io.ktor.network.sockets.openWriteChannel
 import io.ktor.network.sockets.toJavaAddress
 import io.ktor.util.network.port
-import io.ktor.utils.io.charsets.MalformedInputException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -36,11 +35,11 @@ class KtorSocketServer @Inject constructor(private val wifiHelper: WifiHelper) :
     override val listeningState: StateFlow<ServerListeningState> = _listeningState.asStateFlow()
 
     private val _connectionEvents =
-        MutableSharedFlow<ConnectionEvent>(extraBufferCapacity = EVENT_BUFFER_CAPACITY)
+        MutableSharedFlow<ConnectionEvent>(replay = 16, extraBufferCapacity = EVENT_BUFFER_CAPACITY)
     override val connectionEvents = _connectionEvents.asSharedFlow()
 
     private val _messageEvent =
-        MutableSharedFlow<MessageEvent>(extraBufferCapacity = EVENT_BUFFER_CAPACITY)
+        MutableSharedFlow<MessageEvent>(replay = 16, extraBufferCapacity = EVENT_BUFFER_CAPACITY)
     override val messageEvents = _messageEvent.asSharedFlow()
 
     private var socketServer: ServerSocket? = null
@@ -84,30 +83,33 @@ class KtorSocketServer @Inject constructor(private val wifiHelper: WifiHelper) :
         Log.i(TAG, "Server Stopped listening.")
     }
 
-    override suspend fun sendToClient(clientId: String, data: String): Result<Unit> {
+    override suspend fun sendToClient(clientId: String, data: String): Boolean {
         try {
-            if (data.contains("\n")) {
-                return Result.failure(MalformedInputException("Data sent cannot contain new lines."))
-            }
             val clientSendChannel = clientConnections[clientId]!!.output
             clientSendChannel.writePacket(data)
             _messageEvent.tryEmit(MessageEvent.Sent(clientId, data))
-            return Result.success(Unit)
+            return true
         } catch (e: NullPointerException) {
             Log.e(
                 TAG,
                 "Client ($clientId) is not connected or clientConnections state is inconsistent."
             )
-            return Result.failure(e)
+            return false
         }
     }
 
-    override suspend fun sendToAll(data: String): Result<Unit> {
+    override suspend fun sendToAll(data: String): Boolean {
         clientConnections.keys.forEach { clientId ->
-            val result = sendToClient(clientId, data)
-            if (result.isFailure) return result
+            val failure = !sendToClient(clientId, data)
+            if (failure) {
+                Log.e(
+                    TAG,
+                    "Failed to send to clientId $clientId, skipped sending to rest of clients"
+                )
+                return false
+            }
         }
-        return Result.success(Unit)
+        return true
     }
 
     override fun disconnectClient(clientId: String) {
@@ -119,7 +121,9 @@ class KtorSocketServer @Inject constructor(private val wifiHelper: WifiHelper) :
     private fun setupServer() {
         val selectorManager = SelectorManager(Dispatchers.IO)
         val serverIP = wifiHelper.ipAddress
-        socketServer = aSocket(selectorManager).tcp().bind(serverIP!!, 0).also {
+        socketServer = aSocket(selectorManager).tcp().bind(serverIP!!, 0) {
+            reuseAddress = true
+        }.also {
             serverPort = it.localAddress.toJavaAddress().port
             _listeningState.value = ServerListeningState.Listening(serverPort!!)
             Log.d(TAG, "Server is listening at ${it.localAddress}")
@@ -169,7 +173,7 @@ class KtorSocketServer @Inject constructor(private val wifiHelper: WifiHelper) :
             Log.i(TAG, "Client $clientId read loop cancelled.")
             throw e
         } catch (e: Exception) {
-            Log.e(TAG, "Client $clientId read loop error: ${e.message}")
+            Log.e(TAG, "Client $clientId read loop error: ${e.message}", e)
         } finally {
             Log.d(TAG, "Client $clientId read loop finished.")
             cleanupClient(clientId)

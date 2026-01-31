@@ -12,16 +12,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.nsddemo.R
-import com.example.nsddemo.core.util.GameState
 import com.example.nsddemo.presentation.components.DefaultButton
 import com.example.nsddemo.presentation.components.ListTitleText
 import com.example.nsddemo.presentation.screen.voting_results.components.PlayerVoteResultList
@@ -29,10 +28,9 @@ import com.example.nsddemo.presentation.util.NavigationUtil.popBackStackAndNavig
 import com.example.nsddemo.presentation.util.UiEvent
 import kotlinx.coroutines.flow.collectLatest
 
-// Maybe Use PreviewParameters for all screens
 @Composable
 fun VotingResultsScreen(
-    viewModel: VotingResultsViewModel,
+    viewModel: VotingResultsViewModel = hiltViewModel<VotingResultsViewModel>(),
     navController: NavHostController,
 ) {
     LaunchedEffect(true) {
@@ -45,18 +43,6 @@ fun VotingResultsScreen(
                 else -> {
                     // Do nothing
                 }
-            }
-        }
-    }
-    val currentGameState = viewModel.gameState.collectAsState().value
-    if (currentGameState is GameState.Replay) {
-        if (currentGameState.replay) {
-            LaunchedEffect(Unit) {
-                viewModel.onEvent(VotingResultsEvent.ReplayGame)
-            }
-        } else {
-            LaunchedEffect(Unit) {
-                viewModel.onEvent(VotingResultsEvent.EndGame)
             }
         }
     }
@@ -89,10 +75,12 @@ fun VotingResultsScreen(
             currentPlayer = viewModel.currentPlayer,
         )
         Spacer(Modifier.height(16.dp))
-        DefaultButton(
-            stringResource(R.string.show_score),
-            onClick = { viewModel.onEvent(VotingResultsEvent.ShowScores) },
-        )
+        if (viewModel.isHost) {
+            DefaultButton(
+                stringResource(R.string.show_score),
+                onClick = { viewModel.onEvent(VotingResultsEvent.ShowScores) },
+            )
+        }
     }
 }
 

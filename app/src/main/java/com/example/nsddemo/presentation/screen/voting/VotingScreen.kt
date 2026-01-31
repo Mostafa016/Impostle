@@ -19,6 +19,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.nsddemo.R
 import com.example.nsddemo.presentation.components.DefaultButton
@@ -30,7 +31,7 @@ import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun VotingScreen(
-    viewModel: VotingViewModel,
+    viewModel: VotingViewModel = hiltViewModel<VotingViewModel>(),
     navController: NavHostController,
 ) {
     LaunchedEffect(true) {
@@ -68,13 +69,13 @@ fun VotingScreen(
                 .verticalScroll(rememberScrollState()),
             players = viewModel.playersExcludingCurrent,
             votedPlayer = state.value.votedPlayer,
-            onVoteForPlayer = { viewModel.onEvent(VotingEvent.onVotedForPlayer(it)) },
+            onVoteForPlayer = { viewModel.onEvent(VotingEvent.VoteForPlayer(it)) },
         )
         Spacer(modifier = Modifier.height(16.dp))
         DefaultButton(
             stringResource(R.string.confirm_vote),
-            onClick = { viewModel.onEvent(VotingEvent.onVoteConfirmed) },
-            enabled = state.value.hasChosenVote && (!state.value.isVoteConfirmed),
+            onClick = { viewModel.onEvent(VotingEvent.VoteConfirmed) },
+            enabled = state.value.hasChosenVote && !(state.value.isVoteConfirmed),
         )
     }
 }

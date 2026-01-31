@@ -35,6 +35,9 @@ sealed class ServerMessage : Message() {
     //endregion
 
     @Serializable
+    data class RegisterHost(val hostId: String) : ServerMessage()
+
+    @Serializable
     data class PlayerList(val players: List<Player>) :
         ServerMessage()
 

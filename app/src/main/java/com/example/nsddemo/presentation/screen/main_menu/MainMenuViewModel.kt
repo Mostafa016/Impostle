@@ -1,17 +1,11 @@
 package com.example.nsddemo.presentation.screen.main_menu
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.nsddemo.core.util.Debugging.TAG
-import com.example.nsddemo.core.util.GameConstants
-import com.example.nsddemo.core.util.GameState
-import com.example.nsddemo.data.repository.GameRepository
-import com.example.nsddemo.domain.model.Player
-import com.example.nsddemo.presentation.util.GameStateHandler
+import com.example.nsddemo.domain.repository.SettingsRepository
 import com.example.nsddemo.presentation.util.Routes
 import com.example.nsddemo.presentation.util.UiEvent
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,56 +14,41 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
-class MainMenuViewModel(
-    private val gameRepository: GameRepository,
-    private val gameStateHandler: GameStateHandler,
+@HiltViewModel
+class MainMenuViewModel @Inject constructor(
+    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(gameRepository.gameData.value.currentPlayer?.let {
-        MainMenuState(
-            playerNameTextFieldText = it.name, playerName = it.name
-        )
-    } ?: MainMenuState())
+
+    private val _state = MutableStateFlow(MainMenuState())
     val state: StateFlow<MainMenuState> = _state.asStateFlow()
 
     private val _eventFlow = MutableSharedFlow<UiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
 
-    // Used to determine the action to make after clicking on one of the menu options
-    // (Create Game, Join Game)
+    // Callback to execute after player name is saved
     private var onPlayerNameSave: () -> Unit = {}
 
     init {
-        gameRepository.setAllowedStates(
-            setOf(
-                GameState.StartGame::class.simpleName!!, GameState.Transitioning::class.simpleName!!
-            )
-        )
-        gameRepository.playerName?.let {
-            gameRepository.updateGameData(
-                gameRepository.gameData.value.copy(
-                    currentPlayer = Player(
-                        name = it, color = GameConstants.DEFAULT_PLAYER_COLOR
-                    )
-                )
-            )
-            _state.value = state.value.copy(
-                playerName = it, playerNameTextFieldText = it
+        loadPlayerName()
+    }
+
+    private fun loadPlayerName() {
+        viewModelScope.launch {
+            val settings = settingsRepository.userSettings.first()
+            _state.value = _state.value.copy(
+                playerName = settings.playerName,
+                playerNameTextFieldText = settings.playerName ?: ""
             )
         }
     }
 
-
-    override fun onCleared() {
-        super.onCleared()
-        Log.d(TAG, "MainMenuViewModel.onCleared() called")
-    }
-
-
     fun onEvent(event: MainMenuEvent) {
         when (event) {
             MainMenuEvent.SettingsClick -> {
-                onSettingsClick()
+                navigateTo(Routes.Settings.route, popPrevious = false)
             }
 
             MainMenuEvent.PlayerNameClick -> {
@@ -77,7 +56,7 @@ class MainMenuViewModel(
             }
 
             is MainMenuEvent.PlayerNameDialogTextChange -> {
-                onPlayerNameDialogTextChange(event.playerName)
+                _state.value = state.value.copy(playerNameTextFieldText = event.playerName)
             }
 
             is MainMenuEvent.PlayerNameDialogSave -> {
@@ -85,7 +64,7 @@ class MainMenuViewModel(
             }
 
             MainMenuEvent.PlayerNameDialogCancel -> {
-                onCancelPlayerNameDialog()
+                _state.value = state.value.copy(isPlayerNameDialogVisible = false)
             }
 
             MainMenuEvent.CreateGameClick -> {
@@ -95,132 +74,76 @@ class MainMenuViewModel(
             MainMenuEvent.JoinGameClick -> {
                 showPlayerNameDialogOrJoinGame()
             }
-
-        }
-    }
-
-    private fun onSettingsClick() {
-        viewModelScope.launch {
-            _eventFlow.emit(UiEvent.NavigateTo(Routes.Settings.route, isPopInclusive = false))
         }
     }
 
     private fun showPlayerNameDialogWithoutSaveAction() {
-        _state.value = state.value.copy(
-            isPlayerNameDialogVisible = true
-        )
+        _state.value = state.value.copy(isPlayerNameDialogVisible = true)
+        onPlayerNameSave = {}
     }
 
-    private fun showPlayerNameDialogWithSaveAction(onPlayerNameSave: () -> Unit) {
-        _state.value = state.value.copy(
-            isPlayerNameDialogVisible = true
-        )
-        this.onPlayerNameSave = onPlayerNameSave
-    }
-
-    private fun onPlayerNameDialogTextChange(playerName: String) {
-        _state.value = state.value.copy(
-            playerNameTextFieldText = playerName
-        )
+    private fun showPlayerNameDialogWithSaveAction(action: () -> Unit) {
+        _state.value = state.value.copy(isPlayerNameDialogVisible = true)
+        onPlayerNameSave = action
     }
 
     private fun onPlayerNameDialogSave() {
         val playerName = state.value.playerNameTextFieldText
-        gameRepository.playerName = playerName
-        _state.value = state.value.copy(
-            playerName = playerName, isPlayerNameDialogVisible = false
-        )
-        onPlayerNameSave()
-    }
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                settingsRepository.setPlayerName(playerName)
 
-    private fun onCancelPlayerNameDialog() {
-        _state.value = state.value.copy(
-            isPlayerNameDialogVisible = false
-        )
+            }
+            _state.value = state.value.copy(
+                playerName = playerName,
+                isPlayerNameDialogVisible = false
+            )
+            // Execute the deferred action (Create or Join) on Main Thread
+            launch {
+                onPlayerNameSave()
+            }
+        }
     }
 
     private fun onCreateGameClick() {
-        if (state.value.playerName == null) {
-            showPlayerNameDialogWithSaveAction {
-                createGame()
-                // TODO: IDEA: Create a separate ViewModel scoped to the screens where
-                //  the game is created and joined (The service should still be registered)
-                //  and do like you did with JoinGameViewModel but with CreateGameViewModel.
-                //  This will make GameViewModel only responsible for calling
-                //  Client.run() and Server.run() and living as long as the Activity.
-                //  IDEA A: NSD or should have it's own repository and be injected into the
-                //  ViewModels that would use it.
-                //  IDEA B: Create Server and Client repositories each will handle
-                //  the following (for now): Registration/Discovery (NSD),
-                //  communication with sockets (Ktor),
-            }
+        if (state.value.playerName == null || state.value.playerName == "DEFAULT_PLAYER_NAME") {
+            showPlayerNameDialogWithSaveAction { navigateToCreateGame() }
         } else {
-            createGame()
-        }
-    }
-
-    private fun createGame() {
-        gameRepository.updateGameData(
-            gameRepository.gameData.value.copy(
-                isHost = true, gameCode = generateGameCode()
-            )
-        )
-        val gameData = gameRepository.gameData.value
-        Log.d(TAG, "Game code: ${gameData.gameCode}, isHost: ${gameData.isHost}")
-        viewModelScope.launch(Dispatchers.IO) {
-            gameStateHandler.handleGameStateChanges()
-        }
-        viewModelScope.launch {
-            // TODO: Find a better way to handle this if this appears to take a long time in testing
-            gameStateHandler.lastStateHandlerListener.first { it }
-            _eventFlow.emit(
-                UiEvent.NavigateTo(
-                    destination = Routes.GameSession.route,
-                    dynamicStartRoute = Routes.CreateGame.route,
-                    graphWithDynamicDestinationRoute = Routes.GameSession.route,
-                )
-            )
+            navigateToCreateGame()
         }
     }
 
     private fun showPlayerNameDialogOrJoinGame() {
-        if (state.value.playerName == null) {
-            showPlayerNameDialogWithSaveAction { onJoinGame() }
+        if (state.value.playerName == null || state.value.playerName == "DEFAULT_PLAYER_NAME") {
+            showPlayerNameDialogWithSaveAction { navigateToJoinGame() }
         } else {
-            onJoinGame()
+            navigateToJoinGame()
         }
     }
 
-    private fun onJoinGame() {
-        gameRepository.updateGameData(
-            gameRepository.gameData.value.copy(
-                isHost = false
-            )
+    private fun navigateToCreateGame() {
+        navigateTo(
+            destination = Routes.CreateGameLoading.route,
         )
+    }
+
+    private fun navigateToJoinGame() {
+        navigateTo(
+            destination = Routes.JoinGameGraph.route,
+        )
+    }
+
+    private fun navigateTo(
+        destination: String,
+        popPrevious: Boolean = true
+    ) {
         viewModelScope.launch {
             _eventFlow.emit(
                 UiEvent.NavigateTo(
-                    destination = Routes.GameSession.route,
-                    dynamicStartRoute = Routes.JoinGameSession.route,
-                    graphWithDynamicDestinationRoute = Routes.GameSession.route
+                    destination = destination,
+                    popPrevious = popPrevious
                 )
             )
-        }
-    }
-
-    private fun generateGameCode(): String {
-        return (1..GameConstants.CODE_LENGTH).map { GameConstants.CODE_ALLOWED_CHARACTERS.random() }
-            .joinToString("")
-    }
-
-    companion object {
-        @Suppress("UNCHECKED_CAST")
-        class MainMenuViewModelFactory(
-            private val gameRepository: GameRepository,
-            private val gameStateHandler: GameStateHandler,
-        ) : ViewModelProvider.NewInstanceFactory() {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                MainMenuViewModel(gameRepository, gameStateHandler) as T
         }
     }
 }

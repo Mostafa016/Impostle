@@ -19,7 +19,7 @@
     <string name="are_asking">" are asking "</string>
     <string name="is_asking">" is asking "</string>
     <string name="done">Done</string>
-    <string name="ask_extra_questions">Ask extra questions</string>
+    <string name="decide_on_playing_another_round_or_start_voting">Decide on playing another round or start voting</string>
     <string name="start_vote">Start Vote</string>
     <string name="vote_for_the_person_you_suspect">Vote for the person you suspect</string>
     <string name="confirm_vote">Confirm Vote</string>
@@ -101,11 +101,14 @@
     <string name="confirm">Confirm</string>
     <string name="is_asking_you">" is asking "</string>
     <string name="you_asked">You</string>
-    <string name="additional_round">Start Another Questions Round</string>
+    <string name="additional_round">Play Another Round</string>
     <string name="show_word">Show Word</string>
     <string name="ok">OK</string>
     <string name="imposter">Imposter:</string>
     <string name="start_round">Start Round</string>
     <string name="no_category_chosen">None</string>
     <string name="choose_a_category">Choose Category</string>
+    <string name="couldn_t_create_game_try_again_later">Couldn\'t create game, try again later.</string>
+    <string name="game_found_joining">Game found, joining...</string>
+    <string name="continuing_playing">Continuing playing</string>
 </resources>

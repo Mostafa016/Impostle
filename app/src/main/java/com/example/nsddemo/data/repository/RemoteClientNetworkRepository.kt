@@ -16,6 +16,8 @@ import com.example.nsddemo.domain.model.ClientState
 import com.example.nsddemo.domain.model.NetworkJson
 import com.example.nsddemo.domain.model.ServerMessage
 import com.example.nsddemo.domain.repository.ClientNetworkRepository
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -25,6 +27,7 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.encodeToString
@@ -43,10 +46,19 @@ class RemoteClientNetworkRepository @Inject constructor(
     // Mapping Raw Socket events to Domain Sealed Classes
     override val incomingMessages: Flow<Pair<String, ServerMessage>> =
         socketClient.messageEvents.filterIsInstance(MessageEvent.Received::class)
+            .onEach { Log.d(TAG, "RemoteClientNetworkRepository: Saw event $it") }
             .mapNotNull { event ->
                 try {
                     event.clientId to NetworkJson.decodeFromString<ServerMessage>(event.data)
                 } catch (e: Exception) {
+                    if (e is CancellationException) {
+                        Log.e(
+                            TAG,
+                            "RemoteClientNetworkRepository: incomingMessages collection cancelled",
+                            e
+                        )
+                        throw e
+                    }
                     Log.e(TAG, "Failed to parse message: ${e.message}")
                     null // Drop bad packet, keep connection alive
                 }
@@ -60,16 +72,29 @@ class RemoteClientNetworkRepository @Inject constructor(
         try {
             // 1. Discovery Phase
             val serviceInfo = performDiscovery(gameCode) ?: return@coroutineScope
-
+            Log.d(
+                TAG,
+                "RemoteClientRepository Connect: Performed discovery for service $serviceInfo"
+            )
             // 2. Resolution Phase
             val (host, port) = performResolution(serviceInfo, gameCode) ?: return@coroutineScope
-
+            Log.d(
+                TAG,
+                "RemoteClientRepository Connect: Performed resolution for service $serviceInfo with $host:$port"
+            )
             // 3. Connection Phase
-            performSocketConnection(host, port)
+            launch { performSocketConnection(host, port) }
+            Log.d(
+                TAG,
+                "RemoteClientRepository Connect: Performed server connection for service $serviceInfo with $host:$port"
+            )
         } catch (e: TimeoutCancellationException) {
             Log.e(TAG, "Connection process timed out.")
             _clientState.value =
                 ClientState.Error("Connection timed out. Please try again.", canRetry = true)
+        } catch (e: CancellationException) {
+            Log.e(TAG, "RemoteClientNetworkRepository: Cancelled during connection", e)
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Unexpected error during connection: ${e.message}")
             _clientState.value = ClientState.Error("Unexpected Error: ${e.message}")
@@ -83,8 +108,11 @@ class RemoteClientNetworkRepository @Inject constructor(
         _clientState.value = ClientState.Disconnected
     }
 
-    override suspend fun sendToServer(message: ClientMessage): Boolean =
-        socketClient.sendToServer(NetworkJson.encodeToString<ClientMessage>(message))
+    override suspend fun sendToServer(message: ClientMessage): Boolean {
+        val encodedMessage = NetworkJson.encodeToString<ClientMessage>(message)
+        Log.d(TAG, "RemoteClientRepository: Sending encoded message: $encodedMessage")
+        return socketClient.sendToServer(encodedMessage)
+    }
 
     //region Helper Functions
     private suspend fun performDiscovery(gameCode: String): NsdServiceInfo? {
@@ -105,6 +133,7 @@ class RemoteClientNetworkRepository @Inject constructor(
         _clientState.value = ClientState.Discovering
 
         // Wait for the actual Service Found event
+        Log.d(TAG, "Performed discovery: getting service info from events")
         return withTimeout(TIMEOUT_MS) {
             networkDiscovery.discoveredServiceEvent
                 .filterIsInstance<NsdDiscoveryEvent.Found>()
@@ -145,16 +174,17 @@ class RemoteClientNetworkRepository @Inject constructor(
     }
 
     private suspend fun performSocketConnection(host: String, port: Int) = coroutineScope {
-        launch { socketClient.startSession(host, port) }
+        launch(Dispatchers.IO) { socketClient.startSession(host, port) }
 
         val event = withTimeout(TIMEOUT_MS) {
             socketClient.connectionEvents
                 .first { it is ConnectionEvent.Connected || it is ConnectionEvent.Error }
         }
-
+        Log.d(TAG, "performSocketConnection: event ($event)")
         when (event) {
             is ConnectionEvent.Connected -> {
                 _clientState.value = ClientState.Connected
+                Log.d(TAG, "performSocketConnection: clientState (${clientState.value})")
             }
 
             is ConnectionEvent.Error -> {
@@ -173,6 +203,6 @@ class RemoteClientNetworkRepository @Inject constructor(
     //endregion
 
     companion object {
-        const val TIMEOUT_MS = 1_000L
+        const val TIMEOUT_MS = 15_000L
     }
 }

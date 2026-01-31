@@ -1,31 +1,42 @@
 package com.example.nsddemo.presentation.screen.settings
 
-import android.content.SharedPreferences
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
-import androidx.core.os.LocaleListCompat
+import android.util.Log
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.example.nsddemo.core.util.Debugging.TAG
+import com.example.nsddemo.domain.model.AppLocales
+import com.example.nsddemo.domain.repository.SettingsRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class SettingsViewModel(private val sharedPreferences: SharedPreferences) : ViewModel() {
-    private val _languageSetting = mutableStateOf(getAppLocale())
-    val languageSetting: State<GameLocales> = _languageSetting
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
+    private val settingsRepository: SettingsRepository
+) : ViewModel() {
+    val languageSetting = settingsRepository.userSettings
+        .map { GameLocales.toLocale(it.languageCode) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GameLocales.English)
 
-    private val _languageSettingDropdownExpanded = mutableStateOf(false)
-    val languageSettingDropdownExpanded: State<Boolean> = _languageSettingDropdownExpanded
+    val darkThemeSetting = settingsRepository.userSettings
+        .map { it.isDarkTheme }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
-    private val _darkThemeSetting = mutableStateOf(false)
-    val darkThemeSetting: State<Boolean> = _darkThemeSetting
-
-    init {
-        _darkThemeSetting.value = sharedPreferences.getBoolean(THEME_SHARED_PREF_KEY, false)
-    }
+    private val _languageSettingDropdownExpanded = MutableStateFlow(false)
+    val languageSettingDropdownExpanded = _languageSettingDropdownExpanded.asStateFlow()
 
     fun onLanguageChange(locale: GameLocales) {
-        _languageSetting.value = locale
         _languageSettingDropdownExpanded.value = false
-        changeAppLocale(countryCode = locale.countryCode)
+        viewModelScope.launch {
+            // Map UI GameLocales back to Domain AppLocales
+            val appLocale = AppLocales.fromCountryCode(locale.countryCode)
+            settingsRepository.setLanguage(appLocale)
+        }
     }
 
     fun onLanguageDropDownExpandedChange(isExpanded: Boolean) {
@@ -37,32 +48,9 @@ class SettingsViewModel(private val sharedPreferences: SharedPreferences) : View
     }
 
     fun onThemeChange(isDarkTheme: Boolean) {
-        _darkThemeSetting.value = isDarkTheme
-        with(sharedPreferences.edit()) {
-            putBoolean(THEME_SHARED_PREF_KEY, isDarkTheme)
-            apply()
-        }
-    }
-
-    private fun changeAppLocale(countryCode: String) {
-        val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags(countryCode)
-        AppCompatDelegate.setApplicationLocales(appLocale)
-    }
-
-    private fun getAppLocale(): GameLocales {
-        return if (AppCompatDelegate.getApplicationLocales().isEmpty) GameLocales.English
-        else GameLocales.toLocale(AppCompatDelegate.getApplicationLocales()[0].toString())
-    }
-
-    companion object {
-        private const val THEME_SHARED_PREF_KEY = "theme_impostle"
-
-        @Suppress("UNCHECKED_CAST")
-        class SettingsViewModelFactory(
-            private val sharedPreferences: SharedPreferences
-        ) : ViewModelProvider.NewInstanceFactory() {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                SettingsViewModel(sharedPreferences) as T
+        Log.d(TAG, "onThemeChange: $isDarkTheme")
+        viewModelScope.launch {
+            settingsRepository.setDarkTheme(isDarkTheme)
         }
     }
 }

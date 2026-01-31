@@ -1,5 +1,7 @@
 package com.example.nsddemo.domain.logic
 
+import android.util.Log
+import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.domain.model.Active
 import com.example.nsddemo.domain.model.ClientMessage
 import com.example.nsddemo.domain.model.Envelope
@@ -12,8 +14,9 @@ import com.example.nsddemo.domain.model.ServerMessage
 import com.example.nsddemo.domain.model.SystemEvent
 import com.example.nsddemo.domain.util.GameFlowRegistry
 import com.example.nsddemo.domain.util.PlayerCountLimits
+import javax.inject.Inject
 
-class SessionManager {
+class SessionManager @Inject constructor() {
     fun registerPlayer(
         data: NewGameData, phase: GamePhase, message: ClientMessage.RegisterPlayer
     ): GameStateTransition {
@@ -29,9 +32,7 @@ class SessionManager {
     }
 
     fun handleSystemEvent(
-        data: NewGameData,
-        phase: GamePhase,
-        event: SystemEvent
+        data: NewGameData, phase: GamePhase, event: SystemEvent
     ): GameStateTransition {
         return when (event) {
             is SystemEvent.PlayerDisconnected -> handleDisconnect(data, phase, event.playerId)
@@ -80,46 +81,36 @@ class SessionManager {
             roundData = syncRoundData,
         )
         return GameStateTransition.Valid(
-            newGameData = newData,
-            newPhase = newPhase ?: phase,
-            envelopes = listOf(
+            newGameData = newData, newPhase = newPhase ?: phase, envelopes = listOf(
                 Envelope.Unicast(
                     recipientId = message.playerId,
                     message = ServerMessage.ReconnectionFullStateSync(
-                        data = syncData,
-                        phase = newPhase ?: phase
+                        data = syncData, phase = newPhase ?: phase
                     )
                 )
             ) + broadcastMessages.map {
                 Envelope.Broadcast(it)
-            }
-        )
+            })
     }
 
     private fun performNewJoin(
-        data: NewGameData,
-        message: ClientMessage.RegisterPlayer,
-        phase: GamePhase
+        data: NewGameData, message: ClientMessage.RegisterPlayer, phase: GamePhase
     ): GameStateTransition {
         val allowedPhases = GameFlowRegistry.getValidPhasesFor(message)
         if (phase !in allowedPhases) {
             return GameStateTransition.Invalid(
-                reason = "Game has already started.",
-                envelopes = listOf(
+                reason = "Game has already started.", envelopes = listOf(
                     Envelope.Unicast(
-                        recipientId = message.playerId,
-                        message = ServerMessage.GameAlreadyStarted
+                        recipientId = message.playerId, message = ServerMessage.GameAlreadyStarted
                     )
                 )
             )
         }
         if (data.players.size >= PlayerCountLimits.MAX_PLAYERS) {
             return GameStateTransition.Invalid(
-                reason = "Game is already full",
-                envelopes = listOf(
+                reason = "Game is already full", envelopes = listOf(
                     Envelope.Unicast(
-                        recipientId = message.playerId,
-                        message = ServerMessage.GameFull
+                        recipientId = message.playerId, message = ServerMessage.GameFull
                     )
                 )
             )
@@ -128,22 +119,31 @@ class SessionManager {
         val newColor = ColorAllocator.assignColor(data.usedColors)
         val newPlayer =
             Player(name = message.playerName, id = message.playerId, color = newColor.toString())
-        val newData = data.copy(players = data.players + (message.playerId to newPlayer))
+        val newData = data.copy(
+            players = data.players + (message.playerId to newPlayer),
+            hostId = if (message.playerId == data.localPlayerId) data.localPlayerId else data.hostId
+        )
 
+        Log.d(TAG, "SessionManager: Sending the player the messages")
+        Log.d(TAG, "SessionManager: newData: $newData")
+        val envelopes = listOfNotNull(
+            Envelope.Unicast(message.playerId, ServerMessage.RegisterHost(newData.hostId)),
+            newData.category?.let {
+                Envelope.Unicast(
+                    message.playerId,
+                    ServerMessage.CategorySelected(it)
+                )
+            },
+            Envelope.Broadcast(ServerMessage.PlayerList(newData.players.values.toList()))
+        )
         return GameStateTransition.Valid(
             newGameData = newData,
-            envelopes = listOf(
-                Envelope.Broadcast(
-                    ServerMessage.PlayerList(newData.players.values.toList())
-                )
-            )
+            envelopes = envelopes
         )
     }
 
     private fun handleDisconnect(
-        data: NewGameData,
-        phase: GamePhase,
-        playerId: String
+        data: NewGameData, phase: GamePhase, playerId: String
     ): GameStateTransition {
         val player = data.players[playerId]
             ?: return GameStateTransition.Invalid("Can't find disconnect player")
@@ -162,9 +162,7 @@ class SessionManager {
             )
 
             GameStateTransition.Valid(
-                newGameData = pausedData,
-                newPhase = GamePhase.Paused,
-                envelopes = listOf(
+                newGameData = pausedData, newPhase = GamePhase.Paused, envelopes = listOf(
                     Envelope.Broadcast(ServerMessage.PlayerDisconnected(playerId))
                 )
             )
@@ -180,8 +178,7 @@ class SessionManager {
             )
 
             GameStateTransition.Valid(
-                newGameData = newData,
-                envelopes = listOf(
+                newGameData = newData, envelopes = listOf(
                     Envelope.Broadcast(ServerMessage.PlayerList(newData.players.values.toList()))
                 )
             )

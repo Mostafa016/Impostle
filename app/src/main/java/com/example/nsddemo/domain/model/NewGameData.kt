@@ -85,6 +85,11 @@ data class NewGameData(
         get() = players.isNotEmpty() && votes.size == players.size
     //endregion
 
+    // region --- Score Helpers ---
+    val scoresAsPlayers: Map<Player, Int>
+        get() = scores.mapKeys { players[it.key]!! }
+    //endregion
+
     //region --- Round Helpers ---
     val isFirstRound: Boolean
         get() = roundNumber == 1
