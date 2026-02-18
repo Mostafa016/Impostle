@@ -8,4 +8,8 @@ sealed interface ClientEvent {
     // Notifications
     data class PlayerLeft(val playerId: String) : ClientEvent
     data class PlayerRejoined(val playerId: String) : ClientEvent
+    data object GameResumed : ClientEvent
+
+    data object KickedFromGame : ClientEvent
+    data object LobbyClosed : ClientEvent
 }

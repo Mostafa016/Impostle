@@ -2,9 +2,6 @@ package com.example.nsddemo.domain.model
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.polymorphic
-import kotlinx.serialization.modules.subclass
 
 @Serializable
 sealed class Message
@@ -21,10 +18,10 @@ sealed class ServerMessage : Message() {
         ServerMessage()
 
     @Serializable
-    data object GameResumed : ServerMessage()
+    data class GameResumed(val phaseAfterPause: GamePhase) : ServerMessage()
 
     @Serializable
-    data class ReconnectionFullStateSync(val data: NewGameData, val phase: GamePhase) :
+    data class ReconnectionFullStateSync(val data: GameData, val phase: GamePhase) :
         ServerMessage()
 
     @Serializable
@@ -32,6 +29,13 @@ sealed class ServerMessage : Message() {
 
     @Serializable
     data object GameAlreadyStarted : ServerMessage()
+
+    // Graceful exit signals
+    @Serializable
+    data object YouWereKicked : ServerMessage()
+
+    @Serializable
+    data object LobbyClosed : ServerMessage()
     //endregion
 
     @Serializable
@@ -63,13 +67,19 @@ sealed class ServerMessage : Message() {
     data object RoundEnd : ServerMessage()
 
     @Serializable
-    data object ReplayRound : ServerMessage()
+    data class ReplayRound(val incrementRoundNumber: Boolean = true) : ServerMessage()
 
     @Serializable
     data object StartVote : ServerMessage()
 
     @Serializable
     data class PlayerVoted(val playerId: String, val votedPlayerId: String) : ServerMessage()
+
+    @Serializable
+    data class VotesAfterLeaver(val votes: Map<String, String>) : ServerMessage()
+
+    @Serializable
+    data class ScoresAfterLeaver(val scores: Map<String, Int>) : ServerMessage()
 
     @Serializable
     data class VoteResult(
@@ -99,6 +109,9 @@ sealed class ClientMessage : Message() {
     @Serializable
     data class RequestSelectCategory(val category: GameCategory) :
         ClientMessage()
+
+    @Serializable
+    data class RequestKickPlayer(val playerId: String) : ClientMessage()
 
     @Serializable
     data object RequestStartGame : ClientMessage()
@@ -139,42 +152,5 @@ sealed class ClientMessage : Message() {
 val NetworkJson = Json {
     prettyPrint = true
 //    ignoreUnknownKeys = true // Useful if client/server versions mismatch slightly
-    serializersModule = SerializersModule {
-        polymorphic(Message::class) {
-            //region Server Messages
-            subclass(ServerMessage.PlayerDisconnected::class)
-            subclass(ServerMessage.PlayerReconnected::class)
-            subclass(ServerMessage.GameResumed::class)
-            subclass(ServerMessage.ReconnectionFullStateSync::class)
-            subclass(ServerMessage.GameFull::class)
-            subclass(ServerMessage.GameAlreadyStarted::class)
-            subclass(ServerMessage.PlayerList::class)
-            subclass(ServerMessage.CategorySelected::class)
-            subclass(ServerMessage.RoleAssigned::class)
-            subclass(ServerMessage.PlayerReady::class)
-            subclass(ServerMessage.Question::class)
-            subclass(ServerMessage.RoundEnd::class)
-            subclass(ServerMessage.ReplayRound::class)
-            subclass(ServerMessage.StartVote::class)
-            subclass(ServerMessage.PlayerVoted::class)
-            subclass(ServerMessage.VoteResult::class)
-            subclass(ServerMessage.ContinueToGameChoice::class)
-            subclass(ServerMessage.ReplayGame::class)
-            subclass(ServerMessage.EndGame::class)
-            //endregion
-            //region Client Messages
-            subclass(ClientMessage.RegisterPlayer::class)
-            subclass(ClientMessage.RequestSelectCategory::class)
-            subclass(ClientMessage.RequestStartGame::class)
-            subclass(ClientMessage.ConfirmRoleReceived::class)
-            subclass(ClientMessage.EndTurn::class)
-            subclass(ClientMessage.RequestReplayRound::class)
-            subclass(ClientMessage.RequestStartVote::class)
-            subclass(ClientMessage.SubmitVote::class)
-            subclass(ClientMessage.RequestContinueToGameChoice::class)
-            subclass(ClientMessage.RequestReplayGame::class)
-            subclass(ClientMessage.RequestEndGame::class)
-            //endregion
-        }
-    }
+
 }

@@ -27,6 +27,7 @@ import androidx.navigation.NavHostController
 import com.example.nsddemo.R
 import com.example.nsddemo.presentation.screen.choose_category.components.CategoryCard
 import com.example.nsddemo.presentation.util.NavigationUtil.popBackStackAndNavigateTo
+import com.example.nsddemo.presentation.util.Routes
 import com.example.nsddemo.presentation.util.UiCategory
 import com.example.nsddemo.presentation.util.UiEvent
 import kotlinx.coroutines.flow.collectLatest
@@ -40,7 +41,10 @@ fun ChooseCategoryScreen(
         viewModel.eventFlow.collectLatest { event ->
             when (event) {
                 is UiEvent.NavigateTo -> {
-                    navController.popBackStackAndNavigateTo(event.destination)
+                    navController.popBackStackAndNavigateTo(
+                        event.destination,
+                        Routes.GameSessionGraph.route
+                    )
                 }
 
                 else -> {

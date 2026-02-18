@@ -6,11 +6,12 @@ import com.example.nsddemo.domain.logic.SessionManager
 import com.example.nsddemo.domain.model.ClientMessage
 import com.example.nsddemo.domain.model.Envelope
 import com.example.nsddemo.domain.model.GameAction
+import com.example.nsddemo.domain.model.GameData
 import com.example.nsddemo.domain.model.GameMode
 import com.example.nsddemo.domain.model.GamePhase
 import com.example.nsddemo.domain.model.GameStateTransition
-import com.example.nsddemo.domain.model.NewGameData
 import com.example.nsddemo.domain.model.PlayerConnectionEvent
+import com.example.nsddemo.domain.model.ServerMessage
 import com.example.nsddemo.domain.model.ServerState
 import com.example.nsddemo.domain.model.SystemEvent
 import com.example.nsddemo.domain.repository.ServerNetworkRepository
@@ -18,6 +19,7 @@ import com.example.nsddemo.domain.strategy.GameModeStrategy
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -36,9 +38,9 @@ class GameServer @Inject constructor(
     private var gameModeStrategy: GameModeStrategy = strategies[GameMode.Question]!!
     private val masterGamePhase = MutableStateFlow<GamePhase>(GamePhase.Lobby)
     private val masterGameData =
-        MutableStateFlow(NewGameData(roundData = gameModeStrategy.roundData))
+        MutableStateFlow(GameData(roundData = gameModeStrategy.roundData))
     val serverState = serverNetworkRepository.serverState
-    private val playerDisconnectionEvents =
+    private val playerConnectivityEvents =
         serverNetworkRepository.playerConnectionEvents.mapNotNull { event ->
             when (event) {
                 is PlayerConnectionEvent.PlayerConnected -> null
@@ -70,7 +72,7 @@ class GameServer @Inject constructor(
     private suspend fun processActions() = coroutineScope {
         merge(serverNetworkRepository.incomingMessages.map { (id, msg) ->
             GameAction.User(id, msg)
-        }, playerDisconnectionEvents)
+        }, playerConnectivityEvents)
             .collect { action ->
                 try {
                     // Log that we are attempting to process an action
@@ -80,7 +82,6 @@ class GameServer @Inject constructor(
                 } catch (e: Exception) {
                     // THIS IS THE CRITICAL LOG
                     Log.e(TAG, "GameServer: CRITICAL LOGIC CRASH processing $action", e)
-                    throw e // Re-throw to ensure we don't hide the crash, just log it
                 }
             }
     }
@@ -88,20 +89,52 @@ class GameServer @Inject constructor(
     private suspend fun processAction(action: GameAction) {
         val transition = when (action) {
             is GameAction.User -> {
-                if (action.message is ClientMessage.RegisterPlayer) {
-                    Log.d(TAG, "Registering player ${action.playerId}")
-                    sessionManager.registerPlayer(
-                        data = masterGameData.value,
-                        phase = masterGamePhase.value,
-                        message = action.message,
-                    )
-                } else {
-                    gameModeStrategy.handleAction(
-                        data = masterGameData.value,
-                        phase = masterGamePhase.value,
-                        message = action.message,
-                        playerID = action.playerId
-                    )
+                when (action.message) {
+                    is ClientMessage.RegisterPlayer -> {
+                        Log.d(TAG, "GameServer: Registering player ${action.playerId}")
+                        sessionManager.registerPlayer(
+                            data = masterGameData.value,
+                            phase = masterGamePhase.value,
+                            message = action.message,
+                        )
+                    }
+
+                    is ClientMessage.RequestKickPlayer -> {
+                        if (masterGameData.value.hostId != action.playerId) {
+                            GameStateTransition.Invalid("Only host can kick players")
+                        } else {
+                            Log.d(TAG, "GameServer: Kicking player ${action.message.playerId}")
+
+                            // 1. Notify the kicked player
+                            serverNetworkRepository.sendToPlayer(
+                                action.message.playerId,
+                                ServerMessage.YouWereKicked
+                            )
+                            // 2. Disconnect them from network
+                            serverNetworkRepository.disconnectPlayer(action.message.playerId)
+
+                            // 3. Update State
+                            if (masterGamePhase.value !is GamePhase.Lobby) {
+                                sessionManager.kickPlayer(
+                                    data = masterGameData.value,
+                                    phase = masterGamePhase.value,
+                                    playerIdToKick = action.message.playerId,
+                                    strategy = gameModeStrategy
+                                )
+                            } else {
+                                GameStateTransition.Valid(masterGameData.value)
+                            }
+                        }
+                    }
+
+                    else -> {
+                        gameModeStrategy.handleAction(
+                            data = masterGameData.value,
+                            phase = masterGamePhase.value,
+                            message = action.message,
+                            playerID = action.playerId
+                        )
+                    }
                 }
             }
 
@@ -113,6 +146,8 @@ class GameServer @Inject constructor(
         }
 
         handleTransition(transition)
+        Log.i(TAG, "GameServer: masterGameData after $action: ${masterGameData.value}")
+        Log.i(TAG, "GameServer: masterGamePhase after $action: ${masterGamePhase.value}")
     }
 
     private suspend fun handleTransition(transition: GameStateTransition) {
@@ -143,7 +178,9 @@ class GameServer @Inject constructor(
 
     suspend fun stop() {
         Log.d(TAG, "GameServer: Stopping server...")
-        masterGameData.value = NewGameData()
+        serverNetworkRepository.sendToAllPlayers(ServerMessage.LobbyClosed)
+        delay(1000L)
+        masterGameData.value = GameData()
         masterGamePhase.value = GamePhase.Lobby
         serverNetworkRepository.stop()
     }

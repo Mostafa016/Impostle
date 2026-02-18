@@ -3,12 +3,18 @@ package com.example.nsddemo.presentation.screen.lobby.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.sharp.Delete
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -20,14 +26,22 @@ import com.example.nsddemo.domain.model.Player
 import com.example.nsddemo.presentation.theme.englishTypography
 
 @Composable
-fun PlayerNameItem(modifier: Modifier, player: Player) {
+fun PlayerNameItem(
+    modifier: Modifier,
+    player: Player,
+    onPlayerKick: (String) -> Unit,
+    isLocalPlayer: Boolean,
+    isHost: Boolean
+) {
     Row(
         modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.background)
             .padding(8.dp),
-        horizontalArrangement = Arrangement.Center
+        horizontalArrangement = if (isHost && !isLocalPlayer) Arrangement.SpaceBetween else Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+
     ) {
         Text(
             text = player.name,
@@ -36,11 +50,23 @@ fun PlayerNameItem(modifier: Modifier, player: Player) {
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
+        if (isHost && !isLocalPlayer) {
+            Spacer(Modifier.weight(1f))
+            IconButton(onClick = { onPlayerKick(player.id) }) {
+                Icon(Icons.Sharp.Delete, "Kick player", tint = Color.Red)
+            }
+        }
     }
 }
 
 @Preview(backgroundColor = 0xFFFFFF, showBackground = true)
 @Composable
 private fun PlayerRowPreview() {
-    PlayerNameItem(modifier = Modifier, player = Player("Player_1", "FFFF00FF"))
+    PlayerNameItem(
+        modifier = Modifier,
+        player = Player("Player_1", "FFFF00FF"),
+        onPlayerKick = {},
+        isLocalPlayer = false,
+        isHost = false
+    )
 }

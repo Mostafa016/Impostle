@@ -25,6 +25,7 @@ import com.example.nsddemo.presentation.components.DefaultButton
 import com.example.nsddemo.presentation.screen.join_game.components.GameCodeTextField
 import com.example.nsddemo.presentation.theme.englishTypography
 import com.example.nsddemo.presentation.util.NavigationUtil.popBackStackAndNavigateTo
+import com.example.nsddemo.presentation.util.Routes
 import com.example.nsddemo.presentation.util.UiEvent
 import kotlinx.coroutines.flow.collectLatest
 
@@ -37,7 +38,10 @@ fun JoinGameScreen(
         viewModel.eventFlow.collectLatest { event ->
             when (event) {
                 is UiEvent.NavigateTo -> {
-                    navController.popBackStackAndNavigateTo(event.destination)
+                    navController.popBackStackAndNavigateTo(
+                        event.destination,
+                        Routes.JoinGameGraph.route
+                    )
                 }
 
                 else -> {
@@ -81,7 +85,7 @@ fun JoinGameScreen(
             DefaultButton(
                 stringResource(R.string.join_game),
                 onClick = { viewModel.onEvent(JoinGameEvent.JoinGame) },
-                enabled = (state.gameCodeTextFieldText.length == GameConstants.CODE_LENGTH),
+                enabled = state.isJoinGameButtonEnabled,
             )
         }
     }

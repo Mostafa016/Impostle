@@ -111,4 +111,8 @@
     <string name="couldn_t_create_game_try_again_later">Couldn\'t create game, try again later.</string>
     <string name="game_found_joining">Game found, joining...</string>
     <string name="continuing_playing">Continuing playing</string>
+    <string name="disconnected_players">Disconnected Players</string>
+    <string name="game_paused">Game Paused</string>
+    <string name="rejoin">Rejoin</string>
+    <string name="you_have_been_disconnected">You have been disconnected</string>
 </resources>

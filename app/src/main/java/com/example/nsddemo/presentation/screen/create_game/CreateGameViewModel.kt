@@ -1,10 +1,11 @@
 package com.example.nsddemo.presentation.screen.create_game
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nsddemo.R
+import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.domain.engine.GameSession
-import com.example.nsddemo.domain.logic.GameCodeGenerator
 import com.example.nsddemo.domain.model.SessionState
 import com.example.nsddemo.domain.repository.SettingsRepository
 import com.example.nsddemo.presentation.service.SessionController
@@ -19,7 +20,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import javax.inject.Inject
 
@@ -29,7 +29,6 @@ class CreateGameViewModel @Inject constructor(
     private val gameSession: GameSession,
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
-
     private val _state = MutableStateFlow<GameCreationState>(GameCreationState.InProgress)
     val state = _state.asStateFlow()
 
@@ -42,43 +41,26 @@ class CreateGameViewModel @Inject constructor(
 
     private fun createGame() {
         viewModelScope.launch(Dispatchers.IO) {
-            val gameCode = GameCodeGenerator.generate()
+            //TODO: Important: replace it with GameCodeGenerator.generate() when done testing
+            val gameCode = "AAAA"
             val settings = settingsRepository.userSettings.first()
-
-            // 1. Tell Service to start Host Mode
             sessionController.startHost(gameCode, settings.playerId)
 
-            // 2. Wait for Session to be Ready
-            gameSession.sessionState.collect { state ->
-                when (state) {
-                    is SessionState.Running -> {
-                        // 3. Register the Host as a Player
-                        val activeClient = gameSession.activeClient
-                        if (activeClient != null) {
-                            activeClient.registerPlayer(settings.playerName!!, settings.playerId)
-                            try {
-                                withTimeout(2_500L) {
-                                    gameSession.gameData.first { it.players.isNotEmpty() }
-                                    withContext(Dispatchers.Main.immediate) {
-                                        _state.value = GameCreationState.Success
-                                    }
-                                }
-                            } catch (e: TimeoutCancellationException) {
-                                withContext(Dispatchers.Main.immediate) {
-                                    _state.value =
-                                        GameCreationState.Error("Couldn't complete handshake")
-                                }
-                            }
-                        }
-                    }
-
-                    is SessionState.Error -> {
-                        // Handle error (e.g. Port in use)
-                        // For now, maybe just log or navigate back
-                    }
-
-                    else -> {} // Idle/Connecting
+            try {
+                withTimeout(30_000L) {
+                    gameSession.sessionState.first { it is SessionState.Running }
+                    gameSession.activeClient!!.registerPlayer(
+                        settings.playerName!!,
+                        settings.playerId
+                    )
+                    _state.value = GameCreationState.Success
                 }
+            } catch (e: TimeoutCancellationException) {
+                Log.e(TAG, "CreateGameViewModel: Couldn't create game (Timeout)")
+                _state.value = GameCreationState.Error
+            } catch (e: NullPointerException) {
+                Log.e(TAG, "CreateGameViewModel: Couldn't create game (Client not initialized)")
+                _state.value = GameCreationState.Error
             }
         }
     }
@@ -87,16 +69,22 @@ class CreateGameViewModel @Inject constructor(
         when (event) {
             CreateGameEvent.GameCreated -> {
                 viewModelScope.launch {
-                    _eventFlow.emit(UiEvent.NavigateTo(Routes.Lobby.route))
+                    _eventFlow.emit(UiEvent.ShowSnackBar(R.string.game_found_joining))
                 }
             }
 
             CreateGameEvent.GameCreationFailed -> {
                 viewModelScope.launch {
+                    sessionController.stopSession()
                     _eventFlow.emit(UiEvent.ShowSnackBar(R.string.couldn_t_create_game_try_again_later))
                     _eventFlow.emit(UiEvent.NavigateTo(Routes.MainMenu.route))
                 }
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.i(TAG, "CreateGameViewModel: Cleared!")
     }
 }

@@ -7,6 +7,7 @@ import com.example.nsddemo.domain.model.ClientEvent
 import com.example.nsddemo.domain.model.ClientMessage
 import com.example.nsddemo.domain.model.ClientState
 import com.example.nsddemo.domain.model.GameCategory
+import com.example.nsddemo.domain.model.GamePhase
 import com.example.nsddemo.domain.model.ServerMessage
 import com.example.nsddemo.domain.repository.ClientNetworkRepository
 import com.example.nsddemo.domain.repository.GameSessionRepository
@@ -74,11 +75,33 @@ class GameClient @AssistedInject constructor(
         }
 
         // B. Update Phase
-        val nextPhase = GameFlowRegistry.getTransitionFor(message)
-        if (nextPhase != null && nextPhase != gamePhase.value) {
-            Log.i(TAG, "GameClient: gamePhase after $message: $nextPhase")
-            gameSessionRepository.updateGamePhase(nextPhase)
+        when (message) {
+            is ServerMessage.YouWereKicked -> {
+                _clientEvent.emit(ClientEvent.KickedFromGame)
+                stop() // Trigger intentional disconnect (State -> Idle)
+                return
+            }
+
+            is ServerMessage.LobbyClosed -> {
+                _clientEvent.emit(ClientEvent.LobbyClosed)
+                stop() // Trigger intentional disconnect (State -> Idle)
+                return
+            }
+
+            is ServerMessage.GameResumed -> {
+                gameSessionRepository.updateGamePhase(message.phaseAfterPause)
+            }
+
+            else -> {
+                if (gamePhase.value != GamePhase.Paused || message is ServerMessage.EndGame) {
+                    val nextPhase = GameFlowRegistry.getTransitionFor(message)
+                    if (nextPhase != null && nextPhase != gamePhase.value) {
+                        gameSessionRepository.updateGamePhase(nextPhase)
+                    }
+                }
+            }
         }
+        Log.i(TAG, "GameClient: gamePhase after $message: ${gamePhase.value}")
 
         // C. Emit Domain Events
         when (message) {
@@ -91,6 +114,10 @@ class GameClient @AssistedInject constructor(
                 )
             )
 
+            is ServerMessage.GameResumed -> {
+                _clientEvent.emit(ClientEvent.GameResumed)
+            }
+
             else -> {}
         }
     }
@@ -98,6 +125,10 @@ class GameClient @AssistedInject constructor(
     //region --- Actions ---
     suspend fun registerPlayer(name: String, playerId: String) {
         clientNetworkRepository.sendToServer(ClientMessage.RegisterPlayer(name, playerId))
+    }
+
+    suspend fun kickPlayer(playerId: String) {
+        clientNetworkRepository.sendToServer(ClientMessage.RequestKickPlayer(playerId))
     }
 
     suspend fun selectCategory(category: GameCategory) {

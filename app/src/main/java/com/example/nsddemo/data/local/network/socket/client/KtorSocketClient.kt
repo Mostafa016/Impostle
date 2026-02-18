@@ -12,7 +12,6 @@ import io.ktor.network.sockets.aSocket
 import io.ktor.network.sockets.isClosed
 import io.ktor.network.sockets.openReadChannel
 import io.ktor.network.sockets.openWriteChannel
-import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.coroutineScope
@@ -21,6 +20,9 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.IOException
+import java.nio.channels.ClosedChannelException
+import java.nio.channels.ClosedSelectorException
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -55,11 +57,15 @@ class KtorSocketClient @Inject constructor() : SocketClient {
         }
     }
 
-    override suspend fun disconnect() = coroutineScope {
-        cleanup()
-        // Emit disconnected if we had a connection
-        if (::serverConnection.isInitialized) {
-            _connectionEvents.emit(ConnectionEvent.Disconnected("Legacy"))
+    override suspend fun disconnect(): Unit = coroutineScope {
+        try {
+            if (::serverConnection.isInitialized) {
+                _connectionEvents.emit(ConnectionEvent.Disconnected(serverConnection.socket.remoteAddress.toString()))
+            }
+        } catch (e: ClosedChannelException) {
+            Log.w(TAG, "KtorSocketClient: Channel already closed")
+        } finally {
+            cleanup()
         }
     }
 
@@ -73,7 +79,6 @@ class KtorSocketClient @Inject constructor() : SocketClient {
             _messageEvent.emit(
                 MessageEvent.Sent(serverConnection.socket.remoteAddress.toString(), data)
             )
-            Log.d(TAG, "sendToServer: NOT DEADLOCKED!")
             true
         } catch (e: CancellationException) {
             throw e
@@ -86,14 +91,23 @@ class KtorSocketClient @Inject constructor() : SocketClient {
     private suspend fun setupClient(host: String, port: Int) {
         Log.d(TAG, "Connecting to server at $host:$port...")
         selectorManager = SelectorManager(Dispatchers.IO)
-        val socket = aSocket(selectorManager!!).tcp().connect(host, port) {
-            keepAlive = true
-            noDelay = true
+        try {
+            val socket = aSocket(selectorManager!!).tcp().connect(host, port) {
+                keepAlive = true
+                noDelay = true
+            }
+            serverConnection =
+                Connection(
+                    socket,
+                    socket.openReadChannel(),
+                    socket.openWriteChannel(autoFlush = true)
+                )
+            _connectionEvents.emit(ConnectionEvent.Connected(host))
+            Log.d(TAG, "Connected to server: ${socket.remoteAddress}")
+        } catch (e: ClosedSelectorException) {
+            // This happens if cleanup() is called while connect() is suspended
+            throw IOException("Connection attempt cancelled (Selector closed)", e)
         }
-        serverConnection =
-            Connection(socket, socket.openReadChannel(), socket.openWriteChannel(autoFlush = true))
-        _connectionEvents.emit(ConnectionEvent.Connected(host))
-        Log.d(TAG, "Connected to server: ${socket.remoteAddress}")
     }
 
     private suspend fun launchServerReadLoop() = coroutineScope {
@@ -102,8 +116,13 @@ class KtorSocketClient @Inject constructor() : SocketClient {
                 while (isActive && !serverConnection.socket.isClosed) {
                     val line = serverConnection.input.readPacket()
                     if (line == null) {
-                        Log.w(TAG, "SocketClient: Server closed connection (EOF).")
-                        throw CancellationException("Server disconnected.")
+                        Log.i(TAG, "SocketClient: Server closed connection (EOF).")
+                        _connectionEvents.emit(
+                            ConnectionEvent.Disconnected(
+                                serverConnection.socket.remoteAddress.toString()
+                            )
+                        )
+                        break
                     }
                     Log.d(TAG, "SocketClient: Read packet: $line")
                     _messageEvent.emit(
@@ -114,10 +133,17 @@ class KtorSocketClient @Inject constructor() : SocketClient {
                     )
                 }
             } catch (e: CancellationException) {
+                Log.d(TAG, "SocketClient: Read loop cancelled")
                 throw e
             } catch (e: Exception) {
-                Log.e(TAG, "SocketClient: Read Loop Error: ${e.message}")
-                throw IOException("Read Error", e)
+                // Handle actual IO errors (timeout, malformed, etc)
+                Log.e(TAG, "SocketClient: Read Loop Error: ${e.message}", e)
+                _connectionEvents.emit(
+                    ConnectionEvent.Error(
+                        serverConnection.socket.remoteAddress.toString(),
+                        e.message ?: "Unknown Error"
+                    )
+                )
             }
         }
     }

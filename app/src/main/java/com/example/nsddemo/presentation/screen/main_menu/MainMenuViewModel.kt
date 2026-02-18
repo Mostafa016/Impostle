@@ -21,7 +21,6 @@ import javax.inject.Inject
 class MainMenuViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
-
     private val _state = MutableStateFlow(MainMenuState())
     val state: StateFlow<MainMenuState> = _state.asStateFlow()
 
@@ -36,7 +35,7 @@ class MainMenuViewModel @Inject constructor(
     }
 
     private fun loadPlayerName() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val settings = settingsRepository.userSettings.first()
             _state.value = _state.value.copy(
                 playerName = settings.playerName,
@@ -106,7 +105,7 @@ class MainMenuViewModel @Inject constructor(
     }
 
     private fun onCreateGameClick() {
-        if (state.value.playerName == null || state.value.playerName == "DEFAULT_PLAYER_NAME") {
+        if (state.value.playerName == null) {
             showPlayerNameDialogWithSaveAction { navigateToCreateGame() }
         } else {
             navigateToCreateGame()
@@ -114,7 +113,7 @@ class MainMenuViewModel @Inject constructor(
     }
 
     private fun showPlayerNameDialogOrJoinGame() {
-        if (state.value.playerName == null || state.value.playerName == "DEFAULT_PLAYER_NAME") {
+        if (state.value.playerName == null) {
             showPlayerNameDialogWithSaveAction { navigateToJoinGame() }
         } else {
             navigateToJoinGame()
@@ -122,6 +121,7 @@ class MainMenuViewModel @Inject constructor(
     }
 
     private fun navigateToCreateGame() {
+
         navigateTo(
             destination = Routes.CreateGameLoading.route,
         )

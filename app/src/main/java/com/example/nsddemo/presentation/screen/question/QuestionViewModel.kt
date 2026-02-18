@@ -1,12 +1,12 @@
 package com.example.nsddemo.presentation.screen.question
 
+import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.domain.engine.GameSession
-import com.example.nsddemo.domain.model.GamePhase
 import com.example.nsddemo.domain.model.Player
 import com.example.nsddemo.domain.model.RoundData
 import com.example.nsddemo.presentation.util.BaseGameViewModel
-import com.example.nsddemo.presentation.util.Routes
 import com.example.nsddemo.presentation.util.UiEvent
 import com.example.nsddemo.presentation.util.uiCategory
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -66,15 +65,6 @@ class QuestionViewModel @Inject constructor(
                 }
             }
         }
-
-        // Navigation
-        viewModelScope.launch {
-            gamePhase.collectLatest { phase ->
-                if (phase is GamePhase.RoundReplayChoice) {
-                    _eventFlow.emit(UiEvent.NavigateTo(Routes.ReplayRoundChoice.route))
-                }
-            }
-        }
     }
 
     fun onEvent(event: QuestionEvent) {
@@ -94,5 +84,10 @@ class QuestionViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.i(TAG, "QuestionViewModel: Cleared!")
     }
 }

@@ -16,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -57,9 +58,9 @@ fun MainMenuScreen(
         }
     }
 
-    val state = viewModel.state.collectAsState()
-    val playerName = state.value.playerName
-    if (state.value.isPlayerNameDialogVisible) {
+    val state by viewModel.state.collectAsState()
+    val playerName = state.playerName
+    if (state.isPlayerNameDialogVisible) {
         ChangePlayerNameDialog(mainMenuViewModel = viewModel)
     }
     Column(
@@ -97,6 +98,7 @@ fun MainMenuScreen(
                 onClick = {
                     viewModel.onEvent(MainMenuEvent.CreateGameClick)
                 },
+                enabled = state.isCreateGameButtonEnabled
             )
             Spacer(modifier = Modifier.height(16.dp))
             MainMenuOptionButton(
@@ -104,6 +106,7 @@ fun MainMenuScreen(
                 onClick = {
                     viewModel.onEvent(MainMenuEvent.JoinGameClick)
                 },
+                enabled = state.isJoinGameButtonEnabled
             )
         }
     }

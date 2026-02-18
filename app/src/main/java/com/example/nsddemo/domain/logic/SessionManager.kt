@@ -5,20 +5,21 @@ import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.domain.model.Active
 import com.example.nsddemo.domain.model.ClientMessage
 import com.example.nsddemo.domain.model.Envelope
+import com.example.nsddemo.domain.model.GameData
 import com.example.nsddemo.domain.model.GamePhase
 import com.example.nsddemo.domain.model.GameStateTransition
-import com.example.nsddemo.domain.model.NewGameData
 import com.example.nsddemo.domain.model.Player
 import com.example.nsddemo.domain.model.RoundData
 import com.example.nsddemo.domain.model.ServerMessage
 import com.example.nsddemo.domain.model.SystemEvent
+import com.example.nsddemo.domain.strategy.GameModeStrategy
 import com.example.nsddemo.domain.util.GameFlowRegistry
 import com.example.nsddemo.domain.util.PlayerCountLimits
 import javax.inject.Inject
 
 class SessionManager @Inject constructor() {
     fun registerPlayer(
-        data: NewGameData, phase: GamePhase, message: ClientMessage.RegisterPlayer
+        data: GameData, phase: GamePhase, message: ClientMessage.RegisterPlayer
     ): GameStateTransition {
         val existingPlayer = data.players[message.playerId]
         return if (existingPlayer != null) {
@@ -32,7 +33,7 @@ class SessionManager @Inject constructor() {
     }
 
     fun handleSystemEvent(
-        data: NewGameData, phase: GamePhase, event: SystemEvent
+        data: GameData, phase: GamePhase, event: SystemEvent
     ): GameStateTransition {
         return when (event) {
             is SystemEvent.PlayerDisconnected -> handleDisconnect(data, phase, event.playerId)
@@ -41,7 +42,7 @@ class SessionManager @Inject constructor() {
 
     private fun performReconnection(
         existingPlayer: Player,
-        data: NewGameData,
+        data: GameData,
         message: ClientMessage.RegisterPlayer,
         phase: GamePhase
     ): GameStateTransition {
@@ -54,11 +55,10 @@ class SessionManager @Inject constructor() {
             mutableListOf(ServerMessage.PlayerReconnected(updatedPlayer))
         // 2. AUTO-RESUME CHECK
         if (phase is GamePhase.Paused) {
-            val allConnected = newData.players.values.all { it.isConnected }
-            if (allConnected) {
-                newPhase = newData.phaseBeforePause!!
-                newData = newData.copy(phaseBeforePause = null)
-                broadcastMessages.add(ServerMessage.GameResumed)
+            if (newData.isEveryoneConnected) {
+                newPhase = newData.phaseAfterPause!!
+                newData = newData.copy(phaseBeforePause = null, phaseAfterPause = null)
+                broadcastMessages.add(ServerMessage.GameResumed(newPhase))
             }
         }
 
@@ -76,8 +76,14 @@ class SessionManager @Inject constructor() {
         }
         val syncData = newData.copy(
             localPlayerId = "",
-            imposterId = if (message.playerId == newData.imposterId) newData.imposterId else null,
-            word = if (message.playerId == newData.imposterId) newData.word else null,
+            imposterId = if (message.playerId == newData.imposterId || (newPhase
+                    ?: phase).let { it is GamePhase.GameResults || it is GamePhase.GameReplayChoice || it is GamePhase.GameEnd }
+            ) {
+                newData.imposterId
+            } else {
+                null
+            },
+            word = if (message.playerId == newData.imposterId) null else newData.word,
             roundData = syncRoundData,
         )
         return GameStateTransition.Valid(
@@ -94,7 +100,7 @@ class SessionManager @Inject constructor() {
     }
 
     private fun performNewJoin(
-        data: NewGameData, message: ClientMessage.RegisterPlayer, phase: GamePhase
+        data: GameData, message: ClientMessage.RegisterPlayer, phase: GamePhase
     ): GameStateTransition {
         val allowedPhases = GameFlowRegistry.getValidPhasesFor(message)
         if (phase !in allowedPhases) {
@@ -143,10 +149,10 @@ class SessionManager @Inject constructor() {
     }
 
     private fun handleDisconnect(
-        data: NewGameData, phase: GamePhase, playerId: String
+        data: GameData, phase: GamePhase, playerId: String
     ): GameStateTransition {
         val player = data.players[playerId]
-            ?: return GameStateTransition.Invalid("Can't find disconnect player")
+            ?: return GameStateTransition.Invalid("Can't find disconnected player in ${data.players}")
 
         val ghostPlayer = player.copy(isConnected = false)
         val dataWithGhost = data.copy(players = data.players + (playerId to ghostPlayer))
@@ -155,16 +161,21 @@ class SessionManager @Inject constructor() {
             // ===========================
             // CASE: ACTIVE OR ALREADY PAUSED
             // ===========================
-            val phaseToSave =
-                if (phase is GamePhase.Paused) dataWithGhost.phaseBeforePause else phase
+            val phaseBeforePause =
+                if (phase is GamePhase.Paused) dataWithGhost.phaseBeforePause!! else phase
+            val phaseAfterPause =
+                if (phase is GamePhase.Paused) dataWithGhost.phaseAfterPause!! else phase
             val pausedData = dataWithGhost.copy(
-                phaseBeforePause = phaseToSave
+                phaseBeforePause = phaseBeforePause,
+                phaseAfterPause = phaseAfterPause
             )
 
             GameStateTransition.Valid(
-                newGameData = pausedData, newPhase = GamePhase.Paused, envelopes = listOf(
+                newGameData = pausedData,
+                newPhase = GamePhase.Paused,
+                envelopes = listOf(
                     Envelope.Broadcast(ServerMessage.PlayerDisconnected(playerId))
-                )
+                ),
             )
         } else {
             // ===========================
@@ -183,5 +194,89 @@ class SessionManager @Inject constructor() {
                 )
             )
         }
+    }
+
+    fun kickPlayer(
+        data: GameData,
+        phase: GamePhase,
+        playerIdToKick: String,
+        strategy: GameModeStrategy
+    ): GameStateTransition {
+        // 1. Core Cleanup: Remove player from the map
+        val remainingPlayers = data.players.filterKeys { it != playerIdToKick }
+
+        // 2. Minimum Player Check
+        if (phase !is GamePhase.Lobby && remainingPlayers.size < PlayerCountLimits.MIN_PLAYERS) {
+            return GameStateTransition.Valid(
+                newGameData = GameData(), // Reset entirely
+                newPhase = GamePhase.GameEnd,
+                envelopes = listOf(Envelope.Broadcast(ServerMessage.EndGame))
+            )
+        }
+
+        // 3. Imposter Check (Win Condition)
+        // If the Imposter is kicked, Civilians win immediately.
+        val cleanScores = data.scores
+            .filterKeys { it != playerIdToKick }
+        if (playerIdToKick == data.imposterId && phase !is GamePhase.Lobby && phase !is GamePhase.GameReplayChoice) {
+            return GameStateTransition.Valid(
+                newGameData = data,
+                newPhase = GamePhase.GameResults,
+                envelopes = listOf(
+                    Envelope.Broadcast(ServerMessage.PlayerList(data.players.values.toList())),
+                    Envelope.Broadcast(
+                        ServerMessage.VoteResult(
+                            voteResult = emptyMap(), // Empty votes imply forfeit
+                            imposterId = playerIdToKick,
+                            playerScores = cleanScores // Keep existing scores
+                        )
+                    ),
+                    Envelope.Broadcast(ServerMessage.GameResumed(GamePhase.GameResults)),
+                )
+            )
+        }
+
+        // 4. Delegate to Strategy:
+        // Important: If we are Paused, we want to calculate the logic based on the
+        // phase we were in BEFORE the pause (to know if we need to restart round etc)
+        val cleanedData = data.copy(players = remainingPlayers, scores = cleanScores)
+        val logicPhase =
+            if (phase is GamePhase.Paused) cleanedData.phaseBeforePause!! else phase
+        Log.d(TAG, "SessionManager: Kicking player in logic phase: $logicPhase")
+
+        val transition = strategy.onPlayerRemoved(cleanedData, logicPhase, playerIdToKick)
+
+        // 5. Decide to keep pausing or resume
+        // Clear Pause State:
+        return when (transition) {
+            is GameStateTransition.Valid -> {
+                transition.let {
+                    if (it.newGameData.isEveryoneConnected) {
+                        Log.d(TAG, "SessionManager: Resuming game")
+                        it.copy(
+                            newGameData = it.newGameData.copy(
+                                phaseBeforePause = null,
+                                phaseAfterPause = null
+                            ),
+                            newPhase = transition.newPhase ?: logicPhase,
+                            envelopes = it.envelopes + Envelope.Broadcast(
+                                ServerMessage.GameResumed(
+                                    transition.newPhase ?: logicPhase
+                                )
+                            )
+                        )
+                    } else {
+                        Log.d(TAG, "SessionManager: Keeping game paused")
+                        it.copy(
+                            newGameData = it.newGameData.copy(phaseAfterPause = it.newPhase),
+                            newPhase = GamePhase.Paused
+                        )
+                    }
+                }
+            }
+
+            is GameStateTransition.Invalid -> transition
+        }
+
     }
 }

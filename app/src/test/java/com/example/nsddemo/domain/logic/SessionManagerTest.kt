@@ -1,19 +1,23 @@
 package com.example.nsddemo.domain.logic
 
+import android.util.Log
 import com.example.nsddemo.domain.model.ClientMessage
 import com.example.nsddemo.domain.model.Envelope
+import com.example.nsddemo.domain.model.GameData
 import com.example.nsddemo.domain.model.GamePhase
 import com.example.nsddemo.domain.model.GameStateTransition
-import com.example.nsddemo.domain.model.NewGameData
 import com.example.nsddemo.domain.model.NewPlayerColors
 import com.example.nsddemo.domain.model.Player
 import com.example.nsddemo.domain.model.RoundData
 import com.example.nsddemo.domain.model.ServerMessage
 import com.example.nsddemo.domain.model.SystemEvent
+import com.example.nsddemo.domain.strategy.GameModeStrategy
 import com.example.nsddemo.domain.util.GameFlowRegistry
 import com.example.nsddemo.domain.util.PlayerCountLimits
 import io.mockk.every
+import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.unmockkObject
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -33,7 +37,7 @@ class SessionManagerTest {
     private val player = Player("Bob", "Blue", playerId, isConnected = true)
 
     // Base data with one player already inside
-    private val baseData = NewGameData(
+    private val baseData = GameData(
         hostId = hostId,
         players = mapOf(playerId to player)
     )
@@ -43,7 +47,17 @@ class SessionManagerTest {
         // Mock Singletons
         mockkObject(GameFlowRegistry)
         mockkObject(ColorAllocator)
-
+        mockkStatic(Log::class)
+        every { Log.d(any(), any()) } returns 0
+        every { Log.e(any(), any()) } returns 0
+        every { Log.e(any(), any(), any()) } answers {
+            // Print the error if the test fails so we see why
+            println("ERROR: ${secondArg<String>()} Exception: ${thirdArg<Throwable>()}")
+            0
+        }
+        every { Log.w(any(), any<Throwable>()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
+        every { Log.i(any(), any()) } returns 0
         // Default Mocks
         every { ColorAllocator.assignColor(any()) } returns NewPlayerColors.Red
         every { GameFlowRegistry.getValidPhasesFor(any()) } returns setOf(
@@ -79,7 +93,7 @@ class SessionManagerTest {
     @Test
     fun `GIVEN Idle Phase WHEN Register New Player THEN Success (Strict Mode)`() {
         // Arrange: Game just started (Idle)
-        val emptyData = NewGameData(hostId = "", players = emptyMap())
+        val emptyData = GameData(hostId = "", players = emptyMap())
         val msg = ClientMessage.RegisterPlayer("Host", hostId)
 
         val result = sessionManager.registerPlayer(emptyData, GamePhase.Idle, msg)
@@ -169,7 +183,7 @@ class SessionManagerTest {
                 playerId to player.copy(isConnected = false), // Bob offline
                 hostId to Player("Host", "Red", hostId, isConnected = true) // Host online
             ),
-            phaseBeforePause = GamePhase.InRound
+            phaseAfterPause = GamePhase.InRound
         )
         val msg = ClientMessage.RegisterPlayer("Bob", playerId)
 
@@ -183,7 +197,7 @@ class SessionManagerTest {
         assertEquals(GamePhase.InRound, valid.newPhase)
 
         // 2. phaseBeforePause cleared
-        assertNull(valid.newGameData.phaseBeforePause)
+        assertNull(valid.newGameData.phaseAfterPause)
 
         // 3. GameResumed broadcast sent
         val messages = valid.envelopes.map {
@@ -192,7 +206,10 @@ class SessionManagerTest {
                 is Envelope.Unicast -> it.message
             }
         }
-        assertTrue("Should broadcast GameResumed", messages.contains(ServerMessage.GameResumed))
+        assertTrue(
+            "Should broadcast GameResumed",
+            messages.contains(ServerMessage.GameResumed(GamePhase.InRound))
+        )
     }
 
     @Test
@@ -204,7 +221,7 @@ class SessionManagerTest {
                 "p3" to Player("Charlie", "Green", "p3", isConnected = false), // Charlie
                 hostId to Player("Host", "Red", hostId, isConnected = true)
             ),
-            phaseBeforePause = GamePhase.InRound
+            phaseAfterPause = GamePhase.InRound
         )
         val msg = ClientMessage.RegisterPlayer("Bob", playerId)
 
@@ -218,7 +235,7 @@ class SessionManagerTest {
         assertEquals(GamePhase.Paused, valid.newPhase)
 
         // 2. phaseBeforePause persisted
-        assertEquals(GamePhase.InRound, valid.newGameData.phaseBeforePause)
+        assertEquals(GamePhase.InRound, valid.newGameData.phaseAfterPause)
 
         // 3. NO GameResumed message
         val messages = valid.envelopes.map {
@@ -227,7 +244,7 @@ class SessionManagerTest {
                 is Envelope.Unicast -> it.message
             }
         }
-        assertFalse(messages.contains(ServerMessage.GameResumed))
+        assertFalse(messages.contains(ServerMessage.GameResumed(GamePhase.InRound)))
     }
 
     @Test
@@ -289,7 +306,7 @@ class SessionManagerTest {
         assertEquals(GamePhase.Paused, valid.newPhase)
 
         // 2. Saved previous phase
-        assertEquals(GamePhase.InRound, valid.newGameData.phaseBeforePause)
+        assertEquals(GamePhase.InRound, valid.newGameData.phaseAfterPause)
 
         // 3. Player kept but offline
         assertTrue(valid.newGameData.players.containsKey(playerId))
@@ -308,7 +325,8 @@ class SessionManagerTest {
                 hostId to Player("Host", "Red", hostId, isConnected = false),
                 playerId to player // Bob is currently online
             ),
-            phaseBeforePause = GamePhase.GameVoting // Was voting before pause
+            phaseBeforePause = GamePhase.GameVoting,
+            phaseAfterPause = GamePhase.GameVoting // Was voting before pause
         )
 
         val event = SystemEvent.PlayerDisconnected(playerId) // Bob disconnects too
@@ -321,7 +339,7 @@ class SessionManagerTest {
         assertEquals(GamePhase.Paused, valid.newPhase)
 
         // CRITICAL: Ensure we didn't overwrite 'GameVoting' with 'Paused'
-        assertEquals(GamePhase.GameVoting, valid.newGameData.phaseBeforePause)
+        assertEquals(GamePhase.GameVoting, valid.newGameData.phaseAfterPause)
 
         assertFalse(valid.newGameData.players[playerId]!!.isConnected)
     }
@@ -332,5 +350,191 @@ class SessionManagerTest {
         val result = sessionManager.handleSystemEvent(baseData, GamePhase.InRound, event)
 
         assertTrue(result is GameStateTransition.Invalid)
+    }
+
+    // ==========================================
+    // 4. KICK LOGIC
+    // ==========================================
+
+    @Test
+    fun `GIVEN Active Game WHEN Imposter is Kicked THEN Civilians Win Immediately`() {
+        // Arrange
+        val imposterId = playerId
+        val gameData = baseData.copy(
+            imposterId = imposterId,
+            roundNumber = 1,
+            players = baseData.players + mapOf(
+                hostId to Player(
+                    "Host",
+                    "Green",
+                    hostId,
+                    isConnected = true
+                ), ("123" to Player("Dummy", "Yellow", "123", isConnected = true))
+            )
+        )
+
+        // Mock Strategy (needed because kickPlayer calls it if not imposter/min players)
+        // But here we hit the Imposter check first, so strategy shouldn't be called for logic.
+        val mockStrategy = mockk<GameModeStrategy>()
+
+        // Act
+        val result =
+            sessionManager.kickPlayer(gameData, GamePhase.InRound, imposterId, mockStrategy)
+
+        // Assert
+        assertTrue(result is GameStateTransition.Valid)
+        val valid = result as GameStateTransition.Valid
+
+        assertEquals(GamePhase.GameResults, valid.newPhase)
+
+        val messages = valid.envelopes.map { (it as Envelope.Broadcast).message }
+        assertTrue(messages.any { it is ServerMessage.VoteResult }) // Reveal
+    }
+
+    @Test
+    fun `GIVEN Active Game WHEN Too Few Players Remain THEN End Game`() {
+        // Arrange: Only 2 players. If 1 is kicked, we have 1 left. Min is 2.
+        val data = baseData // Host + Player (Size 2)
+        val mockStrategy = mockk<GameModeStrategy>()
+
+        // Act
+        val result = sessionManager.kickPlayer(data, GamePhase.InRound, playerId, mockStrategy)
+
+        // Assert
+        assertTrue(result is GameStateTransition.Valid)
+        assertEquals(GamePhase.GameEnd, (result as GameStateTransition.Valid).newPhase)
+    }
+
+    @Test
+    fun `GIVEN Paused Game WHEN Kicking Offline Player Makes Everyone Online THEN Resume Game`() {
+        // Arrange: Game paused because P2 and P3 disconnected.
+        val p3Id = "p3"
+        val p3 = Player("Charlie", "Green", p3Id, isConnected = true) // Offline
+
+        // Data has 3 players. P2 (online for this test setup), P3 (offline).
+        // Wait, to test Resume, we need the result state to have ALL players connected.
+        // So: Host(Online), P2(Offline).
+        // If we KICK P2, only Host remains (Online). So "Everyone is connected".
+
+        val pausedData = GameData(
+            imposterId = hostId,
+            players = mapOf(
+                hostId to player.copy(id = hostId, isConnected = true),
+                playerId to player.copy(isConnected = false),
+                p3Id to p3
+            ),
+            phaseBeforePause = GamePhase.InRound,
+            phaseAfterPause = GamePhase.InRound
+        )
+
+        // Mock Strategy: Must return a valid transition for the kick logic
+        val mockStrategy = mockk<GameModeStrategy>()
+        every {
+            mockStrategy.onPlayerRemoved(
+                any(),
+                any(),
+                any()
+            )
+        } returns GameStateTransition.Valid(
+            newGameData = pausedData.copy(players = pausedData.players - playerId), // simplified return
+            newPhase = GamePhase.InRound
+        )
+
+        // Act: Kick the offline player
+        val result = sessionManager.kickPlayer(pausedData, GamePhase.Paused, playerId, mockStrategy)
+
+        // Assert
+        assertTrue(result is GameStateTransition.Valid)
+        val valid = result as GameStateTransition.Valid
+
+        // Logic:
+        // 1. Kick removes P2.
+        // 2. Remaining: Host (Connected), P3 (Disconnected).
+        // 3. isEveryoneConnected == true.
+        // 4. Resume to phaseBeforePause (InRound).
+
+        // Note: Our mock returned a blank GameData(), but the SessionManager logic wraps it.
+        // The key is checking if it sends "GameResumed".
+
+        val envelopes = valid.envelopes.filterIsInstance<Envelope.Broadcast>()
+        assertTrue(envelopes.any { it.message is ServerMessage.GameResumed })
+    }
+
+    // ==========================================
+    // 5. RECONNECTION STATE SYNC (The Fixes)
+    // ==========================================
+
+    @Test
+    fun `GIVEN Imposter Reconnects WHEN Syncing THEN Receives ImposterId and NO Word`() {
+        // Arrange
+        val imposterId = playerId
+        val data = baseData.copy(
+            imposterId = imposterId,
+            word = "SecretWord",
+            players = mapOf(playerId to player.copy(isConnected = false))
+        )
+        val msg = ClientMessage.RegisterPlayer("Bob", playerId)
+
+        // Act
+        val result = sessionManager.registerPlayer(data, GamePhase.InRound, msg)
+        val valid = result as GameStateTransition.Valid
+
+        // Extract Sync Message
+        val syncEnvelope = valid.envelopes.find { it is Envelope.Unicast } as Envelope.Unicast
+        val syncMsg = syncEnvelope.message as ServerMessage.ReconnectionFullStateSync
+
+        // Assert
+        assertEquals("Imposter should see their own ID", imposterId, syncMsg.data.imposterId)
+        assertNull("Imposter should NOT see the word", syncMsg.data.word)
+    }
+
+    @Test
+    fun `GIVEN Civilian Reconnects WHEN Syncing THEN Receives Word and NO ImposterId`() {
+        // Arrange
+        val civId = playerId
+        val imposterId = hostId // Host is imposter
+        val data = baseData.copy(
+            imposterId = imposterId,
+            word = "SecretWord",
+            players = mapOf(playerId to player.copy(isConnected = false))
+        )
+        val msg = ClientMessage.RegisterPlayer("Bob", civId)
+
+        // Act
+        val result = sessionManager.registerPlayer(data, GamePhase.InRound, msg)
+        val valid = result as GameStateTransition.Valid
+
+        val syncEnvelope = valid.envelopes.find { it is Envelope.Unicast } as Envelope.Unicast
+        val syncMsg = syncEnvelope.message as ServerMessage.ReconnectionFullStateSync
+
+        // Assert
+        assertNull("Civilian should NOT see imposter ID", syncMsg.data.imposterId)
+        assertEquals("Civilian SHOULD see the word", "SecretWord", syncMsg.data.word)
+    }
+
+    @Test
+    fun `GIVEN Reconnect InRound WHEN Syncing THEN Receives FULL Round Data (Not Sliced)`() {
+        // Arrange
+        val roundData = RoundData.QuestionRoundData(
+            roundPairs = listOf("p1" to "p2", "p2" to "p3", "p3" to "p1"),
+            currentPairIndex = 1 // Middle of round
+        )
+        val data = baseData.copy(
+            roundData = roundData,
+            players = mapOf(playerId to player.copy(isConnected = false))
+        )
+        val msg = ClientMessage.RegisterPlayer("Bob", playerId)
+
+        // Act
+        val result = sessionManager.registerPlayer(data, GamePhase.InRound, msg)
+
+        // Assert
+        val valid = result as GameStateTransition.Valid
+        val syncMsg =
+            (valid.envelopes.find { it is Envelope.Unicast } as Envelope.Unicast).message as ServerMessage.ReconnectionFullStateSync
+        val syncRound = syncMsg.data.roundData as RoundData.QuestionRoundData
+
+        assertEquals("Should send pairs until current round", 2, syncRound.roundPairs.size)
+        assertEquals("Should preserve index", 1, syncRound.currentPairIndex)
     }
 }

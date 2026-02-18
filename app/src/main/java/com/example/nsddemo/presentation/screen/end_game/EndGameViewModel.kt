@@ -1,9 +1,10 @@
 package com.example.nsddemo.presentation.screen.end_game
 
+import android.util.Log
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.nsddemo.domain.engine.GameSession
+import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.presentation.service.SessionController
-import com.example.nsddemo.presentation.util.BaseGameViewModel
 import com.example.nsddemo.presentation.util.Routes
 import com.example.nsddemo.presentation.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,9 +17,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class EndGameViewModel @Inject constructor(
-    gameSession: GameSession,
     private val sessionController: SessionController
-) : BaseGameViewModel(gameSession) {
+) : ViewModel() {
     private val _state = MutableStateFlow(EndGameState())
     val state = _state.asStateFlow()
 
@@ -29,6 +29,11 @@ class EndGameViewModel @Inject constructor(
         when (event) {
             EndGameEvent.EndGame -> quitToMainMenu()
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.i(TAG, "EndGameViewModel: Cleared!")
     }
 
     private fun quitToMainMenu() {

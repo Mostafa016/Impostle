@@ -1,8 +1,8 @@
 package com.example.nsddemo.data.local.network.repository
 
 import com.example.nsddemo.data.repository.GameSessionRepositoryImpl
+import com.example.nsddemo.domain.model.GameData
 import com.example.nsddemo.domain.model.GamePhase
-import com.example.nsddemo.domain.model.NewGameData
 import com.example.nsddemo.domain.model.Player
 import com.example.nsddemo.domain.model.RoundData
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +32,7 @@ class GameSessionRepositoryTest {
     @Test
     fun `GIVEN new repository WHEN checked THEN starts in Idle state with empty data`() {
         assertEquals("Initial state should be Idle", GamePhase.Idle, repository.gameState.value)
-        assertEquals("Initial data should be empty", NewGameData(), repository.gameData.value)
+        assertEquals("Initial data should be empty", GameData(), repository.gameData.value)
 
         // Verify RoundData is Idle by default
         assertTrue(repository.gameData.value.roundData is RoundData.Idle)
@@ -157,7 +157,7 @@ class GameSessionRepositoryTest {
 
         // Assert
         assertEquals("State should be reset to Idle", GamePhase.Idle, repository.gameState.value)
-        assertEquals("Data should be reset to default", NewGameData(), repository.gameData.value)
+        assertEquals("Data should be reset to default", GameData(), repository.gameData.value)
         assertEquals("Local Player ID should be empty", "", repository.gameData.value.localPlayerId)
         assertTrue(
             "RoundData should be reset to Idle",

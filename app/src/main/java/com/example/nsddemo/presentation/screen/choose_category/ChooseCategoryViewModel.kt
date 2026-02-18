@@ -1,6 +1,8 @@
 package com.example.nsddemo.presentation.screen.choose_category
 
+import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.domain.engine.GameSession
 import com.example.nsddemo.domain.model.GameCategory
 import com.example.nsddemo.presentation.util.BaseGameViewModel
@@ -26,6 +28,11 @@ class ChooseCategoryViewModel @Inject constructor(
         when (event) {
             is ChooseCategoryEvent.CategoryChosen -> onChooseCategory(event.category)
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.i(TAG, "ChooseCategoryViewModel: Cleared!")
     }
 
     private fun onChooseCategory(domainCategory: GameCategory) {

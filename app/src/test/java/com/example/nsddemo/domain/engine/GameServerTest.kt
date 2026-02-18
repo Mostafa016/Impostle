@@ -5,10 +5,10 @@ import app.cash.turbine.test
 import com.example.nsddemo.domain.logic.SessionManager
 import com.example.nsddemo.domain.model.ClientMessage
 import com.example.nsddemo.domain.model.Envelope
+import com.example.nsddemo.domain.model.GameData
 import com.example.nsddemo.domain.model.GameMode
 import com.example.nsddemo.domain.model.GamePhase
 import com.example.nsddemo.domain.model.GameStateTransition
-import com.example.nsddemo.domain.model.NewGameData
 import com.example.nsddemo.domain.model.PlayerConnectionEvent
 import com.example.nsddemo.domain.model.RoundData
 import com.example.nsddemo.domain.model.ServerMessage
@@ -71,8 +71,16 @@ class GameServerTest {
 
         // Mock Logging
         mockkStatic(Log::class)
-        every { Log.e(any(), any()) } returns 0
         every { Log.d(any(), any()) } returns 0
+        every { Log.e(any(), any()) } returns 0
+        every { Log.e(any(), any(), any()) } answers {
+            // Print the error if the test fails so we see why
+            println("ERROR: ${secondArg<String>()} Exception: ${thirdArg<Throwable>()}")
+            0
+        }
+        every { Log.w(any(), any<Throwable>()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
+        every { Log.i(any(), any()) } returns 0
 
         // 1. Setup Repository Mocks
         every { repo.incomingMessages } returns incomingMessagesFlow
@@ -103,7 +111,7 @@ class GameServerTest {
         gameServer.serverState.test {
             assertEquals(ServerState.Idle, awaitItem())
 
-            val job = launch { gameServer.start("CODE") }
+            val job = launch { gameServer.start("CODE", "123") }
             runCurrent()
 
             repoStateFlow.value = ServerState.Running(1234, "CODE")
@@ -118,7 +126,7 @@ class GameServerTest {
     @Test
     fun `GIVEN Server Starts WHEN Repo stays Idle (Timeout) THEN repo stops`() = runTest {
         // 1. Launch the start function (it suspends)
-        val job = launch { gameServer.start("CODE") }
+        val job = launch { gameServer.start("CODE", "123") }
 
         // 2. Advance time PAST the timeout (10,000 + 1)
         advanceTimeBy(GameServer.TIMEOUT_MS + 1)
@@ -139,9 +147,9 @@ class GameServerTest {
         val msg = ClientMessage.RegisterPlayer("Alice", playerId)
 
         coEvery { sessionManager.registerPlayer(any(), any(), msg) } returns
-                GameStateTransition.Valid(NewGameData())
+                GameStateTransition.Valid(GameData())
 
-        val job = launch { gameServer.start("CODE") }
+        val job = launch { gameServer.start("CODE", "123") }
         repoStateFlow.value = ServerState.Running(1234, "CODE")
         runCurrent()
 
@@ -160,9 +168,9 @@ class GameServerTest {
         val msg = ClientMessage.SubmitVote("p2")
 
         coEvery { strategy.handleAction(any(), any(), msg, playerId) } returns
-                GameStateTransition.Valid(NewGameData())
+                GameStateTransition.Valid(GameData())
 
-        val job = launch { gameServer.start("CODE") }
+        val job = launch { gameServer.start("CODE", "123") }
         repoStateFlow.value = ServerState.Running(1234, "CODE")
         runCurrent()
 
@@ -182,9 +190,9 @@ class GameServerTest {
         val expectedSystemEvent = SystemEvent.PlayerDisconnected(playerId)
 
         coEvery { sessionManager.handleSystemEvent(any(), any(), expectedSystemEvent) } returns
-                GameStateTransition.Valid(NewGameData())
+                GameStateTransition.Valid(GameData())
 
-        val job = launch { gameServer.start("CODE") }
+        val job = launch { gameServer.start("CODE", "123") }
         repoStateFlow.value = ServerState.Running(1234, "CODE")
         runCurrent()
 
@@ -202,7 +210,7 @@ class GameServerTest {
     fun `GIVEN PlayerConnected Event WHEN Received THEN Ignored`() = runTest {
         val event = PlayerConnectionEvent.PlayerConnected("p1", "Alice")
 
-        val job = launch { gameServer.start("CODE") }
+        val job = launch { gameServer.start("CODE", "123") }
         runCurrent()
 
         connectionEventsFlow.emit(event)
@@ -228,12 +236,12 @@ class GameServerTest {
             // Mock Strategy returning New Game Code and New Phase
             coEvery { strategy.handleAction(any(), any(), msg, playerId) } returns
                     GameStateTransition.Valid(
-                        newGameData = NewGameData(gameCode = "UPDATED"),
+                        newGameData = GameData(gameCode = "UPDATED"),
                         newPhase = GamePhase.GameResults,
                         envelopes = listOf(Envelope.Broadcast(broadcastMsg))
                     )
 
-            val job = launch { gameServer.start("CODE") }
+            val job = launch { gameServer.start("CODE", "123") }
             repoStateFlow.value = ServerState.Running(1234, "CODE")
             runCurrent()
 
@@ -252,7 +260,7 @@ class GameServerTest {
                     nextMsg,
                     playerId
                 )
-            } returns GameStateTransition.Valid(NewGameData())
+            } returns GameStateTransition.Valid(GameData())
 
             incomingMessagesFlow.emit(playerId to nextMsg)
             advanceUntilIdle()
@@ -283,7 +291,7 @@ class GameServerTest {
                         envelopes = listOf(Envelope.Unicast("p1", errorMsg))
                     )
 
-            val job = launch { gameServer.start("CODE") }
+            val job = launch { gameServer.start("CODE", "123") }
             repoStateFlow.value = ServerState.Running(1234, "CODE")
             runCurrent()
 
@@ -306,14 +314,14 @@ class GameServerTest {
                     checkMsg,
                     playerId
                 )
-            } returns GameStateTransition.Valid(NewGameData())
+            } returns GameStateTransition.Valid(GameData())
 
             incomingMessagesFlow.emit(playerId to checkMsg)
             advanceUntilIdle()
 
             coVerify {
                 strategy.handleAction(
-                    withArg { assertEquals("", it.gameCode) }, // Still default, not changed
+                    withArg { assertEquals("CODE", it.gameCode) }, // Still default, not changed
                     withArg { assertEquals(GamePhase.Lobby, it) }, // Still Lobby
                     checkMsg,
                     playerId
@@ -332,14 +340,14 @@ class GameServerTest {
 
         coEvery { strategy.handleAction(any(), any(), msg, playerId) } returns
                 GameStateTransition.Valid(
-                    newGameData = NewGameData(),
+                    newGameData = GameData(),
                     envelopes = listOf(
                         Envelope.Broadcast(broadcastMsg),
                         Envelope.Unicast(playerId, unicastMsg)
                     )
                 )
 
-        val job = launch { gameServer.start("CODE") }
+        val job = launch { gameServer.start("CODE", "123") }
         repoStateFlow.value = ServerState.Running(1234, "CODE")
         runCurrent()
 
@@ -360,11 +368,11 @@ class GameServerTest {
         // Return Valid transition but newPhase is null
         coEvery { strategy.handleAction(any(), any(), msg, playerId) } returns
                 GameStateTransition.Valid(
-                    newGameData = NewGameData(),
+                    newGameData = GameData(),
                     newPhase = null // Explicitly null
                 )
 
-        val job = launch { gameServer.start("CODE") }
+        val job = launch { gameServer.start("CODE", "123") }
         repoStateFlow.value = ServerState.Running(1234, "CODE")
         runCurrent()
 
@@ -380,7 +388,7 @@ class GameServerTest {
                 checkMsg,
                 playerId
             )
-        } returns GameStateTransition.Valid(NewGameData())
+        } returns GameStateTransition.Valid(GameData())
 
         incomingMessagesFlow.emit(playerId to checkMsg)
         advanceUntilIdle()

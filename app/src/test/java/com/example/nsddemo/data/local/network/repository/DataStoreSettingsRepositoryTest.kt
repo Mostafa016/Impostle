@@ -1,5 +1,6 @@
 package com.example.nsddemo.data.local.network.repository
 
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
@@ -11,6 +12,7 @@ import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -49,7 +51,7 @@ class DataStoreSettingsRepositoryTest {
 
     private val testDispatcher = StandardTestDispatcher()
 
-    // We use a separate scope for DataStore internals to control its lifecycle
+    // Unconfined is recommended for DataStore tests to prevent deadlocks on file locks
     private val dataStoreScope = TestScope(UnconfinedTestDispatcher(testDispatcher.scheduler))
 
     @Before
@@ -57,12 +59,13 @@ class DataStoreSettingsRepositoryTest {
         MockKAnnotations.init(this)
         Dispatchers.setMain(testDispatcher)
 
-        // FIX 1: Use UnconfinedTestDispatcher for DataStore.
-        // This forces DataStore coroutines to run immediately on the current thread,
-        // reducing the chance of background threads holding file locks during the Rename operation.
+        // Mock Log to prevent RuntimeExceptions in tests (as Log is static Android)
+        mockkStatic(Log::class)
+        every { Log.d(any(), any()) } returns 0
+        every { Log.e(any(), any(), any()) } returns 0
+        every { Log.e(any(), any()) } returns 0
 
-        // FIX 2: Create a unique subfolder for every test.
-        // Windows locking can sometimes affect the parent directory.
+        // Create a unique file for every test run to avoid Windows file locking collisions
         val testFile =
             File(tmpFolder.newFolder(), "test_settings_${UUID.randomUUID()}.preferences_pb")
 
@@ -71,6 +74,7 @@ class DataStoreSettingsRepositoryTest {
             produceFile = { testFile }
         )
 
+        // Default mock behavior
         every { appLocaleHelper.getCurrentLocale() } returns AppLocales.English
 
         repository = DataStoreSettingsRepository(testDataStore, appLocaleHelper)
@@ -78,8 +82,7 @@ class DataStoreSettingsRepositoryTest {
 
     @After
     fun tearDown() {
-        // FIX 3: Aggressively cancel the DataStore scope.
-        // This releases any file handles held by active coroutines.
+        // Cancel the scope to release file handles
         dataStoreScope.cancel()
         Dispatchers.resetMain()
     }
@@ -89,12 +92,10 @@ class DataStoreSettingsRepositoryTest {
     @Test
     fun `GIVEN empty DataStore WHEN userSettings collected THEN emits defaults`() =
         runTest(testDispatcher) {
-            every { appLocaleHelper.getCurrentLocale() } returns AppLocales.English
-
             repository.userSettings.test {
                 val settings = awaitItem()
 
-                assertNull(settings.playerName)
+                assertNull("Player Name should be null by default", settings.playerName)
                 assertFalse("Default theme should be false (Light)", settings.isDarkTheme)
                 assertEquals("en", settings.languageCode)
                 assertTrue("Player ID should be generated", settings.playerId.isNotEmpty())
@@ -122,10 +123,13 @@ class DataStoreSettingsRepositoryTest {
     @Test
     fun `WHEN setPlayerName called THEN userSettings emits new name`() = runTest(testDispatcher) {
         repository.userSettings.test {
+            // 1. Initial State
             assertNull(awaitItem().playerName)
 
+            // 2. Action
             repository.setPlayerName("SuperPlayer")
 
+            // 3. Result
             assertEquals("SuperPlayer", awaitItem().playerName)
         }
     }
@@ -164,6 +168,7 @@ class DataStoreSettingsRepositoryTest {
     @Test
     fun `GIVEN DataStore throws IOException WHEN collecting THEN emits empty preferences`() =
         runTest(testDispatcher) {
+            // Mock a broken DataStore
             val brokenDataStore = mockk<DataStore<Preferences>>()
             every { brokenDataStore.data } returns flow {
                 throw IOException("File corrupted")
@@ -173,6 +178,7 @@ class DataStoreSettingsRepositoryTest {
 
             brokenRepo.userSettings.test {
                 val settings = awaitItem()
+                // Should fallback to default (empty prefs)
                 assertNull(settings.playerName)
                 cancelAndIgnoreRemainingEvents()
             }
@@ -189,7 +195,7 @@ class DataStoreSettingsRepositoryTest {
             val brokenRepo = DataStoreSettingsRepository(brokenDataStore, appLocaleHelper)
 
             brokenRepo.userSettings.test {
-                // Fix: Use awaitError() to consume the terminal exception event
+                // We expect a crash here, so we await the Error
                 val error = awaitError()
 
                 assertTrue(error is RuntimeException)

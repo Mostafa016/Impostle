@@ -29,13 +29,18 @@ class DataStoreSettingsRepository @Inject constructor(
     override val userSettings: Flow<UserSettings> = settingsDataStore.data
         .catch { exception ->
             if (exception is IOException) {
-                Log.e(TAG, exception.message.toString())
+                Log.e(
+                    TAG,
+                    "DataStoreSettingsRepository: " + exception.message.toString(),
+                    exception
+                )
                 emit(emptyPreferences())
             } else throw exception
         }
         .map { preferences ->
+            val playerId = preferences[PLAYER_ID] ?: Uuid.random().toString()
             UserSettings(
-                playerId = preferences[PLAYER_ID] ?: Uuid.random().toString(),
+                playerId = playerId,
                 playerName = preferences[PLAYER_NAME],
                 isDarkTheme = preferences[DARK_THEME] ?: false,
                 languageCode = preferences[LANGUAGE]
@@ -44,7 +49,13 @@ class DataStoreSettingsRepository @Inject constructor(
         }
 
     override suspend fun setPlayerName(name: String) {
-        settingsDataStore.edit { it[PLAYER_NAME] = name }
+        settingsDataStore.edit {
+            it[PLAYER_NAME] = name
+            if (it[PLAYER_ID] == null) {
+                @OptIn(ExperimentalUuidApi::class)
+                it[PLAYER_ID] = Uuid.random().toString()
+            }
+        }
     }
 
     override suspend fun setDarkTheme(enabled: Boolean) {

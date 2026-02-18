@@ -68,15 +68,22 @@ class HostServerNetworkRepositoryTest {
         Dispatchers.setMain(StandardTestDispatcher())
 
         mockkStatic(Log::class)
+        every { Log.d(any(), any()) } returns 0
         every { Log.e(any(), any()) } returns 0
+        every { Log.e(any(), any(), any()) } answers {
+            // Print the error if the test fails so we see why
+            println("ERROR: ${secondArg<String>()} Exception: ${thirdArg<Throwable>()}")
+            0
+        }
+        every { Log.w(any(), any<Throwable>()) } returns 0
         every { Log.w(any(), any<String>()) } returns 0
-        every { Log.wtf(any(), any<String>()) } returns 0
+        every { Log.i(any(), any()) } returns 0
 
         // Socket Mocks
         every { socketServer.listeningState } returns serverListeningStateFlow
         every { socketServer.connectionEvents } returns socketConnectionEvents
         every { socketServer.messageEvents } returns socketMessageEvents
-        coEvery { socketServer.sendToAll(any()) } returns Result.success(Unit)
+        coEvery { socketServer.sendToAll(any()) } returns true
 
         // Registration Mocks
         every { networkRegistration.registrationState } returns registrationStateFlow

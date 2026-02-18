@@ -10,9 +10,10 @@ import androidx.compose.ui.text.font.FontWeight
 @Composable
 fun MainMenuOptionButton(
     textResID: Int,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    enabled: Boolean
 ) {
-    TextButton(onClick = onClick) {
+    TextButton(onClick = onClick, enabled = enabled) {
         Text(
             stringResource(textResID),
             style = MaterialTheme.typography.headlineLarge,

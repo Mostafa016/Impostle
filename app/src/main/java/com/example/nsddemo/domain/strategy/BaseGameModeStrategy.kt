@@ -5,9 +5,9 @@ import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.domain.model.ClientMessage
 import com.example.nsddemo.domain.model.Envelope
 import com.example.nsddemo.domain.model.GameCategory
+import com.example.nsddemo.domain.model.GameData
 import com.example.nsddemo.domain.model.GamePhase
 import com.example.nsddemo.domain.model.GameStateTransition
-import com.example.nsddemo.domain.model.NewGameData
 import com.example.nsddemo.domain.model.ServerMessage
 import com.example.nsddemo.domain.repository.WordRepository
 import com.example.nsddemo.domain.util.GameFlowRegistry
@@ -16,7 +16,7 @@ import com.example.nsddemo.domain.util.PlayerCountLimits
 
 abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) : GameModeStrategy {
     override fun handleAction(
-        data: NewGameData, phase: GamePhase, message: ClientMessage, playerID: String
+        data: GameData, phase: GamePhase, message: ClientMessage, playerID: String
     ): GameStateTransition {
         val allowedPhases = GameFlowRegistry.getValidPhasesFor(message)
         if (phase !in allowedPhases) {
@@ -65,7 +65,7 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
     }
 
     private fun selectCategory(
-        data: NewGameData, category: GameCategory, playerID: String
+        data: GameData, category: GameCategory, playerID: String
     ): GameStateTransition {
         if (data.hostId != playerID) {
             Log.i(TAG, "hostId: ${data.hostId} playerID: $playerID")
@@ -84,7 +84,7 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
     }
 
     private fun startGame(
-        data: NewGameData, playerID: String
+        data: GameData, playerID: String
     ): GameStateTransition {
         if (data.hostId != playerID) {
             return GameStateTransition.Invalid("Only host can start game")
@@ -97,7 +97,10 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
         }
 
         val word = wordRepository.getWordsForCategory(selectedCategory).random()
-        val imposterId = data.players.keys.random()
+        //TODO: Important: allow host to be imposter once done with pause testing
+        val imposterId =
+            data.players.keys.filter { it != data.hostId && it != "6190a1f9-122b-4bd2-9ca7-47a7286aec3d" }
+                .random()
 
         val dataWithRoles = data.copy(
             word = word, imposterId = imposterId
@@ -128,7 +131,7 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
     }
 
     private fun handleRoleConfirm(
-        data: NewGameData, playerId: String
+        data: GameData, playerId: String
     ): GameStateTransition {
         val dataWithNewConfirmation = data.copy(readyPlayerIds = data.readyPlayerIds + playerId)
         if (dataWithNewConfirmation.readyCount == data.players.size) {
@@ -148,13 +151,13 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
     }
 
     private fun endTurn(
-        data: NewGameData, playerID: String
+        data: GameData, playerID: String
     ): GameStateTransition {
         return onTurnEnd(data, playerID)
     }
 
     private fun replayRound(
-        data: NewGameData, playerID: String
+        data: GameData, playerID: String
     ): GameStateTransition {
         if (data.hostId != playerID) {
             return GameStateTransition.Invalid("Only host can replay round")
@@ -162,7 +165,7 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
 
         val newRoundData = setupRoundSpecifics(data).copy(roundNumber = data.roundNumber + 1)
         val roundStartTransition = onRoundStart(newRoundData) as GameStateTransition.Valid
-        val roundReplayMessage = listOf(Envelope.Broadcast(ServerMessage.ReplayRound))
+        val roundReplayMessage = listOf(Envelope.Broadcast(ServerMessage.ReplayRound()))
 
         val replayRoundTransition =
             roundStartTransition.copy(envelopes = roundReplayMessage + roundStartTransition.envelopes)
@@ -170,7 +173,7 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
     }
 
     private fun startVote(
-        data: NewGameData, playerID: String
+        data: GameData, playerID: String
     ): GameStateTransition {
         if (data.hostId != playerID) {
             return GameStateTransition.Invalid("Only host can replay round")
@@ -184,7 +187,7 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
     }
 
     private fun submitVote(
-        data: NewGameData, playerID: String, votedPlayerID: String
+        data: GameData, playerID: String, votedPlayerID: String
     ): GameStateTransition {
         if (playerID == votedPlayerID) {
             return GameStateTransition.Invalid("A player can't vote for themselves")
@@ -238,7 +241,7 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
     ): Map<String, Int> =
         votes.entries.associate { it.key to (if (it.value == imposterId) GameScoreIncrements.CORRECT_PLAYER_GUESS else GameScoreIncrements.INCORRECT_PLAYER_GUESS) }
 
-    private fun continueToGameChoice(data: NewGameData, playerId: String): GameStateTransition {
+    private fun continueToGameChoice(data: GameData, playerId: String): GameStateTransition {
         if (data.hostId != playerId) return GameStateTransition.Invalid("Only host can continue to game choice")
 
         return GameStateTransition.Valid(
@@ -251,35 +254,38 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
     }
 
     private fun replayGame(
-        data: NewGameData, playerID: String
+        data: GameData, playerID: String
     ): GameStateTransition {
         if (data.hostId != playerID) {
             return GameStateTransition.Invalid("Only host can replay game")
         }
 
-        val cleanData = NewGameData(
+        val cleanData = GameData(
             localPlayerId = data.localPlayerId,
             hostId = data.hostId,
             gameCode = data.gameCode,
-            players = data.players,
+            players = data.players.filterValues { it.isConnected },
             scores = data.scores
         )
 
         return GameStateTransition.Valid(
             newGameData = cleanData,
             newPhase = GamePhase.Lobby,
-            envelopes = listOf(Envelope.Broadcast(ServerMessage.ReplayGame))
+            envelopes = listOf(
+                Envelope.Broadcast(ServerMessage.ReplayGame),
+                Envelope.Broadcast(ServerMessage.PlayerList(cleanData.players.values.toList()))
+            )
         )
     }
 
     private fun endGame(
-        data: NewGameData, playerId: String
+        data: GameData, playerId: String
     ): GameStateTransition {
         if (data.hostId != playerId) {
             return GameStateTransition.Invalid("Only host can end game")
         }
 
-        val emptyData = NewGameData()
+        val emptyData = GameData()
 
         return GameStateTransition.Valid(
             newGameData = emptyData,
@@ -289,8 +295,8 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
     }
 
     //region --- Template Methods ---
-    protected abstract fun setupRoundSpecifics(data: NewGameData): NewGameData
-    protected abstract fun onRoundStart(data: NewGameData): GameStateTransition
-    protected abstract fun onTurnEnd(data: NewGameData, playerID: String): GameStateTransition
+    protected abstract fun setupRoundSpecifics(data: GameData): GameData
+    protected abstract fun onRoundStart(data: GameData): GameStateTransition
+    protected abstract fun onTurnEnd(data: GameData, playerID: String): GameStateTransition
     //endregion
 }

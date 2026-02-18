@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -67,8 +68,12 @@ class RemoteClientNetworkRepositoryTest {
         Dispatchers.setMain(StandardTestDispatcher())
 
         mockkStatic(Log::class)
+        every { Log.d(any(), any()) } returns 0
         every { Log.e(any(), any()) } returns 0
-        every { Log.wtf(any(), any<String>()) } returns 0
+        every { Log.i(any(), any()) } returns 0
+        every { Log.e(any(), any(), any()) } returns 0
+        every { Log.w(any(), any<Throwable>()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
 
         // Wire up mocks
         every { networkDiscovery.discoveryProcessState } returns discoveryStateFlow
@@ -77,7 +82,12 @@ class RemoteClientNetworkRepositoryTest {
         every { socketClient.connectionEvents } returns socketConnectionEvents
 
         repository =
-            RemoteClientNetworkRepository(networkDiscovery, networkResolution, socketClient)
+            RemoteClientNetworkRepository(
+                networkDiscovery,
+                networkResolution,
+                socketClient,
+                UnconfinedTestDispatcher()
+            )
     }
 
     @After
@@ -96,7 +106,14 @@ class RemoteClientNetworkRepositoryTest {
 
         // Mock startSession to run forever (simulate an active connection)
         coEvery { socketClient.startSession(host, port) } coAnswers { awaitCancellation() }
-
+        // FIX: Inject UnconfinedTestDispatcher.
+        // This forces the 'launch' to execute immediately on the current thread.
+        repository = RemoteClientNetworkRepository(
+            networkDiscovery,
+            networkResolution,
+            socketClient,
+            UnconfinedTestDispatcher(testScheduler)
+        )
         repository.clientState.test {
             assertEquals(ClientState.Idle, awaitItem())
 

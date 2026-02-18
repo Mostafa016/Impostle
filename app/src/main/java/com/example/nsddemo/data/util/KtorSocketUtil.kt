@@ -10,6 +10,7 @@ import io.ktor.utils.io.readFully
 import io.ktor.utils.io.writeFully
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.withContext
 
 private const val MAX_PAYLOAD_LENGTH = 10 * 1024 * 1024
@@ -17,11 +18,8 @@ private const val MAX_PAYLOAD_LENGTH = 10 * 1024 * 1024
 object KtorSocketUtil {
     // Write: [Int Length] + [JSON Bytes]
     suspend fun ByteWriteChannel.writePacket(json: String) = withContext(Dispatchers.IO) {
-        Log.d(TAG, "SocketUtil: Writing packet: $json")
         json.toByteArray(Charsets.UTF_8).also { bytes ->
-            Log.d(TAG, "SocketUtil: Writing ${bytes.size} bytes")
             writeInt(bytes.size)
-            Log.d(TAG, "SocketUtil: Writing ${String(bytes)}")
             writeFully(bytes)
         }
         flush()
@@ -35,7 +33,6 @@ object KtorSocketUtil {
             // discard() logic or checks might be needed if stream is corrupt,
             // but for now, reading int is standard.
             val length = readInt()
-            Log.d(TAG, "SocketUtil: Reading $length bytes")
             if (length > MAX_PAYLOAD_LENGTH) throw IOException("Packet too large")
             val packet = ByteArray(length)
             readFully(packet)
@@ -44,6 +41,8 @@ object KtorSocketUtil {
             throw e
         } catch (e: EOFException) {
             null // Socket closed cleanly
+        } catch (e: ClosedReceiveChannelException) {
+            null
         } catch (e: Exception) {
             Log.e(TAG, "SocketUtil: readPacket: ${e.message}", e)
             throw IOException("Socket read error", e)

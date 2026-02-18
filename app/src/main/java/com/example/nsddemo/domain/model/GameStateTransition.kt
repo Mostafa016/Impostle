@@ -2,7 +2,7 @@ package com.example.nsddemo.domain.model
 
 sealed class GameStateTransition(open val envelopes: List<Envelope> = emptyList()) {
     data class Valid(
-        val newGameData: NewGameData,
+        val newGameData: GameData,
         val newPhase: GamePhase? = null,
         override val envelopes: List<Envelope> = emptyList()
     ) : GameStateTransition(envelopes)

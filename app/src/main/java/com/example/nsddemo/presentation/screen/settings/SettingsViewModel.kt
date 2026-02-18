@@ -53,4 +53,9 @@ class SettingsViewModel @Inject constructor(
             settingsRepository.setDarkTheme(isDarkTheme)
         }
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.i(TAG, "SettingsViewModel: Cleared!")
+    }
 }

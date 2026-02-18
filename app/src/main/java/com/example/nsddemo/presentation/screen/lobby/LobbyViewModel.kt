@@ -1,8 +1,9 @@
 package com.example.nsddemo.presentation.screen.lobby
 
+import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.domain.engine.GameSession
-import com.example.nsddemo.domain.model.GamePhase
 import com.example.nsddemo.presentation.util.BaseGameViewModel
 import com.example.nsddemo.presentation.util.Routes
 import com.example.nsddemo.presentation.util.UiEvent
@@ -22,6 +23,7 @@ class LobbyViewModel @Inject constructor(
     // Derived UI State
     val gameCode = gameData.value.gameCode
     val isHost = gameData.value.isHost
+    val localPlayerId = gameData.value.localPlayerId
 
     val state = gameSession.gameData.map {
         LobbyState(
@@ -33,18 +35,6 @@ class LobbyViewModel @Inject constructor(
 
     private val _eventFlow = MutableSharedFlow<UiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
-
-    init {
-        // Temporary Navigation Listener (Step 2 Only)
-        // In Step 3, a central Router will handle this.
-        viewModelScope.launch {
-            gamePhase.collect { phase ->
-                if (phase is GamePhase.RoleDistribution) {
-                    _eventFlow.emit(UiEvent.NavigateTo(Routes.RoleReveal.route))
-                }
-            }
-        }
-    }
 
     fun onEvent(event: LobbyEvent) {
         when (event) {
@@ -59,6 +49,16 @@ class LobbyViewModel @Inject constructor(
                     activeClient?.startGame()
                 }
             }
+
+            is LobbyEvent.KickPlayer ->
+                viewModelScope.launch {
+                    activeClient?.kickPlayer(event.playerId)
+                }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.i(TAG, "LobbyViewModel: Cleared!")
     }
 }

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,6 +34,7 @@ import com.example.nsddemo.presentation.screen.lobby.components.PlayerListTitle
 import com.example.nsddemo.presentation.screen.lobby.components.PlayersList
 import com.example.nsddemo.presentation.util.ConditionalComposable
 import com.example.nsddemo.presentation.util.NavigationUtil.popBackStackAndNavigateTo
+import com.example.nsddemo.presentation.util.Routes
 import com.example.nsddemo.presentation.util.UiCategory
 import com.example.nsddemo.presentation.util.UiEvent
 import com.example.nsddemo.presentation.util.uiCategory
@@ -47,7 +49,10 @@ fun LobbyScreen(
         viewModel.eventFlow.collectLatest { event ->
             when (event) {
                 is UiEvent.NavigateTo -> {
-                    navController.popBackStackAndNavigateTo(event.destination)
+                    navController.popBackStackAndNavigateTo(
+                        event.destination,
+                        popUpToRoute = Routes.GameSessionGraph.route
+                    )
                 }
 
                 else -> {
@@ -65,6 +70,8 @@ fun LobbyScreen(
         onChooseCategoryClick = { viewModel.onEvent(LobbyEvent.ChooseCategoryButtonClick) },
         onStartRound = { viewModel.onEvent(LobbyEvent.StartRound) },
         isStartRoundButtonEnabled = state.value.isStartRoundButtonEnabled,
+        onPlayerKick = { viewModel.onEvent(LobbyEvent.KickPlayer(it)) },
+        localPlayerId = viewModel.localPlayerId
     )
 }
 
@@ -77,6 +84,8 @@ private fun LobbyScreen(
     onChooseCategoryClick: () -> Unit,
     onStartRound: () -> Unit,
     isStartRoundButtonEnabled: Boolean,
+    onPlayerKick: (String) -> Unit,
+    localPlayerId: String
 ) {
     Column(
         Modifier
@@ -101,7 +110,17 @@ private fun LobbyScreen(
                     .heightIn(max = 400.dp)
                     .width(150.dp)
             ) {
-                PlayersList(modifier = Modifier.animateContentSize(), players = players)
+                ConditionalComposable(
+                    condition = players.isNotEmpty(),
+                    fallbackComposable = { CircularProgressIndicator() }) {
+                    PlayersList(
+                        modifier = Modifier.animateContentSize(),
+                        players = players,
+                        onPlayerKick = onPlayerKick,
+                        localPlayerId = localPlayerId,
+                        isHost = isHost,
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(16.dp))
             GameCodeText(text = gameCode)
@@ -155,6 +174,8 @@ private fun LobbyScreenPreview() {
         onStartRound = {},
         chosenCategory = null,
         isStartRoundButtonEnabled = false,
+        onPlayerKick = {},
+        localPlayerId = "Player_1"
     )
 }
 

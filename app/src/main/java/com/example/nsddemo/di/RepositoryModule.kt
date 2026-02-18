@@ -19,13 +19,13 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineDispatcher
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
     @Binds
-    @Singleton
     abstract fun bindServerNetworkRepository(
         hostServerNetworkRepository: HostServerNetworkRepository
     ): ServerNetworkRepository
@@ -50,15 +50,19 @@ abstract class RepositoryModule {
 
     companion object {
         @Provides
-        @Singleton
         fun provideRemoteClientNetworkRepository(
             networkDiscovery: NetworkDiscovery,
             networkResolution: NetworkResolution,
-            socketClient: SocketClient
-        ) = RemoteClientNetworkRepository(networkDiscovery, networkResolution, socketClient)
+            socketClient: SocketClient,
+            @IoDispatcher ioDispatcher: CoroutineDispatcher
+        ) = RemoteClientNetworkRepository(
+            networkDiscovery,
+            networkResolution,
+            socketClient,
+            ioDispatcher
+        )
 
         @Provides
-        @Singleton
         fun provideLoopbackClientNetworkRepository(
             loopbackDataSource: LoopbackDataSource
         ) = LoopbackClientNetworkRepository(loopbackDataSource)

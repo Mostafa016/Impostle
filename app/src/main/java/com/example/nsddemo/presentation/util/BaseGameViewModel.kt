@@ -2,15 +2,15 @@ package com.example.nsddemo.presentation.util
 
 import androidx.lifecycle.ViewModel
 import com.example.nsddemo.domain.engine.GameSession
+import com.example.nsddemo.domain.model.GameData
 import com.example.nsddemo.domain.model.GamePhase
-import com.example.nsddemo.domain.model.NewGameData
 import kotlinx.coroutines.flow.StateFlow
 
 abstract class BaseGameViewModel(
     protected val gameSession: GameSession
 ) : ViewModel() {
 
-    val gameData: StateFlow<NewGameData> = gameSession.gameData
+    val gameData: StateFlow<GameData> = gameSession.gameData
     val gamePhase: StateFlow<GamePhase> = gameSession.gamePhase
 
     /**

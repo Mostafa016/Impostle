@@ -138,6 +138,16 @@ class HostServerNetworkRepository @Inject constructor(
         when (listeningState) {
             is ServerListeningState.Listening -> {
                 handleRegistration(gameCode, listeningState.port)
+                launch {
+                    socketServer.listeningState.collect { state ->
+                        // If we encounter an error AFTER startup (e.g. OS kills socket, interface down)
+                        if (state is ServerListeningState.Error) {
+                            _serverState.value =
+                                ServerState.Error("Server Socket Failed: ${state.message}")
+                        }
+                        // Note: We don't handle Idle here because stop() sets Idle manually.
+                    }
+                }
             }
 
             is ServerListeningState.Error -> {
@@ -173,6 +183,13 @@ class HostServerNetworkRepository @Inject constructor(
     override suspend fun sendToAllPlayers(message: ServerMessage) {
         socketServer.sendToAll(data = NetworkJson.encodeToString<ServerMessage>(message))
         loopbackDataSource.serverToClient.emit(LoopbackDataSource.LOCAL_HOST_CLIENT_ID to message)
+    }
+
+    override fun disconnectPlayer(playerId: String) {
+        val clientTransport = sessionManager.getTransport(playerId) as? TransportEndpoint.Network
+        clientTransport?.let {
+            socketServer.disconnectClient(it.clientId)
+        }
     }
 
     override fun cancelAdvertising() {

@@ -1,5 +1,6 @@
 package com.example.nsddemo.domain.engine
 
+import android.util.Log
 import com.example.nsddemo.data.repository.LoopbackClientNetworkRepository
 import com.example.nsddemo.data.repository.RemoteClientNetworkRepository
 import com.example.nsddemo.domain.model.ClientState
@@ -12,6 +13,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.unmockkAll
 import io.mockk.verify
@@ -44,7 +46,9 @@ class GameSessionTest {
     private lateinit var clientFactory: GameClient.GameClientFactory
     private lateinit var serverProvider: Provider<GameServer>
     private lateinit var remoteRepo: RemoteClientNetworkRepository
+    private lateinit var remoteRepoProvider: Provider<RemoteClientNetworkRepository>
     private lateinit var loopbackRepo: LoopbackClientNetworkRepository
+    private lateinit var loopbackRepoProvider: Provider<LoopbackClientNetworkRepository>
     private lateinit var sessionRepo: GameSessionRepository
 
     // Mocked Instances (Returned by Factory/Provider)
@@ -60,11 +64,25 @@ class GameSessionTest {
         MockKAnnotations.init(this)
         Dispatchers.setMain(StandardTestDispatcher())
 
+        mockkStatic(Log::class)
+        every { Log.d(any(), any()) } returns 0
+        every { Log.e(any(), any()) } returns 0
+        every { Log.e(any(), any(), any()) } answers {
+            // Print the error if the test fails so we see why
+            println("ERROR: ${secondArg<String>()} Exception: ${thirdArg<Throwable>()}")
+            0
+        }
+        every { Log.w(any(), any<Throwable>()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
+        every { Log.i(any(), any()) } returns 0
+
         // 1. Create Mocks
         clientFactory = mockk()
         serverProvider = mockk()
         remoteRepo = mockk()
+        remoteRepoProvider = mockk()
         loopbackRepo = mockk()
+        loopbackRepoProvider = mockk()
         sessionRepo = mockk(relaxed = true) // Relaxed for gameData/Phase flows
 
         mockGameClient = mockk()
@@ -74,13 +92,15 @@ class GameSessionTest {
         // Server Setup
         every { serverProvider.get() } returns mockGameServer
         every { mockGameServer.serverState } returns serverStateFlow
-        coEvery { mockGameServer.start(any()) } returns Unit
+        coEvery { mockGameServer.start(any(), any()) } returns Unit
         coEvery { mockGameServer.stop() } just runs
 
         // Client Setup
         every { clientFactory.create(any()) } returns mockGameClient
+        every { loopbackRepoProvider.get() } returns loopbackRepo
+        every { remoteRepoProvider.get() } returns remoteRepo
         every { mockGameClient.clientState } returns clientStateFlow
-        coEvery { mockGameClient.start(any()) } returns Unit
+        coEvery { mockGameClient.start(any(), any()) } returns Unit
         coEvery { mockGameClient.stop() } just runs
 
         // Repo Setup
@@ -90,8 +110,8 @@ class GameSessionTest {
         gameSession = GameSession(
             clientFactory,
             serverProvider,
-            remoteRepo,
-            loopbackRepo,
+            remoteRepoProvider,
+            loopbackRepoProvider,
             sessionRepo
         )
     }
@@ -109,7 +129,7 @@ class GameSessionTest {
     @Test
     fun `GIVEN Host Start WHEN Server and Client Connect THEN Session is Running`() = runTest {
         // Arrange
-        val job = launch { gameSession.startHostSession("CODE") }
+        val job = launch { gameSession.startHostSession("CODE", "123") }
         runCurrent() // Allow start to proceed to collection
 
         // Verify "Connecting" state initially
@@ -128,15 +148,15 @@ class GameSessionTest {
         verify { serverProvider.get() } // Host creates Server
 
         // Verify Start calls
-        coVerify { mockGameServer.start("CODE") }
-        coVerify { mockGameClient.start("CODE") }
+        coVerify { mockGameServer.start("CODE", "123") }
+        coVerify { mockGameClient.start("CODE", "123") }
 
         job.cancel()
     }
 
     @Test
     fun `GIVEN Host Start WHEN Server Fails THEN Session Error and Cleanup`() = runTest {
-        val job = launch { gameSession.startHostSession("CODE") }
+        val job = launch { gameSession.startHostSession("CODE", "123") }
         runCurrent()
 
         // Act: Server fails
@@ -158,7 +178,7 @@ class GameSessionTest {
 
     @Test
     fun `GIVEN Host Start WHEN Server Ready but Client Fails THEN Session Error`() = runTest {
-        val job = launch { gameSession.startHostSession("CODE") }
+        val job = launch { gameSession.startHostSession("CODE", "123") }
         runCurrent()
 
         // Act: Server OK, Client Fails
@@ -178,7 +198,7 @@ class GameSessionTest {
 
     @Test
     fun `GIVEN Host Start WHEN Timeout Reached THEN Session Error`() = runTest {
-        val job = launch { gameSession.startHostSession("CODE") }
+        val job = launch { gameSession.startHostSession("CODE", "123") }
         runCurrent()
 
         // Act: Wait longer than timeout without states changing
@@ -200,7 +220,7 @@ class GameSessionTest {
 
     @Test
     fun `GIVEN Join Start WHEN Client Connects THEN Session is Running`() = runTest {
-        val job = launch { gameSession.startJoinSession("CODE") }
+        val job = launch { gameSession.startJoinSession("CODE", "123") }
         runCurrent()
 
         assertEquals(SessionState.Connecting, gameSession.sessionState.value)
@@ -213,7 +233,7 @@ class GameSessionTest {
         assertTrue(gameSession.sessionState.value is SessionState.Running)
 
         // Verify Correct Dependencies
-        verify { clientFactory.create(remoteRepo) } // Join uses Remote
+        coVerify { clientFactory.create(remoteRepo) } // Join uses Remote
         verify(exactly = 0) { serverProvider.get() } // Join does NOT create Server
 
         job.cancel()
@@ -221,7 +241,7 @@ class GameSessionTest {
 
     @Test
     fun `GIVEN Join Start WHEN Client Fails THEN Session Error`() = runTest {
-        val job = launch { gameSession.startJoinSession("CODE") }
+        val job = launch { gameSession.startJoinSession("CODE", "123") }
         runCurrent()
 
         // Act
@@ -238,7 +258,7 @@ class GameSessionTest {
 
     @Test
     fun `GIVEN Join Start WHEN Timeout Reached THEN Session Error`() = runTest {
-        val job = launch { gameSession.startJoinSession("CODE") }
+        val job = launch { gameSession.startJoinSession("CODE", "123") }
         runCurrent()
 
         // Act
@@ -259,7 +279,7 @@ class GameSessionTest {
     @Test
     fun `GIVEN Running Session WHEN Cleanup Called THEN Stops All and Resets`() = runTest {
         // Arrange: Start a host session first to populate variables
-        val job = launch { gameSession.startHostSession("CODE") }
+        val job = launch { gameSession.startHostSession("CODE", "123") }
         runCurrent()
         serverStateFlow.value = ServerState.Running(1, "C")
         clientStateFlow.value = ClientState.Connected

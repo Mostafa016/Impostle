@@ -2,6 +2,7 @@ package com.example.nsddemo.presentation.service
 
 import android.content.Context
 import android.content.Intent
+import androidx.core.content.ContextCompat
 
 object ServiceHelper {
     fun startHost(context: Context, gameCode: String, playerId: String) {
@@ -10,7 +11,7 @@ object ServiceHelper {
             putExtra(GameService.EXTRA_GAME_CODE, gameCode)
             putExtra(GameService.EXTRA_PLAYER_ID, playerId)
         }
-        context.startForegroundService(intent)
+        ContextCompat.startForegroundService(context, intent)
     }
 
     fun startJoin(context: Context, gameCode: String, playerId: String) {
@@ -19,7 +20,7 @@ object ServiceHelper {
             putExtra(GameService.EXTRA_GAME_CODE, gameCode)
             putExtra(GameService.EXTRA_PLAYER_ID, playerId)
         }
-        context.startForegroundService(intent)
+        ContextCompat.startForegroundService(context, intent)
     }
 
     fun stop(context: Context) {

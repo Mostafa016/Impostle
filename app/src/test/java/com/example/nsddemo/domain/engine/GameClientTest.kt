@@ -7,8 +7,8 @@ import com.example.nsddemo.domain.model.ClientEvent
 import com.example.nsddemo.domain.model.ClientMessage
 import com.example.nsddemo.domain.model.ClientState
 import com.example.nsddemo.domain.model.GameCategory
+import com.example.nsddemo.domain.model.GameData
 import com.example.nsddemo.domain.model.GamePhase
-import com.example.nsddemo.domain.model.NewGameData
 import com.example.nsddemo.domain.model.ServerMessage
 import com.example.nsddemo.domain.repository.ClientNetworkRepository
 import com.example.nsddemo.domain.repository.GameSessionRepository
@@ -60,7 +60,7 @@ class GameClientTest {
     private val clientStateFlow = MutableStateFlow<ClientState>(ClientState.Idle)
 
     // NEW: Flows for the Session Repository properties
-    private val repoGameDataFlow = MutableStateFlow(NewGameData())
+    private val repoGameDataFlow = MutableStateFlow(GameData())
     private val repoGameStateFlow = MutableStateFlow<GamePhase>(GamePhase.Idle)
 
     @Before
@@ -71,6 +71,15 @@ class GameClientTest {
         // ... Static Mocks ...
         mockkStatic(Log::class)
         every { Log.d(any(), any()) } returns 0
+        every { Log.e(any(), any()) } returns 0
+        every { Log.e(any(), any(), any()) } answers {
+            // Print the error if the test fails so we see why
+            println("ERROR: ${secondArg<String>()} Exception: ${thirdArg<Throwable>()}")
+            0
+        }
+        every { Log.w(any(), any<Throwable>()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
+        every { Log.i(any(), any()) } returns 0
         mockkObject(ClientStateReducer)
         mockkObject(GameFlowRegistry)
 
@@ -91,8 +100,8 @@ class GameClientTest {
 
         // Mock update logic
         coEvery { sessionRepo.updateGameData(any()) } answers {
-            val transform = firstArg<(NewGameData) -> NewGameData>()
-            transform(NewGameData())
+            val transform = firstArg<(GameData) -> GameData>()
+            transform(GameData())
             Unit
         }
         coEvery { sessionRepo.updateGamePhase(any()) } just runs
@@ -115,7 +124,7 @@ class GameClientTest {
     @Test
     fun `GIVEN Start Called WHEN Connected within Timeout THEN Listening Starts`() = runTest {
         // Arrange
-        val job = launch { gameClient.start("CODE") }
+        val job = launch { gameClient.start("CODE", "123") }
 
         // Act: Simulate successful connection
         clientStateFlow.value = ClientState.Connected
@@ -132,7 +141,7 @@ class GameClientTest {
     @Test
     fun `GIVEN Start Called WHEN Timeout Reached THEN Stop is Called`() = runTest {
         // Arrange
-        val job = launch { gameClient.start("CODE") }
+        val job = launch { gameClient.start("CODE", "123") }
 
         // Act: Advance time past timeout without changing state
         advanceTimeBy(GameClient.TIMEOUT_MS + 1)
@@ -152,14 +161,14 @@ class GameClientTest {
     fun `GIVEN Server Message WHEN Received THEN Updates Data via Reducer`() = runTest {
         // Arrange
         val msg = ServerMessage.PlayerList(emptyList())
-        val dummyData = NewGameData()
+        val dummyData = GameData()
 
         // Mock Reducer Logic
         // IMPORTANT: Move mocks BEFORE the action that triggers them
         every { ClientStateReducer.reduce(any(), msg) } returns dummyData
 
         // Start listening
-        val job = launch { gameClient.start("CODE") }
+        val job = launch { gameClient.start("CODE", "123") }
 
         // Ensure the start coroutine gets to the connection check
         runCurrent()
@@ -185,14 +194,14 @@ class GameClientTest {
         val msg = ServerMessage.StartVote
         val expectedPhase = GamePhase.GameVoting
 
-        val job = launch { gameClient.start("CODE") }
+        val job = launch { gameClient.start("CODE", "123") }
         runCurrent()
         clientStateFlow.value = ClientState.Connected
 
         // Mock Registry
         every { GameFlowRegistry.getTransitionFor(msg) } returns expectedPhase
         // Mock Reducer to do nothing
-        every { ClientStateReducer.reduce(any(), any()) } returns NewGameData()
+        every { ClientStateReducer.reduce(any(), any()) } returns GameData()
 
         // Act
         incomingMessagesFlow.emit("server" to msg)
@@ -208,11 +217,11 @@ class GameClientTest {
     fun `GIVEN Server Message WHEN No Transition THEN Does Not Update Phase`() = runTest {
         val msg = ServerMessage.PlayerList(emptyList()) // Data only message
 
-        val job = launch { gameClient.start("CODE") }
+        val job = launch { gameClient.start("CODE", "123") }
         clientStateFlow.value = ClientState.Connected
 
         every { GameFlowRegistry.getTransitionFor(msg) } returns null
-        every { ClientStateReducer.reduce(any(), any()) } returns NewGameData()
+        every { ClientStateReducer.reduce(any(), any()) } returns GameData()
 
         // Act
         incomingMessagesFlow.emit("server" to msg)
@@ -232,9 +241,9 @@ class GameClientTest {
     fun `GIVEN GameFull Message WHEN Received THEN Emits LobbyFull Event`() = runTest {
         val msg = ServerMessage.GameFull
         every { GameFlowRegistry.getTransitionFor(msg) } returns null
-        every { ClientStateReducer.reduce(any(), any()) } returns NewGameData()
+        every { ClientStateReducer.reduce(any(), any()) } returns GameData()
 
-        val job = launch { gameClient.start("CODE") }
+        val job = launch { gameClient.start("CODE", "123") }
         runCurrent()
 
         clientStateFlow.value = ClientState.Connected
@@ -255,9 +264,9 @@ class GameClientTest {
         val msg = ServerMessage.PlayerDisconnected(playerId)
 
         every { GameFlowRegistry.getTransitionFor(msg) } returns null
-        every { ClientStateReducer.reduce(any(), any()) } returns NewGameData()
+        every { ClientStateReducer.reduce(any(), any()) } returns GameData()
 
-        val job = launch { gameClient.start("CODE") }
+        val job = launch { gameClient.start("CODE", "123") }
         runCurrent()
 
         clientStateFlow.value = ClientState.Connected

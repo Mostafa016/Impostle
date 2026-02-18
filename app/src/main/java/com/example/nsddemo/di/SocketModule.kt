@@ -8,7 +8,6 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Singleton
 
 
 @Module
@@ -16,13 +15,11 @@ import javax.inject.Singleton
 abstract class SocketModule {
 
     @Binds
-    @Singleton
     abstract fun bindSocketServer(
         ktorSocketServer: KtorSocketServer
     ): SocketServer
 
     @Binds
-    @Singleton
     abstract fun bindSocketClient(
         ktorSocketClient: KtorSocketClient
     ): SocketClient

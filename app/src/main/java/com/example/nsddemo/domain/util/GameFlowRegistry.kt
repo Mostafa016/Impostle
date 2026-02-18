@@ -32,13 +32,17 @@ object GameFlowRegistry {
         ServerMessage.RoundEnd -> GamePhase.RoundReplayChoice
 
         // Trigger to restart the round mechanics.
-        ServerMessage.ReplayRound -> GamePhase.InRound
+        is ServerMessage.ReplayRound -> GamePhase.InRound
 
         // Trigger to move from Choice Screen -> Voting
         ServerMessage.StartVote -> GamePhase.GameVoting
 
         // Data update within Voting (e.g., "Player A has voted")
         is ServerMessage.PlayerVoted -> null
+
+        is ServerMessage.VotesAfterLeaver -> null
+
+        is ServerMessage.ScoresAfterLeaver -> null
 
         // Trigger to move from Voting -> Results
         is ServerMessage.VoteResult -> GamePhase.GameResults
@@ -50,7 +54,7 @@ object GameFlowRegistry {
         ServerMessage.ReplayGame -> GamePhase.Lobby
 
         // Trigger to move to Main Menu / Disconnect
-        ServerMessage.EndGame -> GamePhase.Idle
+        ServerMessage.EndGame -> GamePhase.GameEnd
 
         // Used to tell clients that they cannot join
         ServerMessage.GameAlreadyStarted, ServerMessage.GameFull -> GamePhase.Idle
@@ -60,10 +64,16 @@ object GameFlowRegistry {
         is ServerMessage.PlayerReconnected -> null
 
         // Full data and phase update for a rejoining player
-        is ServerMessage.ReconnectionFullStateSync -> null
+        is ServerMessage.ReconnectionFullStateSync -> GamePhase.Paused
 
         // Trigger unpausing the game (reverting to phaseBeforePause)
-        ServerMessage.GameResumed -> null
+        is ServerMessage.GameResumed -> null
+
+        // Sent when the server closes normally
+        ServerMessage.LobbyClosed -> null
+
+        // Sent when to a player who was kicked
+        ServerMessage.YouWereKicked -> null
     }
 
     /**
@@ -95,5 +105,8 @@ object GameFlowRegistry {
         ClientMessage.RequestContinueToGameChoice -> setOf(GamePhase.GameResults)
         ClientMessage.RequestEndGame -> setOf(GamePhase.GameReplayChoice, GamePhase.Paused)
         ClientMessage.RequestReplayGame -> setOf(GamePhase.GameReplayChoice)
+
+        // Kicking
+        is ClientMessage.RequestKickPlayer -> setOf(GamePhase.Lobby, GamePhase.Paused)
     }
 }

@@ -1,5 +1,7 @@
 package com.example.nsddemo.domain.engine
 
+import android.util.Log
+import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.data.repository.LoopbackClientNetworkRepository
 import com.example.nsddemo.data.repository.RemoteClientNetworkRepository
 import com.example.nsddemo.domain.model.ClientState
@@ -7,9 +9,12 @@ import com.example.nsddemo.domain.model.ServerState
 import com.example.nsddemo.domain.model.SessionState
 import com.example.nsddemo.domain.repository.GameSessionRepository
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
@@ -24,8 +29,8 @@ import javax.inject.Singleton
 class GameSession @Inject constructor(
     private val clientFactory: GameClient.GameClientFactory,
     private val serverProvider: Provider<GameServer>,
-    private val remoteClientRepo: RemoteClientNetworkRepository,
-    private val loopbackClientRepo: LoopbackClientNetworkRepository,
+    private val remoteClientRepo: Provider<RemoteClientNetworkRepository>,
+    private val loopbackClientRepo: Provider<LoopbackClientNetworkRepository>,
     private val gameSessionRepository: GameSessionRepository,
 ) {
     // Active instances (Null when no game is running)
@@ -37,7 +42,9 @@ class GameSession @Inject constructor(
     val gamePhase = gameSessionRepository.gameState
 
     private val _sessionState = MutableStateFlow<SessionState>(SessionState.Idle)
-    val sessionState = _sessionState.asStateFlow()
+    val sessionState: Flow<SessionState> = _sessionState.asStateFlow()
+
+    private var monitorJob: Job? = null
 
     // --- HOST MODE ---
     suspend fun startHostSession(gameCode: String, playerId: String) = coroutineScope {
@@ -45,7 +52,7 @@ class GameSession @Inject constructor(
 
         _sessionState.value = SessionState.Connecting
         gameServer = serverProvider.get()
-        activeClient = clientFactory.create(loopbackClientRepo)
+        activeClient = clientFactory.create(loopbackClientRepo.get())
 
         launch { gameServer!!.start(gameCode, playerId) }
         launch { activeClient!!.start(gameCode, playerId) }
@@ -67,7 +74,11 @@ class GameSession @Inject constructor(
                     SessionState.Error(clientState.message)
                 }
 
-                serverState is ServerState.Running && clientState is ClientState.Connected -> SessionState.Running
+                serverState is ServerState.Running && clientState is ClientState.Connected -> {
+                    launch { startRuntimeMonitoring(isHost = true) }
+                    SessionState.Running
+                }
+
                 else -> {
                     stopClientAndServer()
                     SessionState.Error("Couldn't launch session: ServerState: $serverState, ClientState: $clientState")
@@ -90,7 +101,7 @@ class GameSession @Inject constructor(
         reset()
 
         _sessionState.value = SessionState.Connecting
-        activeClient = clientFactory.create(remoteClientRepo)
+        activeClient = clientFactory.create(remoteClientRepo.get())
 
         launch { activeClient!!.start(gameCode, playerId) }
 
@@ -104,7 +115,11 @@ class GameSession @Inject constructor(
                     SessionState.Error(clientState.message)
                 }
 
-                is ClientState.Connected -> SessionState.Running
+                is ClientState.Connected -> {
+                    launch { startRuntimeMonitoring(isHost = false) }
+                    SessionState.Running
+                }
+
                 else -> {
                     activeClient?.stop()
                     SessionState.Error("Couldn't launch session: ClientState: $clientState")
@@ -123,8 +138,8 @@ class GameSession @Inject constructor(
     }
 
     suspend fun reset() {
-        stopClientAndServer()
         _sessionState.value = SessionState.Idle
+        stopClientAndServer()
     }
 
     private suspend fun stopClientAndServer() {
@@ -133,5 +148,44 @@ class GameSession @Inject constructor(
 
         activeClient?.stop()
         activeClient = null
+    }
+
+    private suspend fun startRuntimeMonitoring(isHost: Boolean) = coroutineScope {
+        monitorJob?.cancel()
+        monitorJob = launch {
+            if (isHost) {
+                // Host Monitors the SERVER
+                gameServer?.serverState?.collect { state ->
+                    if (state is ServerState.Error && _sessionState.value is SessionState.Running) {
+                        _sessionState.value = SessionState.Error("Server Crashed: ${state.message}")
+                        this.cancel()
+                    }
+                }
+            } else {
+                // Client Monitors the NETWORK CONNECTION
+                activeClient?.clientState?.collect { state ->
+                    // We only care about Disconnected/Error here because Idle means explicit quit
+                    when {
+                        _sessionState.value is SessionState.Running -> {
+                            if (state is ClientState.Disconnected || state is ClientState.Error) {
+                                Log.i(
+                                    TAG,
+                                    "GameSession: ClientState ($state) while running, setting sessionState as Disconnected"
+                                )
+                                _sessionState.value = SessionState.Disconnected
+                                this.cancel()
+                            } else if (state is ClientState.Idle) {
+                                Log.i(
+                                    TAG,
+                                    "GameSession: ClientState ($state) while running, setting sessionState as Idle"
+                                )
+                                _sessionState.value = SessionState.Idle
+                                this.cancel()
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

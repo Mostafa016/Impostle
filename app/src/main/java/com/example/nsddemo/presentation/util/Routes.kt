@@ -15,6 +15,10 @@ enum class Routes(val route: String) {
     VotingResults("voting_results_screen"),
     Scoreboard("scoreboard_screen"),
     EndGame("end_game_screen"),
+    Paused("pause_screen"),
+    Disconnected("disconnected_screen"),
 
-    JoinGameGraph("join_game_graph")
+    JoinGameGraph("join_game_graph"),
+    GameSessionGraph("game_session_graph"),
+    RootGraph("root_graph")
 }

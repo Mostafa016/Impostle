@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import java.net.SocketException
+import java.nio.channels.ClosedChannelException
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
@@ -68,6 +69,8 @@ class KtorSocketServer @Inject constructor(private val wifiHelper: WifiHelper) :
             Log.e(TAG, "Couldn't get IP Address of device. Check Wi-Fi connection.", e)
             _listeningState.value =
                 ServerListeningState.Error("Couldn't get IP of device: ${e.message}")
+        } catch (e: ClosedChannelException) {
+            Log.i(TAG, "KtorSocketServer: ServerSocket is closed")
         } catch (e: Exception) {
             Log.e(TAG, "Something went wrong in the server accept loop.", e)
             _listeningState.value =
@@ -82,6 +85,7 @@ class KtorSocketServer @Inject constructor(private val wifiHelper: WifiHelper) :
         _listeningState.value = ServerListeningState.Idle
         Log.i(TAG, "Server Stopped listening.")
     }
+
 
     override suspend fun sendToClient(clientId: String, data: String): Boolean {
         try {
@@ -113,7 +117,6 @@ class KtorSocketServer @Inject constructor(private val wifiHelper: WifiHelper) :
     }
 
     override fun disconnectClient(clientId: String) {
-        // If implementing kick functionality should tryEmit a message before kicking
         cleanupClient(clientId)
     }
 
@@ -199,7 +202,7 @@ class KtorSocketServer @Inject constructor(private val wifiHelper: WifiHelper) :
 
     private fun cleanupResources() {
         cleanupAllClients()
-        socketServer?.close()
+        if (socketServer?.isClosed == false) socketServer?.close()
         socketServer = null
         serverPort = null
     }

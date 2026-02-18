@@ -3,11 +3,9 @@ package com.example.nsddemo.presentation.util
 import androidx.navigation.NavHostController
 
 object NavigationUtil {
-    fun NavHostController.popBackStackAndNavigateTo(route: String) {
+    fun NavHostController.popBackStackAndNavigateTo(route: String, popUpToRoute: String? = null) {
         navigate(route) {
-            popUpTo(route) {
-                inclusive
-            }
+            popUpTo(popUpToRoute ?: Routes.RootGraph.route)
         }
     }
 }

@@ -7,16 +7,16 @@ import kotlin.reflect.KClass
 
 //region Marker Interfaces (Logical Grouping)
 /** Indicates the app is connected to a session (Lobby or Game) */
-interface Connected : GamePhase
+interface Connected
 
 /** Indicates the game loop is active (Prevent Back Button, Keep Screen On) */
-interface InGame : GamePhase, Connected
+interface InGame : Connected
 
 /**
  * Marker for phases where a missing player breaks the game flow.
  * Disconnects here trigger PAUSE. Disconnects elsewhere trigger DELETE.
  */
-interface Active : GamePhase, InGame
+interface Active : InGame
 //endregion
 
 @Serializable
@@ -38,58 +38,69 @@ sealed interface GamePhase {
     //region Phases
     @Serializable
     data object Idle : GamePhase {
-        override val validNextStates = setOf(Lobby::class)
+        override val validNextStates: Set<KClass<out GamePhase>> =
+            setOf(Lobby::class, Paused::class)
     }
 
     @Serializable
     data object Lobby : GamePhase, Connected {
-        override val validNextStates = setOf(Idle::class, RoleDistribution::class)
+        override val validNextStates: Set<KClass<out GamePhase>> =
+            setOf(Idle::class, RoleDistribution::class)
     }
 
     @Serializable
     data object RoleDistribution : GamePhase, Active {
-        override val validNextStates = setOf(InRound::class, Idle::class, Paused::class)
+        override val validNextStates: Set<KClass<out GamePhase>> =
+            setOf(InRound::class, Paused::class)
     }
 
     @Serializable
     data object InRound : GamePhase, Active {
-        override val validNextStates = setOf(RoundReplayChoice::class, Idle::class, Paused::class)
+        override val validNextStates: Set<KClass<out GamePhase>> =
+            setOf(RoundReplayChoice::class, Paused::class)
     }
 
     @Serializable
     data object RoundReplayChoice : GamePhase, Active {
-        override val validNextStates =
-            setOf(GameVoting::class, InRound::class, Idle::class, Paused::class)
+        override val validNextStates: Set<KClass<out GamePhase>> =
+            setOf(GameVoting::class, InRound::class, Paused::class)
     }
 
     @Serializable
     data object GameVoting : GamePhase, Active {
-        override val validNextStates = setOf(GameResults::class, Idle::class, Paused::class)
+        override val validNextStates: Set<KClass<out GamePhase>> =
+            setOf(GameResults::class, Paused::class)
     }
 
     @Serializable
     data object GameResults : GamePhase, Active {
-        override val validNextStates = setOf(GameReplayChoice::class, Idle::class, Paused::class)
+        override val validNextStates: Set<KClass<out GamePhase>> =
+            setOf(GameReplayChoice::class, Paused::class)
     }
 
     @Serializable
     data object GameReplayChoice : GamePhase, Active {
-        override val validNextStates = setOf(Lobby::class, Idle::class, Paused::class)
+        override val validNextStates: Set<KClass<out GamePhase>> =
+            setOf(Lobby::class, GameEnd::class, Paused::class)
+    }
+
+    @Serializable
+    data object GameEnd : GamePhase {
+        override val validNextStates: Set<KClass<out GamePhase>> = setOf(Idle::class)
     }
 
     @Serializable
     data object Paused : GamePhase, Connected {
         override val validNextStates: Set<KClass<out GamePhase>>
             get() = setOf(
-                // Resuming
+                Lobby::class,
                 RoleDistribution::class,
                 InRound::class,
                 RoundReplayChoice::class,
                 GameVoting::class,
                 GameResults::class,
-
-                // End game
-                Idle::class
+                GameReplayChoice::class,
+                GameEnd::class
             )
     }
     //endregion

@@ -17,34 +17,33 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.navigation.NavHostController
 import com.example.nsddemo.R
 import com.example.nsddemo.presentation.components.DefaultButton
 import com.example.nsddemo.presentation.components.ListTitleText
 import com.example.nsddemo.presentation.screen.score.components.PlayerScoreList
 import com.example.nsddemo.presentation.theme.englishTypography
-import com.example.nsddemo.presentation.util.NavigationUtil.popBackStackAndNavigateTo
 import com.example.nsddemo.presentation.util.UiEvent
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun ScoreScreen(
-    viewModel: ScoreViewModel = hiltViewModel<ScoreViewModel>(), navController: NavHostController
+    viewModel: ScoreViewModel = hiltViewModel<ScoreViewModel>(),
+    showSnackBar: (String) -> Unit
 ) {
+    val context = LocalContext.current
     LaunchedEffect(true) {
         viewModel.eventFlow.collectLatest { event ->
             when (event) {
-                is UiEvent.NavigateTo -> {
-                    navController.popBackStackAndNavigateTo(event.destination)
+                is UiEvent.ShowSnackBar -> {
+                    showSnackBar(context.getString(event.messageResId))
                 }
 
-                else -> {
-                    // Do nothing
-                }
+                else -> {}
             }
         }
     }

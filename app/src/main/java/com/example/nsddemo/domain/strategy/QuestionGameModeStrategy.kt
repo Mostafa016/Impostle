@@ -2,9 +2,9 @@ package com.example.nsddemo.domain.strategy
 
 import com.example.nsddemo.domain.logic.RoundPlayerPairsGenerator
 import com.example.nsddemo.domain.model.Envelope
+import com.example.nsddemo.domain.model.GameData
 import com.example.nsddemo.domain.model.GamePhase
 import com.example.nsddemo.domain.model.GameStateTransition
-import com.example.nsddemo.domain.model.NewGameData
 import com.example.nsddemo.domain.model.RoundData
 import com.example.nsddemo.domain.model.ServerMessage
 import com.example.nsddemo.domain.repository.WordRepository
@@ -15,7 +15,7 @@ class QuestionGameModeStrategy @Inject constructor(wordRepository: WordRepositor
     override val roundData: RoundData
         get() = RoundData.QuestionRoundData()
 
-    override fun setupRoundSpecifics(data: NewGameData): NewGameData {
+    override fun setupRoundSpecifics(data: GameData): GameData {
         return data.copy(
             roundData = RoundData.QuestionRoundData(
                 roundPairs = RoundPlayerPairsGenerator
@@ -24,7 +24,7 @@ class QuestionGameModeStrategy @Inject constructor(wordRepository: WordRepositor
         )
     }
 
-    override fun onRoundStart(data: NewGameData): GameStateTransition {
+    override fun onRoundStart(data: GameData): GameStateTransition {
         val roundData = data.roundData as? RoundData.QuestionRoundData
             ?: return GameStateTransition.Invalid("Round Data is not QuestionRoundData (It is ${data.roundData})")
 
@@ -42,7 +42,7 @@ class QuestionGameModeStrategy @Inject constructor(wordRepository: WordRepositor
         )
     }
 
-    override fun onTurnEnd(data: NewGameData, playerID: String): GameStateTransition {
+    override fun onTurnEnd(data: GameData, playerID: String): GameStateTransition {
         val currentRoundData = data.roundData as RoundData.QuestionRoundData
         if (currentRoundData.currentAskerId != playerID) {
             return GameStateTransition.Invalid("Only the asking player can end turn: askerId: ${currentRoundData.currentAskerId} playerID: $playerID")
@@ -70,5 +70,87 @@ class QuestionGameModeStrategy @Inject constructor(wordRepository: WordRepositor
                 )
             )
         )
+    }
+
+    override fun onPlayerRemoved(
+        data: GameData,
+        phase: GamePhase,
+        removedPlayerId: String
+    ): GameStateTransition {
+        // Civilian Kicked - Handle based on Phase
+        val remainingPlayers = data.players
+        return when (phase) {
+            is GamePhase.RoleDistribution -> {
+                // If someone leaves during role assignment, the setup is invalid. Restart Game Setup.
+                GameStateTransition.Valid(
+                    newGameData = data.copy(readyPlayerIds = emptySet()),
+                    newPhase = GamePhase.Lobby, // Fallback to Lobby to pick category/start again
+                    envelopes = listOf(
+                        Envelope.Broadcast(ServerMessage.PlayerList(remainingPlayers.values.toList())),
+                        Envelope.Broadcast(ServerMessage.ReplayGame), // Re-use Replay message to reset clients
+                        Envelope.Broadcast(ServerMessage.ScoresAfterLeaver(data.scores))
+                    )
+                )
+            }
+
+            is GamePhase.InRound -> {
+                // The question chain is broken. Regenerate pairs and restart the round (Round 1.1).
+                val newRoundData = setupRoundSpecifics(data.copy(players = remainingPlayers))
+                val roundStartTransition = onRoundStart(newRoundData) as GameStateTransition.Valid
+                val roundReplayEnvelopes =
+                    listOf(
+                        Envelope.Broadcast(ServerMessage.PlayerList(remainingPlayers.values.toList())),
+                        Envelope.Broadcast(ServerMessage.ReplayRound(incrementRoundNumber = false)),
+                        Envelope.Broadcast(ServerMessage.ScoresAfterLeaver(data.scores))
+                    )
+
+                val replayRoundTransition =
+                    roundStartTransition.copy(envelopes = roundReplayEnvelopes + roundStartTransition.envelopes)
+                replayRoundTransition
+            }
+
+            is GamePhase.RoundReplayChoice -> {
+                // Just update list, logic holds fine here
+                GameStateTransition.Valid(
+                    newGameData = data,
+                    envelopes = listOf(
+                        Envelope.Broadcast(ServerMessage.PlayerList(remainingPlayers.values.toList())),
+                        Envelope.Broadcast(ServerMessage.ScoresAfterLeaver(data.scores))
+                    )
+                )
+            }
+
+            is GamePhase.GameVoting -> {
+                // Remove votes involving the kicked player
+                val cleanVotes = data.votes
+                    .filterKeys { it != removedPlayerId } // Remove their vote
+                    .filterValues { it != removedPlayerId } // Remove votes FOR them
+
+                val votingData = data.copy(votes = cleanVotes)
+
+                GameStateTransition.Valid(
+                    newGameData = votingData,
+                    envelopes = listOf(
+                        Envelope.Broadcast(ServerMessage.PlayerList(remainingPlayers.values.toList())),
+                        Envelope.Broadcast(ServerMessage.VotesAfterLeaver(cleanVotes)),
+                        Envelope.Broadcast(ServerMessage.ScoresAfterLeaver(data.scores))
+                    )
+                )
+            }
+
+            is GamePhase.GameResults, is GamePhase.GameReplayChoice -> {
+                GameStateTransition.Valid(
+                    newGameData = data,
+                    envelopes = listOf(
+                        Envelope.Broadcast(ServerMessage.PlayerList(remainingPlayers.values.toList())),
+                        Envelope.Broadcast(ServerMessage.ScoresAfterLeaver(data.scores))
+                    )
+                )
+            }
+
+            is GamePhase.Idle, GamePhase.Lobby, is GamePhase.Paused, is GamePhase.GameEnd -> GameStateTransition.Invalid(
+                "Cannot kick player when phase is $phase"
+            )
+        }
     }
 }

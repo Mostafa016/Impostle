@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,37 +26,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.navigation.NavHostController
 import com.example.nsddemo.R
 import com.example.nsddemo.presentation.components.DefaultButton
 import com.example.nsddemo.presentation.screen.question.components.CategoryAndWordDialog
 import com.example.nsddemo.presentation.screen.question.components.ShowWordButton
 import com.example.nsddemo.presentation.theme.englishTypography
-import com.example.nsddemo.presentation.util.NavigationUtil.popBackStackAndNavigateTo
-import com.example.nsddemo.presentation.util.UiEvent
 import com.example.nsddemo.presentation.util.WordResourceMapper
-import kotlinx.coroutines.flow.collectLatest
 
 
 @SuppressLint("UnusedContentLambdaTargetStateParameter")
 @Composable
 fun QuestionScreen(
     viewModel: QuestionViewModel = hiltViewModel<QuestionViewModel>(),
-    navController: NavHostController
 ) {
-    LaunchedEffect(true) {
-        viewModel.eventFlow.collectLatest { event ->
-            when (event) {
-                is UiEvent.NavigateTo -> {
-                    navController.popBackStackAndNavigateTo(event.destination)
-                }
-
-                else -> {
-                    // Do nothing
-                }
-            }
-        }
-    }
     val state = viewModel.state.collectAsState()
     if (state.value.isWordDialogVisible) {
         CategoryAndWordDialog(

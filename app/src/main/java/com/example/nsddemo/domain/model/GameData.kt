@@ -3,7 +3,7 @@ package com.example.nsddemo.domain.model
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class NewGameData(
+data class GameData(
     // --- Identity ---
     val localPlayerId: String = "",
     val hostId: String = "",
@@ -28,8 +28,11 @@ data class NewGameData(
     // Scoreboard (PlayerID -> Score)
     val scores: Map<String, Int> = emptyMap(),
 
-    // phase we were in before the FIRST disconnect
-    val phaseBeforePause: GamePhase? = null
+    // phase we were in before the first player disconnected
+    val phaseBeforePause: GamePhase? = null,
+
+    // phase we will be in after the all players are connected (last reconnect/kick)
+    val phaseAfterPause: GamePhase? = null
 ) {
     //region --- Identity Helpers ---
     val localPlayer: Player?
@@ -78,6 +81,9 @@ data class NewGameData(
     val localPlayerVotedTargetId: String?
         get() = votes[localPlayerId]
 
+    val localPlayerVotedTargetPlayer: Player?
+        get() = players[votes[localPlayerId]]
+
     val numberOfPlayersWhoVoted: Int
         get() = votes.size
 
@@ -93,6 +99,11 @@ data class NewGameData(
     //region --- Round Helpers ---
     val isFirstRound: Boolean
         get() = roundNumber == 1
+    //endregion
+
+    //region --- Connectivity Helpers ---
+    val isEveryoneConnected: Boolean
+        get() = players.values.all { it.isConnected }
     //endregion
 }
 

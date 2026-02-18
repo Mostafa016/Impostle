@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.nsddemo.data.local.network.WifiHelper
 import com.example.nsddemo.data.local.settings.AppLocaleHelper
+import com.example.nsddemo.presentation.navigation.GameRouteMapper
 import com.example.nsddemo.presentation.service.AndroidSessionController
 import com.example.nsddemo.presentation.service.SessionController
 import dagger.Binds
@@ -48,6 +49,10 @@ object AppModule {
     fun provideAppLocaleHelper(): AppLocaleHelper {
         return AppLocaleHelper()
     }
+
+    @Provides
+    @Singleton
+    fun provideGameRouteMapper(): GameRouteMapper = GameRouteMapper()
 
     @Module
     @InstallIn(SingletonComponent::class)

@@ -1,14 +1,16 @@
 package com.example.nsddemo.presentation.screen.score
 
+import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.example.nsddemo.R
+import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.domain.engine.GameSession
 import com.example.nsddemo.domain.model.GamePhase
 import com.example.nsddemo.domain.model.Player
 import com.example.nsddemo.presentation.util.BaseGameViewModel
-import com.example.nsddemo.presentation.util.Routes
 import com.example.nsddemo.presentation.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -19,7 +21,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ScoreViewModel @Inject constructor(
-    gameSession: GameSession
+    gameSession: GameSession,
 ) : BaseGameViewModel(gameSession) {
     private val _state = MutableStateFlow(ScoreState())
     val state = _state.asStateFlow()
@@ -36,16 +38,10 @@ class ScoreViewModel @Inject constructor(
     val playerScores = gameData.value.scoresAsPlayers
 
     init {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             gamePhase.collectLatest { phase ->
-                when (phase) {
-                    is GamePhase.Lobby -> {
-                        _eventFlow.emit(UiEvent.ShowSnackBar(R.string.continuing_playing))
-                        _eventFlow.emit(UiEvent.NavigateTo(Routes.Lobby.route))
-                    }
-
-                    is GamePhase.Idle -> _eventFlow.emit(UiEvent.NavigateTo(Routes.EndGame.route))
-                    else -> {}
+                if (phase is GamePhase.Lobby) {
+                    _eventFlow.emit(UiEvent.ShowSnackBar(R.string.continuing_playing))
                 }
             }
         }
@@ -54,12 +50,19 @@ class ScoreViewModel @Inject constructor(
     fun onEvent(event: ScoreEvent) {
         when (event) {
             ScoreEvent.ReplayGame -> {
-                viewModelScope.launch { activeClient?.replayGame() }
+                viewModelScope.launch(Dispatchers.IO) { activeClient?.replayGame() }
             }
 
             ScoreEvent.EndGame -> {
-                viewModelScope.launch { activeClient?.endGame() }
+                viewModelScope.launch(Dispatchers.IO) {
+                    activeClient?.endGame()
+                }
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.i(TAG, "ScoreViewModel: Cleared!")
     }
 }

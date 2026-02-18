@@ -1,0 +1,6 @@
+package com.example.nsddemo.presentation.screen.pause
+
+sealed interface PauseEvent {
+    data class KickPlayer(val playerId: String) : PauseEvent
+    data object EndGame : PauseEvent
+}

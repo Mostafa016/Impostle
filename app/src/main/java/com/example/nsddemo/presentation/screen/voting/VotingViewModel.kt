@@ -1,17 +1,16 @@
 package com.example.nsddemo.presentation.screen.voting
 
+import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.domain.engine.GameSession
-import com.example.nsddemo.domain.model.GamePhase
 import com.example.nsddemo.presentation.util.BaseGameViewModel
-import com.example.nsddemo.presentation.util.Routes
 import com.example.nsddemo.presentation.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -20,7 +19,12 @@ class VotingViewModel @Inject constructor(
     gameSession: GameSession
 ) : BaseGameViewModel(gameSession) {
 
-    private val _state = MutableStateFlow(VotingState())
+    private val _state = MutableStateFlow(gameData.value.localPlayerVotedTargetPlayer?.let {
+        VotingState(
+            votedPlayer = it,
+            isVoteConfirmed = true
+        )
+    } ?: VotingState())
     val state = _state.asStateFlow()
 
     private val _eventFlow = MutableSharedFlow<UiEvent>()
@@ -28,16 +32,6 @@ class VotingViewModel @Inject constructor(
 
     // Static list of candidates (Others)
     val playersExcludingCurrent = gameData.value.otherPlayers
-
-    init {
-        viewModelScope.launch {
-            gamePhase.collectLatest { phase ->
-                if (phase is GamePhase.GameResults) {
-                    _eventFlow.emit(UiEvent.NavigateTo(Routes.VotingResults.route))
-                }
-            }
-        }
-    }
 
     fun onEvent(event: VotingEvent) {
         when (event) {
@@ -53,5 +47,10 @@ class VotingViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.i(TAG, "VotingViewModel: Cleared!")
     }
 }

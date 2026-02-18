@@ -1,16 +1,20 @@
 package com.example.nsddemo.domain.logic
 
+import android.util.Log
 import com.example.nsddemo.domain.model.GameCategory
+import com.example.nsddemo.domain.model.GameData
 import com.example.nsddemo.domain.model.GamePhase
-import com.example.nsddemo.domain.model.NewGameData
 import com.example.nsddemo.domain.model.Player
 import com.example.nsddemo.domain.model.RoundData
 import com.example.nsddemo.domain.model.ServerMessage
+import io.mockk.every
+import io.mockk.mockkStatic
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 class ClientStateReducerTest {
@@ -21,11 +25,26 @@ class ClientStateReducerTest {
     private val p2 = Player("Bob", "Blue", "p2", isConnected = true)
 
     // A standard starting state
-    private val baseData = NewGameData(
+    private val baseData = GameData(
         localPlayerId = localId,
         hostId = localId,
         players = mapOf(localId to p1, "p2" to p2)
     )
+
+    @Before
+    fun setUp() {
+        mockkStatic(Log::class)
+        every { Log.d(any(), any()) } returns 0
+        every { Log.e(any(), any()) } returns 0
+        every { Log.e(any(), any(), any()) } answers {
+            // Print the error if the test fails so we see why
+            println("ERROR: ${secondArg<String>()} Exception: ${thirdArg<Throwable>()}")
+            0
+        }
+        every { Log.w(any(), any<Throwable>()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
+        every { Log.i(any(), any()) } returns 0
+    }
 
     // ==========================================
     // 1. LOBBY & SETUP
@@ -40,6 +59,16 @@ class ClientStateReducerTest {
 
         assertEquals(3, result.players.size)
         assertTrue(result.players.containsKey("p3"))
+    }
+
+    @Test
+    fun `GIVEN RegisterHost Message WHEN Reduced THEN Updates Host ID`() {
+        val newHostId = "new_host_uuid"
+        val msg = ServerMessage.RegisterHost(newHostId)
+
+        val result = ClientStateReducer.reduce(baseData, msg)
+
+        assertEquals(newHostId, result.hostId)
     }
 
     @Test
@@ -142,7 +171,7 @@ class ClientStateReducerTest {
             roundNumber = 1,
             roundData = RoundData.QuestionRoundData(listOf("a" to "b"), 0)
         )
-        val msg = ServerMessage.ReplayRound
+        val msg = ServerMessage.ReplayRound()
         val result = ClientStateReducer.reduce(data, msg)
 
         assertEquals(2, result.roundNumber)
@@ -204,6 +233,57 @@ class ClientStateReducerTest {
     }
 
     @Test
+    fun `GIVEN GameResumed Message WHEN Reduced THEN Clears PhaseAfterPause`() {
+        // Arrange: Game is currently paused, waiting to go back to InRound
+        val pausedData = baseData.copy(
+            phaseAfterPause = GamePhase.InRound
+        )
+        val msg = ServerMessage.GameResumed(GamePhase.InRound)
+
+        // Act
+        val result = ClientStateReducer.reduce(pausedData, msg)
+
+        // Assert
+        assertNull("phaseAfterPause should be cleared on resume", result.phaseAfterPause)
+    }
+
+    @Test
+    fun `GIVEN VotesAfterLeaver Message WHEN Reduced THEN Replaces Votes Map`() {
+        // Arrange: Old votes included a player who just left
+        val oldVotes = mapOf("p1" to "p2", "p2" to "p3", "leaver" to "p2")
+        val dataWithVotes = baseData.copy(votes = oldVotes)
+
+        // Message contains cleaned votes
+        val newVotes = mapOf("p1" to "p2", "p2" to "p3")
+        val msg = ServerMessage.VotesAfterLeaver(newVotes)
+
+        // Act
+        val result = ClientStateReducer.reduce(dataWithVotes, msg)
+
+        // Assert
+        assertEquals(newVotes, result.votes)
+        assertFalse(result.votes.containsKey("leaver"))
+    }
+
+    @Test
+    fun `GIVEN ScoresAfterLeaver Message WHEN Reduced THEN Replaces Scores Map`() {
+        // Arrange: Old scores included a player who just left
+        val oldScores = mapOf("p1" to 100, "leaver" to 50)
+        val dataWithScores = baseData.copy(scores = oldScores)
+
+        // Message contains cleaned scores
+        val newScores = mapOf("p1" to 100)
+        val msg = ServerMessage.ScoresAfterLeaver(newScores)
+
+        // Act
+        val result = ClientStateReducer.reduce(dataWithScores, msg)
+
+        // Assert
+        assertEquals(newScores, result.scores)
+        assertFalse(result.scores.containsKey("leaver"))
+    }
+
+    @Test
     fun `GIVEN PlayerReconnected Message WHEN Reduced THEN Updates and Adds Player`() {
         val updatedP2 = p2.copy(name = "Bob Back", isConnected = true)
         val msg = ServerMessage.PlayerReconnected(updatedP2)
@@ -219,7 +299,7 @@ class ClientStateReducerTest {
         // Arrange:
         // Local Data: I am "local_p1"
         // Server Message Data: Says localPlayerId is "" (empty from session manager)
-        val serverState = NewGameData(
+        val serverState = GameData(
             localPlayerId = "",
             hostId = "host",
             gameCode = "SYNCED"
@@ -267,7 +347,7 @@ class ClientStateReducerTest {
         val msg = ServerMessage.EndGame
         val result = ClientStateReducer.reduce(baseData, msg)
 
-        assertEquals(NewGameData(), result) // Totally empty
+        assertEquals(GameData(), result) // Totally empty
     }
 
     // ==========================================
@@ -292,7 +372,7 @@ class ClientStateReducerTest {
     fun `GIVEN No-Op Message WHEN Reduced THEN Returns Same Instance`() {
         // Messages that shouldn't trigger data changes
         val noOpMessages = listOf(
-            ServerMessage.GameResumed,
+            ServerMessage.RoundEnd,
             ServerMessage.GameFull,
             ServerMessage.GameAlreadyStarted,
             ServerMessage.ContinueToGameChoice,

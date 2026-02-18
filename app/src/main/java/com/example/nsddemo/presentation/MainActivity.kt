@@ -30,14 +30,18 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import com.example.nsddemo.domain.engine.GameSession
+import com.example.nsddemo.presentation.navigation.GameNavigation
+import com.example.nsddemo.presentation.navigation.GameRouteMapper
 import com.example.nsddemo.presentation.screen.choose_category.ChooseCategoryScreen
 import com.example.nsddemo.presentation.screen.create_game.CreateGameLoadingScreen
+import com.example.nsddemo.presentation.screen.disconnected.DisconnectedScreen
 import com.example.nsddemo.presentation.screen.end_game.EndGameScreen
 import com.example.nsddemo.presentation.screen.join_game.JoinGameLoadingScreen
 import com.example.nsddemo.presentation.screen.join_game.JoinGameScreen
 import com.example.nsddemo.presentation.screen.join_game.JoinGameViewModel
 import com.example.nsddemo.presentation.screen.lobby.LobbyScreen
 import com.example.nsddemo.presentation.screen.main_menu.MainMenuScreen
+import com.example.nsddemo.presentation.screen.pause.PauseScreen
 import com.example.nsddemo.presentation.screen.question.QuestionScreen
 import com.example.nsddemo.presentation.screen.replay_round_choice.ChooseExtraQuestionsScreen
 import com.example.nsddemo.presentation.screen.role_reveal.RoleRevealScreen
@@ -58,6 +62,9 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var gameSession: GameSession
 
+    @Inject
+    lateinit var routeMapper: GameRouteMapper
+
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,13 +81,17 @@ class MainActivity : AppCompatActivity() {
             val useDarkTheme by settingsViewModel.darkThemeSetting.collectAsState()
             val locale by settingsViewModel.languageSetting.collectAsState()
             AppTheme(
-                useDarkTheme = useDarkTheme,
-                locale = locale
+                useDarkTheme = useDarkTheme, locale = locale
             ) {
                 CompositionLocalProvider(LocalIndication provides NoFeedbackIndication()) {
                     val snackBarHostState = remember { SnackbarHostState() }
                     val scope = rememberCoroutineScope()
                     val navController = rememberNavController()
+                    GameNavigation(
+                        navController = navController,
+                        gameSession = gameSession,
+                        routeMapper = routeMapper
+                    )
                     Scaffold(
                         Modifier
                             .fillMaxSize()
@@ -90,7 +101,9 @@ class MainActivity : AppCompatActivity() {
                         contentWindowInsets = ScaffoldDefaults.contentWindowInsets
                     ) {
                         NavHost(
-                            navController = navController, startDestination = Routes.MainMenu.route
+                            navController = navController,
+                            startDestination = Routes.MainMenu.route,
+                            route = Routes.RootGraph.route
                         ) {
                             composable(Routes.MainMenu.route) {
                                 MainMenuScreen(
@@ -111,8 +124,7 @@ class MainActivity : AppCompatActivity() {
                                     val joinViewModel =
                                         hiltViewModel<JoinGameViewModel>(parentEntry)
                                     JoinGameScreen(
-                                        viewModel = joinViewModel,
-                                        navController = navController
+                                        viewModel = joinViewModel, navController = navController
                                     )
                                 }
                                 composable(Routes.JoinGameLoading.route) { backStackEntry ->
@@ -123,7 +135,8 @@ class MainActivity : AppCompatActivity() {
                                         hiltViewModel<JoinGameViewModel>(parentEntry)
                                     JoinGameLoadingScreen(
                                         viewModel = joinViewModel,
-                                        navController = navController, showSnackBar = { message ->
+                                        navController = navController,
+                                        showSnackBar = { message ->
                                             scope.launch {
                                                 snackBarHostState.showSnackbar(
                                                     message = message,
@@ -133,53 +146,56 @@ class MainActivity : AppCompatActivity() {
                                 }
                             }
                             composable(Routes.CreateGameLoading.route) {
-
-                                CreateGameLoadingScreen(
-                                    navController = navController
-                                )
+                                CreateGameLoadingScreen(navController = navController)
                             }
-                            composable(Routes.Lobby.route) {
-                                LobbyScreen(
-                                    navController = navController
-                                )
+                            composable(Routes.Paused.route) {
+                                PauseScreen()
                             }
-                            composable(Routes.ChooseCategory.route) {
-                                ChooseCategoryScreen(navController = navController)
+                            composable(Routes.Disconnected.route)
+                            {
+                                DisconnectedScreen(navController = navController)
                             }
-                            composable(Routes.RoleReveal.route) {
-                                RoleRevealScreen(
-                                    navController = navController
-                                )
-                            }
-                            composable(Routes.Question.route) {
-                                QuestionScreen(
-                                    navController = navController,
-                                )
-                            }
-                            composable(Routes.ReplayRoundChoice.route) {
-                                ChooseExtraQuestionsScreen(
-                                    navController = navController
-                                )
-                            }
-                            composable(Routes.Voting.route) {
-                                VotingScreen(
-                                    navController = navController
-                                )
-                            }
-                            composable(Routes.VotingResults.route) {
-                                VotingResultsScreen(
-                                    navController = navController
-                                )
-                            }
-                            composable(Routes.Scoreboard.route) {
-                                ScoreScreen(
-                                    navController = navController
-                                )
-                            }
-                            composable(Routes.EndGame.route) {
-                                EndGameScreen(
-                                    navController = navController
-                                )
+                            navigation(
+                                startDestination = Routes.Lobby.route,
+                                route = Routes.GameSessionGraph.route
+                            ) {
+                                composable(Routes.Lobby.route) {
+                                    LobbyScreen(navController = navController)
+                                }
+                                composable(Routes.ChooseCategory.route) {
+                                    ChooseCategoryScreen(navController = navController)
+                                }
+                                composable(Routes.RoleReveal.route) {
+                                    RoleRevealScreen()
+                                }
+                                composable(Routes.Question.route) {
+                                    QuestionScreen()
+                                }
+                                composable(Routes.ReplayRoundChoice.route) {
+                                    ChooseExtraQuestionsScreen()
+                                }
+                                composable(Routes.Voting.route) {
+                                    VotingScreen()
+                                }
+                                composable(Routes.VotingResults.route) {
+                                    VotingResultsScreen()
+                                }
+                                composable(Routes.Scoreboard.route) {
+                                    ScoreScreen(
+                                        showSnackBar = { message ->
+                                            scope.launch {
+                                                snackBarHostState.showSnackbar(
+                                                    message = message,
+                                                )
+                                            }
+                                        },
+                                    )
+                                }
+                                composable(Routes.EndGame.route) {
+                                    EndGameScreen(
+                                        navController = navController
+                                    )
+                                }
                             }
                         }
                     }

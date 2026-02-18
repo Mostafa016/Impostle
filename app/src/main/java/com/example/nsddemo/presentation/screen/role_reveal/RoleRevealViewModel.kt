@@ -4,9 +4,7 @@ import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.domain.engine.GameSession
-import com.example.nsddemo.domain.model.GamePhase
 import com.example.nsddemo.presentation.util.BaseGameViewModel
-import com.example.nsddemo.presentation.util.Routes
 import com.example.nsddemo.presentation.util.UiEvent
 import com.example.nsddemo.presentation.util.uiCategory
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,7 +13,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -35,17 +32,6 @@ class RoleRevealViewModel @Inject constructor(
     val word: String? = gameData.value.word?.lowercase()
     val isImposter: Boolean = gameData.value.isImposter
 
-    init {
-        // Navigation Logic
-        viewModelScope.launch(Dispatchers.IO) {
-            gamePhase.collectLatest { phase ->
-                if (phase is GamePhase.InRound) {
-                    _eventFlow.emit(UiEvent.NavigateTo(Routes.Question.route))
-                }
-            }
-        }
-    }
-
     fun onEvent(event: RoleRevealEvent) {
         when (event) {
             RoleRevealEvent.ConfirmRoleReveal -> onConfirmClick()
@@ -58,5 +44,10 @@ class RoleRevealViewModel @Inject constructor(
             Log.d(TAG, "RoleRevealViewModel: Sending confirmation to server")
             activeClient?.confirmRole()
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.i(TAG, "RoleRevealViewModel: Cleared!")
     }
 }

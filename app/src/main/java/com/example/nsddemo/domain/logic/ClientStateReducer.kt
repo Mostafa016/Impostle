@@ -1,11 +1,13 @@
 package com.example.nsddemo.domain.logic
 
-import com.example.nsddemo.domain.model.NewGameData
+import android.util.Log
+import com.example.nsddemo.core.util.Debugging.TAG
+import com.example.nsddemo.domain.model.GameData
 import com.example.nsddemo.domain.model.RoundData
 import com.example.nsddemo.domain.model.ServerMessage
 
 object ClientStateReducer {
-    fun reduce(data: NewGameData, message: ServerMessage): NewGameData {
+    fun reduce(data: GameData, message: ServerMessage): GameData {
         return when (message) {
             // --- LOBBY & SETUP ---
             is ServerMessage.PlayerList -> {
@@ -25,7 +27,6 @@ object ClientStateReducer {
             // --- ROLE DISTRIBUTION ---
             is ServerMessage.RoleAssigned -> {
                 // Server tells us our specific role details
-                // Note: The phase change is handled by GameFlowRegistry, here we just set data
                 val isImposter = message.word.isEmpty()
                 data.copy(
                     category = message.category,
@@ -61,7 +62,7 @@ object ClientStateReducer {
             is ServerMessage.RoundEnd -> data
 
             is ServerMessage.ReplayRound -> data.copy(
-                roundNumber = data.roundNumber + 1,
+                roundNumber = data.roundNumber + if (message.incrementRoundNumber) 1 else 0,
                 roundData = RoundData.Idle
             )
             // --- VOTING & RESULTS ---
@@ -70,6 +71,9 @@ object ClientStateReducer {
             is ServerMessage.PlayerVoted ->
                 data.copy(votes = data.votes + (message.playerId to message.votedPlayerId))
 
+            is ServerMessage.VotesAfterLeaver -> data.copy(votes = message.votes)
+
+            is ServerMessage.ScoresAfterLeaver -> data.copy(scores = message.scores)
 
             is ServerMessage.VoteResult -> data.copy(
                 votes = message.voteResult,
@@ -80,7 +84,7 @@ object ClientStateReducer {
             // --- GAME END ---
             is ServerMessage.ContinueToGameChoice -> data
 
-            is ServerMessage.ReplayGame -> NewGameData(
+            is ServerMessage.ReplayGame -> GameData(
                 localPlayerId = data.localPlayerId,
                 hostId = data.hostId,
                 gameCode = data.gameCode,
@@ -88,14 +92,19 @@ object ClientStateReducer {
                 scores = data.scores
             )
 
-            is ServerMessage.EndGame -> NewGameData()
+            is ServerMessage.EndGame -> GameData()
 
             // --- SESSION MANAGEMENT ---
             is ServerMessage.PlayerDisconnected -> {
-                val p = data.players[message.playerId]?.copy(isConnected = false)
-                if (p != null) {
-                    data.copy(players = data.players + (p.id to p))
+                val disconnectedPlayer =
+                    data.players[message.playerId]?.copy(isConnected = false)
+                if (disconnectedPlayer != null) {
+                    data.copy(players = data.players + (disconnectedPlayer.id to disconnectedPlayer))
                 } else {
+                    Log.w(
+                        TAG,
+                        "ClientStateReducer: Couldn't find player who disconnected in player list."
+                    )
                     data
                 }
             }
@@ -111,7 +120,9 @@ object ClientStateReducer {
             // --- MESSAGES WITHOUT DATA UPDATES (handled elsewhere) ---
             is ServerMessage.GameFull -> data
             is ServerMessage.GameAlreadyStarted -> data
-            is ServerMessage.GameResumed -> data
+            is ServerMessage.GameResumed -> data.copy(phaseAfterPause = null)
+            ServerMessage.LobbyClosed -> data
+            ServerMessage.YouWereKicked -> data
         }
     }
 }

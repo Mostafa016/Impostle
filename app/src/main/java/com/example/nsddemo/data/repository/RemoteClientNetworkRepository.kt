@@ -11,13 +11,14 @@ import com.example.nsddemo.data.local.network.nsd.resolution.NsdResolutionState
 import com.example.nsddemo.data.local.network.socket.ConnectionEvent
 import com.example.nsddemo.data.local.network.socket.MessageEvent
 import com.example.nsddemo.data.local.network.socket.client.SocketClient
+import com.example.nsddemo.di.IoDispatcher
 import com.example.nsddemo.domain.model.ClientMessage
 import com.example.nsddemo.domain.model.ClientState
 import com.example.nsddemo.domain.model.NetworkJson
 import com.example.nsddemo.domain.model.ServerMessage
 import com.example.nsddemo.domain.repository.ClientNetworkRepository
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -27,17 +28,18 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.encodeToString
-import java.io.IOException
 import javax.inject.Inject
 
 class RemoteClientNetworkRepository @Inject constructor(
     private val networkDiscovery: NetworkDiscovery,
     private val networkResolution: NetworkResolution,
-    private val socketClient: SocketClient
+    private val socketClient: SocketClient,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ClientNetworkRepository {
 
     private val _clientState = MutableStateFlow<ClientState>(ClientState.Idle)
@@ -88,6 +90,47 @@ class RemoteClientNetworkRepository @Inject constructor(
                 TAG,
                 "RemoteClientRepository Connect: Performed server connection for service $serviceInfo with $host:$port"
             )
+
+            // 4. Runtime Monitoring (Serialized)
+            // We listen to BOTH messages and connection events in a single sequential flow.
+            // This guarantees that if "LobbyClosed" arrives before "Disconnected",
+            // we process LobbyClosed first.
+            launch {
+                val mixedEvents = merge(
+                    socketClient.messageEvents,
+                    socketClient.connectionEvents
+                )
+
+                mixedEvents.collect { event ->
+                    when (event) {
+                        is MessageEvent.Received -> {
+                            // Pre-check for graceful exit signals to update state synchronously
+                            if (isGracefulExitSignal(event.data)) {
+                                Log.i(TAG, "Graceful Exit Signal detected. Setting Idle.")
+                                _clientState.value = ClientState.Idle
+                            }
+                        }
+
+                        is ConnectionEvent.Disconnected -> {
+                            // Because this collect block is sequential, if the message above
+                            // ran first, the state is ALREADY Idle.
+                            if (_clientState.value !is ClientState.Idle && _clientState.value !is ClientState.Error) {
+                                Log.w(TAG, "Unexpected Disconnection. Setting Disconnected.")
+                                _clientState.value = ClientState.Disconnected
+                            }
+                        }
+
+                        is ConnectionEvent.Error -> {
+                            // Handle transport errors
+                            if (_clientState.value !is ClientState.Idle) {
+                                _clientState.value = ClientState.Error(event.message)
+                            }
+                        }
+
+                        else -> {} // Ignore Connected, Sent, etc.
+                    }
+                }
+            }
         } catch (e: TimeoutCancellationException) {
             Log.e(TAG, "Connection process timed out.")
             _clientState.value =
@@ -104,8 +147,8 @@ class RemoteClientNetworkRepository @Inject constructor(
     }
 
     override suspend fun disconnect() {
+        _clientState.value = ClientState.Idle
         cleanupResources()
-        _clientState.value = ClientState.Disconnected
     }
 
     override suspend fun sendToServer(message: ClientMessage): Boolean {
@@ -174,7 +217,7 @@ class RemoteClientNetworkRepository @Inject constructor(
     }
 
     private suspend fun performSocketConnection(host: String, port: Int) = coroutineScope {
-        launch(Dispatchers.IO) { socketClient.startSession(host, port) }
+        launch(ioDispatcher) { socketClient.startSession(host, port) }
 
         val event = withTimeout(TIMEOUT_MS) {
             socketClient.connectionEvents
@@ -184,11 +227,10 @@ class RemoteClientNetworkRepository @Inject constructor(
         when (event) {
             is ConnectionEvent.Connected -> {
                 _clientState.value = ClientState.Connected
-                Log.d(TAG, "performSocketConnection: clientState (${clientState.value})")
             }
 
             is ConnectionEvent.Error -> {
-                throw IOException("Handshake Failed: ${event.message}")
+                _clientState.value = ClientState.Error(event.message)
             }
 
             else -> { /* Ignore Disconnected events during startup */
@@ -199,6 +241,15 @@ class RemoteClientNetworkRepository @Inject constructor(
     private suspend fun cleanupResources() {
         networkDiscovery.stopDiscovery()
         socketClient.disconnect()
+    }
+
+    /**
+     * Light-weight check to see if a raw JSON string corresponds to a graceful exit message.
+     * This avoids full deserialization overhead in the monitoring loop.
+     */
+    private fun isGracefulExitSignal(json: String): Boolean {
+        // Quick string check is faster and safer here than full decode
+        return json.contains("LobbyClosed") || json.contains("YouWereKicked")
     }
     //endregion
 

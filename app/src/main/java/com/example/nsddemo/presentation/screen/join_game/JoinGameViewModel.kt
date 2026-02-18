@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import javax.inject.Inject
 
@@ -49,60 +48,51 @@ class JoinGameViewModel @Inject constructor(
     private fun onGameCodeTextFieldValueChange(text: String) {
         if (text.length > GameConstants.CODE_LENGTH) return
         _state.value = state.value.copy(
-            gameCodeTextFieldText = text.uppercase()
+            gameCodeTextFieldText = text.uppercase(),
+            isJoinGameButtonEnabled = text.length == GameConstants.CODE_LENGTH
         )
+
     }
 
     private fun onJoinGamePressed() {
-        val gameCode = _state.value.gameCodeTextFieldText
-        if (gameCode.length != GameConstants.CODE_LENGTH) return
-
-        _state.value = state.value.copy(gameCodeTextFieldEnabled = false)
-
+        _state.value =
+            state.value.copy(isJoinGameButtonEnabled = false, gameCodeTextFieldEnabled = false)
+        val gameCode = state.value.gameCodeTextFieldText
         viewModelScope.launch(Dispatchers.IO) {
-            // 1. Start the Service in Join Mode
+            _eventFlow.emit(UiEvent.NavigateTo(Routes.JoinGameLoading.route))
+
             val settings = settingsRepository.userSettings.first()
             sessionController.startJoin(gameCode, settings.playerId)
 
-            // 2. Navigate to Loading Screen immediately
-            _eventFlow.emit(UiEvent.NavigateTo(Routes.JoinGameLoading.route))
-
-            // 3. Observe Session State for Success/Failure
-            gameSession.sessionState.collect { sessionState ->
-                when (sessionState) {
-                    is SessionState.Running -> {
-                        // Game Joined! Register Player.
-                        val activeClient = gameSession.activeClient
-                        if (activeClient != null) {
-                            activeClient.registerPlayer(settings.playerName!!, settings.playerId)
-                            try {
-                                withTimeout(30_000L) {
-                                    gameSession.gameData.first { it.players.isNotEmpty() }
-                                    withContext(Dispatchers.Main.immediate) {
-                                        _eventFlow.emit(UiEvent.ShowSnackBar(R.string.game_found_joining))
-                                        _eventFlow.emit(UiEvent.NavigateTo(Routes.Lobby.route))
-                                    }
-                                }
-                            } catch (e: TimeoutCancellationException) {
-                                withContext(Dispatchers.Main.immediate) {
-                                    Log.d(TAG, "JoinGameViewModel: Timed out")
-                                    onGameSearchTimedOut()
-                                }
-                            }
-                        }
+            try {
+                withTimeout(15_000L) {
+                    val sessionState =
+                        gameSession.sessionState.first { it is SessionState.Running || it is SessionState.Error }
+                    if (sessionState is SessionState.Error) {
+                        throw IllegalStateException(sessionState.reason)
                     }
-
-                    is SessionState.Error -> {
-                        _eventFlow.emit(UiEvent.ShowSnackBar(R.string.game_not_found))
-                        // Go back to input
-                        _state.value = state.value.copy(gameCodeTextFieldEnabled = true)
-                        _eventFlow.emit(UiEvent.NavigateTo(Routes.JoinGame.route))
-                    }
-
-                    else -> {} // Connecting/Idle
+                    gameSession.activeClient!!.registerPlayer(
+                        settings.playerName!!,
+                        settings.playerId
+                    )
+                    _eventFlow.emit(UiEvent.ShowSnackBar(R.string.game_found_joining))
                 }
+            } catch (e: TimeoutCancellationException) {
+                Log.e(TAG, "JoinGameViewModel: Couldn't join game (Timeout)")
+                onJoinFailed()
+            } catch (e: NullPointerException) {
+                Log.e(TAG, "JoinGameViewModel: Couldn't join game (Client not initialized)")
+                onJoinFailed()
+            } catch (e: IllegalStateException) {
+                Log.e(TAG, "JoinGameViewModel: Couldn't join game (Initialization failed)")
+                onJoinFailed()
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.i(TAG, "JoinGameViewModel: Cleared!")
     }
 
     private fun onGoBackToMainMenu() {
@@ -112,7 +102,7 @@ class JoinGameViewModel @Inject constructor(
         }
     }
 
-    private suspend fun onGameSearchTimedOut() {
+    private suspend fun onJoinFailed() {
         sessionController.stopSession()
         _state.value = JoinGameState()
         _eventFlow.emit(UiEvent.ShowSnackBar(R.string.game_not_found))

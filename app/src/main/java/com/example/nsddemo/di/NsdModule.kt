@@ -10,25 +10,21 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class NsdModule {
     @Binds
-    @Singleton
     abstract fun bindNetworkDiscovery(
         nsdNetworkDiscovery: NsdNetworkDiscovery
     ): NetworkDiscovery
 
     @Binds
-    @Singleton
     abstract fun bindNetworkRegistration(
         nsdNetworkRegistration: NsdNetworkRegistration
     ): NetworkRegistration
 
     @Binds
-    @Singleton
     abstract fun bindNetworkResolution(
         nsdNetworkResolution: NsdNetworkResolution
     ): NetworkResolution

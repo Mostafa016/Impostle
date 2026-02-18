@@ -24,6 +24,12 @@ object ProtocolRegistry {
             direction = MessageDirection.ServerToClient,
             expectedPhase = GamePhase.Lobby
         ),
+        ClientMessage.RequestKickPlayer::class to MessageDefinition(
+            code = "C_KCK",
+            description = "Host requests to kick player (in lobby or while paused)",
+            direction = MessageDirection.ClientToServer,
+            expectedPhase = GamePhase.Lobby
+        ),
         ClientMessage.RequestSelectCategory::class to MessageDefinition(
             code = "C_CAT",
             description = "Host requests to change category",
@@ -130,6 +136,18 @@ object ProtocolRegistry {
             direction = MessageDirection.ServerToClient,
             expectedPhase = GamePhase.GameVoting
         ),
+        ServerMessage.VotesAfterLeaver::class to MessageDefinition(
+            code = "S_VUPT",
+            description = "Server updates votes list after a player is kicked to avoid invalid votes",
+            direction = MessageDirection.ServerToClient,
+            expectedPhase = GamePhase.Paused
+        ),
+        ServerMessage.ScoresAfterLeaver::class to MessageDefinition(
+            code = "S_SUPT",
+            description = "Server updates scores list after a player is kicked to avoid invalid scores",
+            direction = MessageDirection.ServerToClient,
+            expectedPhase = GamePhase.Paused
+        ),
         ServerMessage.VoteResult::class to MessageDefinition(
             code = "S_RES",
             description = "Server reveals imposter and scores",
@@ -184,13 +202,19 @@ object ProtocolRegistry {
             code = "S_RECN",
             description = "Notification that a player re-joined",
             direction = MessageDirection.ServerToClient,
-            expectedPhase = GamePhase.Idle // Can happen anytime
+            expectedPhase = null // Can happen anytime during game
         ),
         ServerMessage.PlayerDisconnected::class to MessageDefinition(
             code = "S_DISC",
             description = "Notification that a player lost connection",
             direction = MessageDirection.ServerToClient,
-            expectedPhase = GamePhase.Idle // Can happen anytime
+            expectedPhase = null // Can happen anytime during game
+        ),
+        ServerMessage.GameResumed::class to MessageDefinition(
+            code = "S_RSMD",
+            description = "Notification to unpause (resume) the game on clients",
+            direction = MessageDirection.ServerToClient,
+            expectedPhase = null // Can happen anytime during game
         ),
         ServerMessage.ReconnectionFullStateSync::class to MessageDefinition(
             code = "S_SYNC",
@@ -218,7 +242,7 @@ object ProtocolRegistry {
                 code = "UNKN",
                 description = "Unknown Message: ${message::class.simpleName}",
                 direction = MessageDirection.ClientToServer,
-                expectedPhase = GamePhase.Idle
+                expectedPhase = null
             )
     }
 }

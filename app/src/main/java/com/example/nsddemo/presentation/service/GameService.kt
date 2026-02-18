@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class GameService : LifecycleService() { // Changed from Service
+class GameService : LifecycleService() {
 
     @Inject
     lateinit var gameSession: GameSession
@@ -70,8 +70,12 @@ class GameService : LifecycleService() { // Changed from Service
 
         sessionJob?.cancel()
 
-        // We now use the built-in lifecycleScope!
         sessionJob = lifecycleScope.launch(Dispatchers.IO + exceptionHandler) {
+            launch {
+                gameSession.sessionState.collect {
+                    Log.d(TAG, "GameService: SessionState = $it")
+                }
+            }
             if (isHost) {
                 gameSession.startHostSession(gameCode, playerId)
             } else {
@@ -81,12 +85,11 @@ class GameService : LifecycleService() { // Changed from Service
     }
 
     private fun stopSession() {
-        sessionJob?.cancel()
-        lifecycleScope.launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             gameSession.reset()
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
         }
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
     }
 
     // --- Notification Helpers ---
@@ -145,5 +148,10 @@ class GameService : LifecycleService() { // Changed from Service
         const val ACTION_STOP = "ACTION_STOP"
         const val EXTRA_GAME_CODE = "EXTRA_GAME_CODE"
         const val EXTRA_PLAYER_ID = "EXTRA_PLAYER_ID"
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        stopSession()
     }
 }

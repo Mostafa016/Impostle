@@ -1,11 +1,12 @@
 package com.example.nsddemo.domain.strategy
 
+import android.util.Log
 import com.example.nsddemo.domain.model.ClientMessage
 import com.example.nsddemo.domain.model.Envelope
 import com.example.nsddemo.domain.model.GameCategory
+import com.example.nsddemo.domain.model.GameData
 import com.example.nsddemo.domain.model.GamePhase
 import com.example.nsddemo.domain.model.GameStateTransition
-import com.example.nsddemo.domain.model.NewGameData
 import com.example.nsddemo.domain.model.Player
 import com.example.nsddemo.domain.model.RoundData
 import com.example.nsddemo.domain.model.ServerMessage
@@ -15,9 +16,11 @@ import com.example.nsddemo.domain.util.GameScoreIncrements
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.unmockkObject
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -45,7 +48,7 @@ class QuestionGameModeStrategyTest {
     )
 
     // A standard base state
-    private val baseData = NewGameData(
+    private val baseData = GameData(
         hostId = hostId,
         players = playersMap,
         category = GameCategory.ANIMALS
@@ -53,6 +56,18 @@ class QuestionGameModeStrategyTest {
 
     @Before
     fun setUp() {
+        mockkStatic(Log::class)
+        every { Log.d(any(), any()) } returns 0
+        every { Log.e(any(), any()) } returns 0
+        every { Log.e(any(), any(), any()) } answers {
+            // Print the error if the test fails so we see why
+            println("ERROR: ${secondArg<String>()} Exception: ${thirdArg<Throwable>()}")
+            0
+        }
+        every { Log.w(any(), any<Throwable>()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
+        every { Log.i(any(), any()) } returns 0
+
         wordRepository = mockk()
         every { wordRepository.getWordsForCategory(any()) } returns listOf("Lion", "Tiger")
 
@@ -436,5 +451,92 @@ class QuestionGameModeStrategyTest {
         // Verify Hard Reset (Empty Data)
         assertTrue(valid.newGameData.players.isEmpty())
         assertTrue(valid.newGameData.scores.isEmpty())
+    }
+
+    // ==========================================
+    // 7. PLAYER REMOVAL / KICK HANDLING
+    // ==========================================
+
+    @Test
+    fun `GIVEN RoleDistribution WHEN Player Removed THEN Resets to Lobby`() {
+        val result = strategy.onPlayerRemoved(baseData, GamePhase.RoleDistribution, p2Id)
+
+        assertTrue(result is GameStateTransition.Valid)
+        val valid = result as GameStateTransition.Valid
+
+        assertEquals(GamePhase.Lobby, valid.newPhase)
+        assertTrue(valid.newGameData.readyPlayerIds.isEmpty())
+
+        // Verify messages
+        val messages = valid.envelopes.map { (it as Envelope.Broadcast).message }
+        assertTrue(messages.any { it is ServerMessage.ReplayGame })
+    }
+
+    @Test
+    fun `GIVEN InRound WHEN Player Removed THEN Regenerates Pairs and Restarts Round`() {
+        // Arrange: Round was in progress
+        val oldRound = RoundData.QuestionRoundData(
+            roundPairs = listOf(hostId to p2Id, p2Id to p3Id, p3Id to hostId),
+            currentPairIndex = 1
+        )
+        val data = baseData.copy(roundData = oldRound)
+
+        // Act: Remove p2
+        val remainingPlayers = baseData.players.filterKeys { it != p2Id }
+        val inputData = data.copy(players = remainingPlayers)
+
+        val result = strategy.onPlayerRemoved(inputData, GamePhase.InRound, p2Id)
+
+        val valid = result as GameStateTransition.Valid
+
+        // Assert
+        val newRound = valid.newGameData.roundData as RoundData.QuestionRoundData
+
+        // 1. Should still be InRound (technically newPhase is null in strategy, implies same phase,
+        // OR it returns GamePhase.InRound explicitely? The code calls onRoundStart which sets InRound)
+        assertEquals(GamePhase.InRound, valid.newPhase)
+
+        // 2. Pairs should be regenerated for remaining players (Host & P3)
+        assertEquals(2, newRound.roundPairs.size)
+        assertFalse(newRound.roundPairs.any { it.first == p2Id || it.second == p2Id })
+
+        // 3. Round Index reset
+        assertEquals(0, newRound.currentPairIndex)
+
+        // 4. Replay Message Sent
+        val messages = valid.envelopes.map { (it as Envelope.Broadcast).message }
+        assertTrue(messages.any { it is ServerMessage.ReplayRound })
+    }
+
+    @Test
+    fun `GIVEN GameVoting WHEN Player Removed THEN Cleans Votes involving Player`() {
+        // Arrange: p2 voted for p3, p3 voted for p2
+        val votes = mapOf(hostId to p3Id, p2Id to p3Id, p3Id to p2Id)
+        val data = baseData.copy(votes = votes)
+
+        // Act: Remove p2
+        val result = strategy.onPlayerRemoved(data, GamePhase.GameVoting, p2Id)
+        val valid = result as GameStateTransition.Valid
+
+        val newVotes = valid.newGameData.votes
+
+        // Assert
+        assertFalse("p2's vote should be gone", newVotes.containsKey(p2Id))
+        assertFalse("votes FOR p2 should be gone", newVotes.containsValue(p2Id))
+        assertEquals("Host vote remains", p3Id, newVotes[hostId])
+
+        // Verify Update Message
+        val messages = valid.envelopes.map { (it as Envelope.Broadcast).message }
+        assertTrue(messages.any { it is ServerMessage.VotesAfterLeaver })
+    }
+
+    @Test
+    fun `GIVEN Invalid Phase WHEN Player Removed THEN Returns Invalid Transition`() {
+        val invalidPhasesToKickPlayer =
+            listOf(GamePhase.Idle, GamePhase.Lobby, GamePhase.Paused, GamePhase.GameEnd)
+        invalidPhasesToKickPlayer.forEach {
+            val result = strategy.onPlayerRemoved(baseData, it, p2Id)
+            assertTrue(result is GameStateTransition.Invalid)
+        }
     }
 }
