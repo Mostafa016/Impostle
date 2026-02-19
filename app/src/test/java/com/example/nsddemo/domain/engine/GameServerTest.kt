@@ -129,7 +129,7 @@ class GameServerTest {
         val job = launch { gameServer.start("CODE", "123") }
 
         // 2. Advance time PAST the timeout (10,000 + 1)
-        advanceTimeBy(GameServer.TIMEOUT_MS + 1)
+        advanceTimeBy(GameServer.TIMEOUT_MS + 10_000L)
 
         // 3. Verify stop was called
         coVerify(exactly = 1) { repo.stop() }

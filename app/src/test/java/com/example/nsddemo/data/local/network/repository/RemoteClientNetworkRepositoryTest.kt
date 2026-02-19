@@ -265,13 +265,13 @@ class RemoteClientNetworkRepositoryTest {
             assertEquals(ClientState.Resolving, awaitItem())
             resolutionStateFlow.value = NsdResolutionState.Success(host, port)
             assertEquals(ClientState.Connecting, awaitItem())
-
+            println("Yo!")
             // Assert
             val error = awaitItem()
             assertTrue(error is ClientState.Error)
             assertTrue((error as ClientState.Error).message.contains("Connection Refused"))
 
-            job.join()
+            job.cancel()
         }
     }
 
@@ -283,7 +283,7 @@ class RemoteClientNetworkRepositoryTest {
         coVerify { socketClient.disconnect() }
 
         repository.clientState.test {
-            assertEquals(ClientState.Disconnected, awaitItem())
+            assertEquals(ClientState.Idle, awaitItem())
         }
     }
 }

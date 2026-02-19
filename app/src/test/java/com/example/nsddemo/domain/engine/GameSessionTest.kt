@@ -20,6 +20,7 @@ import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -133,7 +134,7 @@ class GameSessionTest {
         runCurrent() // Allow start to proceed to collection
 
         // Verify "Connecting" state initially
-        assertEquals(SessionState.Connecting, gameSession.sessionState.value)
+        assertEquals(SessionState.Connecting, gameSession.sessionState.first())
 
         // Act: Simulate Success
         serverStateFlow.value = ServerState.Running(1234, "CODE")
@@ -141,7 +142,7 @@ class GameSessionTest {
         advanceUntilIdle()
 
         // Assert
-        assertTrue(gameSession.sessionState.value is SessionState.Running)
+        assertTrue(gameSession.sessionState.first() is SessionState.Running)
 
         // Verify Correct Dependencies used
         verify { clientFactory.create(loopbackRepo) } // Host uses Loopback
@@ -165,7 +166,7 @@ class GameSessionTest {
         advanceUntilIdle()
 
         // Assert
-        val state = gameSession.sessionState.value
+        val state = gameSession.sessionState.first()
         assertTrue(state is SessionState.Error)
         assertEquals("Port in use", (state as SessionState.Error).reason)
 
@@ -187,7 +188,7 @@ class GameSessionTest {
         advanceUntilIdle()
 
         // Assert
-        val state = gameSession.sessionState.value
+        val state = gameSession.sessionState.first()
         assertTrue(state is SessionState.Error)
         assertEquals("Loopback failed", (state as SessionState.Error).reason)
 
@@ -205,7 +206,7 @@ class GameSessionTest {
         advanceTimeBy(GameServer.TIMEOUT_MS + 1000)
 
         // Assert
-        val state = gameSession.sessionState.value
+        val state = gameSession.sessionState.first()
         assertTrue(state is SessionState.Error)
         assertTrue((state as SessionState.Error).reason.contains("timed out"))
 
@@ -223,14 +224,14 @@ class GameSessionTest {
         val job = launch { gameSession.startJoinSession("CODE", "123") }
         runCurrent()
 
-        assertEquals(SessionState.Connecting, gameSession.sessionState.value)
+        assertEquals(SessionState.Connecting, gameSession.sessionState.first())
 
         // Act: Client Connects
         clientStateFlow.value = ClientState.Connected
         advanceUntilIdle()
 
         // Assert
-        assertTrue(gameSession.sessionState.value is SessionState.Running)
+        assertTrue(gameSession.sessionState.first() is SessionState.Running)
 
         // Verify Correct Dependencies
         coVerify { clientFactory.create(remoteRepo) } // Join uses Remote
@@ -249,7 +250,7 @@ class GameSessionTest {
         advanceUntilIdle()
 
         // Assert
-        val state = gameSession.sessionState.value
+        val state = gameSession.sessionState.first()
         assertTrue(state is SessionState.Error)
         assertEquals("Host not found", (state as SessionState.Error).reason)
 
@@ -265,7 +266,7 @@ class GameSessionTest {
         advanceTimeBy(GameClient.TIMEOUT_MS + 1)
 
         // Assert
-        val state = gameSession.sessionState.value
+        val state = gameSession.sessionState.first()
         assertTrue(state is SessionState.Error)
         assertTrue((state as SessionState.Error).reason.contains("timed out"))
 
@@ -293,7 +294,7 @@ class GameSessionTest {
         coVerify { mockGameServer.stop() }
         coVerify { mockGameClient.stop() }
 
-        assertEquals(SessionState.Idle, gameSession.sessionState.value)
+        assertEquals(SessionState.Idle, gameSession.sessionState.first())
         assertNull(gameSession.activeClient)
     }
 }
