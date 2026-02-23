@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nsddemo.R
 import com.example.nsddemo.core.util.Debugging.TAG
+import com.example.nsddemo.di.IoDispatcher
 import com.example.nsddemo.domain.engine.GameSession
 import com.example.nsddemo.domain.model.SessionState
 import com.example.nsddemo.domain.repository.SettingsRepository
@@ -12,7 +13,7 @@ import com.example.nsddemo.presentation.service.SessionController
 import com.example.nsddemo.presentation.util.Routes
 import com.example.nsddemo.presentation.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,7 +28,8 @@ import javax.inject.Inject
 class CreateGameViewModel @Inject constructor(
     private val sessionController: SessionController,
     private val gameSession: GameSession,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
     private val _state = MutableStateFlow<GameCreationState>(GameCreationState.InProgress)
     val state = _state.asStateFlow()
@@ -40,7 +42,7 @@ class CreateGameViewModel @Inject constructor(
     }
 
     private fun createGame() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             //TODO: Important: replace it with GameCodeGenerator.generate() when done testing
             val gameCode = "AAAA"
             val settings = settingsRepository.userSettings.first()

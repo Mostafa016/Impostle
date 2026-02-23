@@ -1,10 +1,11 @@
 package com.example.nsddemo.presentation.screen.pause
 
 import androidx.lifecycle.viewModelScope
+import com.example.nsddemo.di.IoDispatcher
 import com.example.nsddemo.domain.engine.GameSession
 import com.example.nsddemo.presentation.util.BaseGameViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +16,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PausedViewModel @Inject constructor(
-    gameSession: GameSession
+    gameSession: GameSession,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : BaseGameViewModel(gameSession) {
     private val isEndGameButtonPressed = MutableStateFlow(false)
     val state: StateFlow<PauseState> = combine(
@@ -45,7 +47,7 @@ class PausedViewModel @Inject constructor(
     }
 
     private fun kickPlayer(playerId: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             activeClient?.kickPlayer(playerId)
         }
     }
@@ -56,7 +58,7 @@ class PausedViewModel @Inject constructor(
             return
         }
         isEndGameButtonPressed.value = true
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             activeClient?.endGame()
         }
     }

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.nsddemo.R
 import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.core.util.GameConstants
+import com.example.nsddemo.di.IoDispatcher
 import com.example.nsddemo.domain.engine.GameSession
 import com.example.nsddemo.domain.model.SessionState
 import com.example.nsddemo.domain.repository.SettingsRepository
@@ -13,7 +14,7 @@ import com.example.nsddemo.presentation.service.SessionController
 import com.example.nsddemo.presentation.util.Routes
 import com.example.nsddemo.presentation.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,7 +29,8 @@ import javax.inject.Inject
 class JoinGameViewModel @Inject constructor(
     private val sessionController: SessionController,
     private val gameSession: GameSession,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(JoinGameState())
@@ -58,7 +60,7 @@ class JoinGameViewModel @Inject constructor(
         _state.value =
             state.value.copy(isJoinGameButtonEnabled = false, gameCodeTextFieldEnabled = false)
         val gameCode = state.value.gameCodeTextFieldText
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             _eventFlow.emit(UiEvent.NavigateTo(Routes.JoinGameLoading.route))
 
             val settings = settingsRepository.userSettings.first()

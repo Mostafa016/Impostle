@@ -2,11 +2,12 @@ package com.example.nsddemo.presentation.screen.main_menu
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.nsddemo.di.IoDispatcher
 import com.example.nsddemo.domain.repository.SettingsRepository
 import com.example.nsddemo.presentation.util.Routes
 import com.example.nsddemo.presentation.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MainMenuViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
     private val _state = MutableStateFlow(MainMenuState())
     val state: StateFlow<MainMenuState> = _state.asStateFlow()
@@ -35,7 +37,7 @@ class MainMenuViewModel @Inject constructor(
     }
 
     private fun loadPlayerName() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val settings = settingsRepository.userSettings.first()
             _state.value = _state.value.copy(
                 playerName = settings.playerName,
@@ -89,7 +91,7 @@ class MainMenuViewModel @Inject constructor(
     private fun onPlayerNameDialogSave() {
         val playerName = state.value.playerNameTextFieldText
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 settingsRepository.setPlayerName(playerName)
 
             }
