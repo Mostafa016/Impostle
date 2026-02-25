@@ -219,8 +219,14 @@ class SessionManager @Inject constructor() {
         val cleanScores = data.scores
             .filterKeys { it != playerIdToKick }
         if (playerIdToKick == data.imposterId && phase !is GamePhase.Lobby && phase !is GamePhase.GameReplayChoice) {
+            val cleanedData = data.copy(
+                players = remainingPlayers,
+                scores = cleanScores,
+                phaseBeforePause = null,
+                phaseAfterPause = null
+            )
             return GameStateTransition.Valid(
-                newGameData = data,
+                newGameData = cleanedData,
                 newPhase = GamePhase.GameResults,
                 envelopes = listOf(
                     Envelope.Broadcast(ServerMessage.PlayerList(data.players.values.toList())),
