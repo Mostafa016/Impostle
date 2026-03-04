@@ -8,7 +8,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
@@ -95,8 +94,7 @@ class MainActivity : AppCompatActivity() {
                     Scaffold(
                         Modifier
                             .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.background)
-                            .safeContentPadding(),
+                            .background(MaterialTheme.colorScheme.background),
                         snackbarHost = { SnackbarHost(snackBarHostState) },
                         contentWindowInsets = ScaffoldDefaults.contentWindowInsets
                     ) {
@@ -111,7 +109,10 @@ class MainActivity : AppCompatActivity() {
                                 )
                             }
                             composable(Routes.Settings.route) {
-                                SettingsScreen(settingsViewModel)
+                                SettingsScreen(
+                                    viewModel = settingsViewModel,
+                                    navController = navController
+                                )
                             }
                             navigation(
                                 startDestination = Routes.JoinGame.route,

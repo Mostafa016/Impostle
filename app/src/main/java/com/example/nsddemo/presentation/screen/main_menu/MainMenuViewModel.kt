@@ -123,7 +123,6 @@ class MainMenuViewModel @Inject constructor(
     }
 
     private fun navigateToCreateGame() {
-
         navigateTo(
             destination = Routes.CreateGameLoading.route,
         )

@@ -4,38 +4,106 @@ import androidx.compose.material3.Typography
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import com.example.nsddemo.R
 
 
-private val defaultTypography = Typography()
-
-val caveatFontFamily = FontFamily(
-    Font(R.font.caveat_regular, FontWeight.Normal),
-    Font(R.font.caveat_medium, FontWeight.Medium),
-    Font(R.font.caveat_semibold, FontWeight.SemiBold),
-    Font(R.font.caveat_bold, FontWeight.Bold)
+val chakraPetchFontFamily = FontFamily(
+    Font(R.font.chakra_petch_light, FontWeight.Normal),
+    Font(R.font.chakra_petch_medium, FontWeight.Medium),
+    Font(R.font.chakra_petch_semibold, FontWeight.SemiBold),
+    Font(R.font.chakra_petch_bold, FontWeight.Bold),
+    // If you have a Black/ExtraBold weight, add it here:
+    // Font(R.font.chakra_petch_black, FontWeight.Black)
 )
 
+val spaceMonoFontFamily = FontFamily(
+    Font(R.font.space_mono, FontWeight.Normal),
+    Font(R.font.space_mono_bold, FontWeight.Bold)
+)
+
+private val defaultTypography = Typography()
+
+// 2. Map Material 3 Roles to the "Cyber-Brutalist" System
 val englishTypography = Typography(
-    displayLarge = defaultTypography.displayLarge.copy(fontFamily = caveatFontFamily),
-    displayMedium = defaultTypography.displayMedium.copy(fontFamily = caveatFontFamily),
-    displaySmall = defaultTypography.displaySmall.copy(fontFamily = caveatFontFamily),
 
-    headlineLarge = defaultTypography.headlineLarge.copy(fontFamily = caveatFontFamily),
-    headlineMedium = defaultTypography.headlineMedium.copy(fontFamily = caveatFontFamily),
-    headlineSmall = defaultTypography.headlineSmall.copy(fontFamily = caveatFontFamily),
+    // --- DISPLAY (Hero Titles like "IMPOSTLE", "GAME OVER") ---
+    displayLarge = defaultTypography.displayLarge.copy(
+        fontFamily = chakraPetchFontFamily,
+        fontWeight = FontWeight.Black, // Thick and punchy
+        letterSpacing = (-1).sp // Tight tracking for large text
+    ),
+    displayMedium = defaultTypography.displayMedium.copy(
+        fontFamily = chakraPetchFontFamily,
+        fontWeight = FontWeight.Bold
+    ),
+    displaySmall = defaultTypography.displaySmall.copy(
+        fontFamily = chakraPetchFontFamily,
+        fontWeight = FontWeight.Bold
+    ),
 
-    titleLarge = defaultTypography.titleLarge.copy(fontFamily = caveatFontFamily),
-    titleMedium = defaultTypography.titleMedium.copy(fontFamily = caveatFontFamily),
-    titleSmall = defaultTypography.titleSmall.copy(fontFamily = caveatFontFamily),
+    // --- HEADLINE (Screen Titles like "SETTINGS", "LOBBY") ---
+    headlineLarge = defaultTypography.headlineLarge.copy(
+        fontFamily = chakraPetchFontFamily,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 0.sp
+    ),
+    headlineMedium = defaultTypography.headlineMedium.copy(
+        fontFamily = chakraPetchFontFamily,
+        fontWeight = FontWeight.Bold
+    ),
+    headlineSmall = defaultTypography.headlineSmall.copy(
+        fontFamily = chakraPetchFontFamily,
+        fontWeight = FontWeight.SemiBold
+    ),
 
-    bodyLarge = defaultTypography.bodyLarge.copy(fontFamily = caveatFontFamily),
-    bodyMedium = defaultTypography.bodyMedium.copy(fontFamily = caveatFontFamily),
-    bodySmall = defaultTypography.bodySmall.copy(fontFamily = caveatFontFamily),
+    // --- TITLE (Card Headers, Primary Buttons) ---
+    titleLarge = defaultTypography.titleLarge.copy(
+        fontFamily = chakraPetchFontFamily,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 1.sp // Slight spacing for uppercase buttons
+    ),
+    titleMedium = defaultTypography.titleMedium.copy(
+        fontFamily = chakraPetchFontFamily,
+        fontWeight = FontWeight.Medium
+    ),
+    titleSmall = defaultTypography.titleSmall.copy(
+        fontFamily = chakraPetchFontFamily,
+        fontWeight = FontWeight.Medium
+    ),
 
-    labelLarge = defaultTypography.labelLarge.copy(fontFamily = caveatFontFamily),
-    labelMedium = defaultTypography.labelMedium.copy(fontFamily = caveatFontFamily),
-    labelSmall = defaultTypography.labelSmall.copy(fontFamily = caveatFontFamily)
+    // --- BODY (Player Lists, Descriptions, Instructions) ---
+    // Swaps to Space Mono for that "Data/Terminal" look
+    bodyLarge = defaultTypography.bodyLarge.copy(
+        fontFamily = spaceMonoFontFamily,
+        fontWeight = FontWeight.Bold, // Brutalist body is often bold
+        fontSize = 16.sp
+    ),
+    bodyMedium = defaultTypography.bodyMedium.copy(
+        fontFamily = spaceMonoFontFamily,
+        fontWeight = FontWeight.Normal
+    ),
+    bodySmall = defaultTypography.bodySmall.copy(
+        fontFamily = spaceMonoFontFamily,
+        fontWeight = FontWeight.Normal
+    ),
+
+    // --- LABEL (Tags, Room Codes, Small Metadata) ---
+    labelLarge = defaultTypography.labelLarge.copy(
+        fontFamily = spaceMonoFontFamily,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 2.sp // Widely tracked for "tech" feel
+    ),
+    labelMedium = defaultTypography.labelMedium.copy(
+        fontFamily = spaceMonoFontFamily,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 1.5.sp
+    ),
+    labelSmall = defaultTypography.labelSmall.copy(
+        fontFamily = spaceMonoFontFamily,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 1.sp
+    )
 )
 
 val tsAnamilFontFamily = FontFamily(

@@ -11,8 +11,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,8 +24,25 @@ class RoleRevealViewModel @Inject constructor(
     gameSession: GameSession
 ) : BaseGameViewModel(gameSession) {
 
-    private val _state = MutableStateFlow(RoleRevealState())
-    val state = _state.asStateFlow()
+    private val _isConfirmPressed = MutableStateFlow(false)
+    private val playersWithReadyState =
+        gameData.map { gameData ->
+            val readyPlayersMap = gameData.readyPlayers.associateBy { it.id }
+            gameData.players.map {
+                val isPlayerReady = it.key in readyPlayersMap.keys
+                it.value.withReadyState(isPlayerReady)
+            }
+        }
+    val state =
+        combine(
+            _isConfirmPressed,
+            playersWithReadyState
+        ) { isConfirmedPressed, playersWithReadyState ->
+            RoleRevealState(
+                isConfirmPressed = isConfirmedPressed,
+                playersWithReadyState = playersWithReadyState,
+            )
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), RoleRevealState())
 
     private val _eventFlow = MutableSharedFlow<UiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
@@ -31,6 +51,7 @@ class RoleRevealViewModel @Inject constructor(
     val categoryNameResId: Int = gameData.value.category!!.uiCategory.nameResId
     val word: String? = gameData.value.word?.lowercase()
     val isImposter: Boolean = gameData.value.isImposter
+    val localPlayerId = gameData.value.localPlayerId
 
     fun onEvent(event: RoleRevealEvent) {
         when (event) {
@@ -39,7 +60,7 @@ class RoleRevealViewModel @Inject constructor(
     }
 
     private fun onConfirmClick() {
-        _state.value = _state.value.copy(isConfirmPressed = true)
+        _isConfirmPressed.value = true
         viewModelScope.launch(Dispatchers.IO) {
             Log.d(TAG, "RoleRevealViewModel: Sending confirmation to server")
             activeClient?.confirmRole()

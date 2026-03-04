@@ -10,9 +10,9 @@ enum class UiCategory(
     val iconResId: Int,
     val color: Color
 ) {
-    Animals(GameCategory.ANIMALS, R.string.animals, R.drawable.animals_silhouette, Color.Green),
-    Food(GameCategory.FOOD, R.string.food, R.drawable.food_silhouette, Color.Red),
-    Jobs(GameCategory.JOBS, R.string.jobs, R.drawable.jobs_silhouette, Color.Blue);
+    Animals(GameCategory.ANIMALS, R.string.animals, R.drawable.sharp_pets_24, Color.Green),
+    Food(GameCategory.FOOD, R.string.food, R.drawable.sharp_fastfood_24, Color.Red),
+    Jobs(GameCategory.JOBS, R.string.jobs, R.drawable.sharp_work_24, Color.Blue);
 }
 
 val GameCategory.uiCategory: UiCategory

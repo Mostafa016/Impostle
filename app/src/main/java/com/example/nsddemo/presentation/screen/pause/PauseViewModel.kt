@@ -43,6 +43,15 @@ class PausedViewModel @Inject constructor(
         when (event) {
             is PauseEvent.KickPlayer -> kickPlayer(event.playerId)
             PauseEvent.EndGame -> endGame()
+            PauseEvent.ContinueGameAnyway -> continueAnyway()
+        }
+    }
+
+    private fun continueAnyway() {
+        for (disconnectedPlayer in state.value.disconnectedPlayers) {
+            viewModelScope.launch(ioDispatcher) {
+                activeClient?.kickPlayer(disconnectedPlayer.id)
+            }
         }
     }
 

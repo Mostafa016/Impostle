@@ -6,9 +6,13 @@ import androidx.lifecycle.viewModelScope
 import com.example.nsddemo.core.util.Debugging.TAG
 import com.example.nsddemo.domain.model.AppLocales
 import com.example.nsddemo.domain.repository.SettingsRepository
+import com.example.nsddemo.presentation.util.Routes
+import com.example.nsddemo.presentation.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -19,6 +23,9 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
+    private val _eventFlow = MutableSharedFlow<UiEvent>()
+    val eventFlow = _eventFlow.asSharedFlow()
+
     val languageSetting = settingsRepository.userSettings
         .map { GameLocales.toLocale(it.languageCode) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GameLocales.English)
@@ -51,6 +58,24 @@ class SettingsViewModel @Inject constructor(
         Log.d(TAG, "onThemeChange: $isDarkTheme")
         viewModelScope.launch {
             settingsRepository.setDarkTheme(isDarkTheme)
+        }
+    }
+
+    fun onSaveChangesClick() {
+        navigateTo(Routes.MainMenu.route)
+    }
+
+    private fun navigateTo(
+        destination: String,
+        popPrevious: Boolean = true
+    ) {
+        viewModelScope.launch {
+            _eventFlow.emit(
+                UiEvent.NavigateTo(
+                    destination = destination,
+                    popPrevious = popPrevious
+                )
+            )
         }
     }
 

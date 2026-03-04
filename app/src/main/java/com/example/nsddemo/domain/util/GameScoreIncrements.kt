@@ -9,5 +9,5 @@ object GameScoreIncrements {
 
 object PlayerCountLimits {
     const val MIN_PLAYERS = 2
-    const val MAX_PLAYERS = 32
+    const val MAX_PLAYERS = 16
 }

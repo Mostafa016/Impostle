@@ -1,152 +1,270 @@
 package com.example.nsddemo.presentation.screen.pause
 
-import androidx.compose.animation.animateContentSize
+import android.content.res.Configuration
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.nsddemo.R
+import com.example.nsddemo.domain.model.NewPlayerColors
 import com.example.nsddemo.domain.model.Player
-import com.example.nsddemo.presentation.components.DefaultButton
-import com.example.nsddemo.presentation.screen.lobby.components.GameCodeText
-import com.example.nsddemo.presentation.screen.lobby.components.PlayersList
-import com.example.nsddemo.presentation.util.ConditionalComposable
+import com.example.nsddemo.presentation.components.common.BrutalistButton
+import com.example.nsddemo.presentation.components.common.BrutalistSectionHeader
+import com.example.nsddemo.presentation.components.common.HeroRoomCodeCard
+import com.example.nsddemo.presentation.components.modifier.brutalistBorderBottom
+import com.example.nsddemo.presentation.components.modifier.brutalistCard
+import com.example.nsddemo.presentation.components.modifier.brutalistGridBackground
+import com.example.nsddemo.presentation.screen.pause.components.ClientWaitingStatus
+import com.example.nsddemo.presentation.screen.pause.components.DisconnectedPlayerRow
+import com.example.nsddemo.presentation.screen.pause.components.HostPauseControls
+import com.example.nsddemo.presentation.screen.pause.components.PauseBanner
+import com.example.nsddemo.presentation.screen.pause.components.PulsingText
+import com.example.nsddemo.presentation.theme.AppTheme
+import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.util.NoFeedbackIndication
+
+// ============================================================================
+// 1. STATEFUL ROOT
+// ============================================================================
 
 @Composable
 fun PauseScreen(
-    viewModel: PausedViewModel = hiltViewModel<PausedViewModel>(),
+    viewModel: PausedViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    PauseScreen(
+
+    PauseContent(
         players = state.disconnectedPlayers,
         gameCode = viewModel.gameCode.uppercase(),
         isHost = viewModel.isHost,
-        onGameEnd = { viewModel.onEvent(PauseEvent.EndGame) },
         isEndGameButtonEnabled = state.isEndGameButtonEnabled,
+        onGameEnd = { viewModel.onEvent(PauseEvent.EndGame) },
         onPlayerKick = { viewModel.onEvent(PauseEvent.KickPlayer(it)) },
-        localPlayerId = viewModel.localPlayerId
+        onResume = { viewModel.onEvent(PauseEvent.ContinueGameAnyway) }
     )
 }
 
+// ============================================================================
+// 2. STATELESS UI
+// ============================================================================
+
 @Composable
-private fun PauseScreen(
+fun PauseContent(
     players: List<Player>,
     gameCode: String,
     isHost: Boolean,
-    onGameEnd: () -> Unit,
     isEndGameButtonEnabled: Boolean,
+    onGameEnd: () -> Unit,
     onPlayerKick: (String) -> Unit,
-    localPlayerId: String
+    onResume: () -> Unit
 ) {
-    Column(
-        Modifier
+    val gridColor = MaterialTheme.colorScheme.surfaceVariant
+
+    Box(
+        modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            stringResource(R.string.game_paused),
-            modifier = Modifier.fillMaxWidth(),
-            style = MaterialTheme.typography.displayLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center
-        )
-        Spacer(Modifier.height(16.dp))
-        Column(
-            Modifier
-                .clip(RoundedCornerShape(32.dp))
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                stringResource(R.string.disconnected_players),
-                modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.displaySmall,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center
+            .brutalistGridBackground(
+                backgroundColor = MaterialTheme.colorScheme.background,
+                gridLineColor = gridColor
             )
-            Spacer(modifier = Modifier.height(8.dp))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .displayCutoutPadding()
+        ) {
+            // --- TOP BANNER ---
+            PauseBanner()
+
             Column(
-                Modifier
-                    .heightIn(max = 400.dp)
-                    .width(150.dp)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .systemBarsPadding()
+                    .padding(horizontal = BrutalistDimens.SpacingLarge)
+                    .padding(
+                        top = BrutalistDimens.SpacingLarge,
+                        bottom = BrutalistDimens.SpacingMedium
+                    ),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                ConditionalComposable(
-                    condition = players.isNotEmpty(),
-                    fallbackComposable = { CircularProgressIndicator() }) {
-                    PlayersList(
-                        modifier = Modifier.animateContentSize(),
-                        players = players,
-                        onPlayerKick = onPlayerKick,
-                        localPlayerId = localPlayerId,
-                        isHost = isHost,
+                // --- ROOM CODE CARD ---
+                HeroRoomCodeCard(gameCode)
+
+                // --- DISCONNECTED PLAYERS LIST ---
+                if (players.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                    ) {
+                        // List Container
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .brutalistCard(
+                                    backgroundColor = MaterialTheme.colorScheme.surface,
+                                    borderColor = MaterialTheme.colorScheme.outline,
+                                    shadowOffset = BrutalistDimens.ShadowMedium,
+                                    borderWidth = BrutalistDimens.BorderThick
+                                )
+                        ) {
+                            // List Title
+                            BrutalistSectionHeader(
+                                text = "DISCONNECTED PLAYERS (${players.size})",
+                                contentColor = MaterialTheme.colorScheme.error,
+                                trailingContent = {
+                                    Icon(
+                                        imageVector = ImageVector.vectorResource(R.drawable.sharp_wifi_off_24),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            LazyColumn(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth(),
+                                contentPadding = PaddingValues(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(players) { player ->
+                                    DisconnectedPlayerRow(
+                                        player = player,
+                                        isHost = isHost,
+                                        onKick = { onPlayerKick(player.id) }
+                                    )
+                                }
+                            }
+
+                            // Footer Note
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(MaterialTheme.colorScheme.background)
+                                    .brutalistBorderBottom(MaterialTheme.colorScheme.outline, 2.dp)
+                                    .padding(12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                PulsingText(
+                                    text = "WAITING FOR PLAYERS TO RETURN...",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+
+                // --- ACTIONS & CLIENT STATUS ---
+                if (isHost) {
+                    HostPauseControls(
+                        isEndGameEnabled = isEndGameButtonEnabled,
+                        onResume = onResume,
+                        onGameEnd = onGameEnd
+                    )
+                } else {
+                    ClientWaitingStatus()
+                    BrutalistButton(
+                        text = "LEAVE GAME",
+                        icon = Icons.AutoMirrored.Filled.ExitToApp,
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        onClick = onGameEnd // Client leaving acts as ending their game
                     )
                 }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            GameCodeText(text = gameCode)
-            ConditionalComposable(condition = isHost) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    DefaultButton(
-                        stringResource(R.string.end_game),
-                        onClick = {
-                            onGameEnd()
-                        },
-                        enabled = isEndGameButtonEnabled,
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
 }
 
-@Preview(backgroundColor = 0xFFFFFF, showBackground = true, locale = "en")
+// ============================================================================
+// 3. SUB-COMPONENTS
+// ============================================================================
+
+
+// ============================================================================
+// 4. PREVIEWS
+// ============================================================================
+
+@Preview(name = "Host View (Light)", showBackground = true)
 @Composable
-private fun PauseScreenPreview() {
-    PauseScreen(
-        players = listOf(
-            Player("Player_1", "FFFF0000"),
-            Player("Player_2", "FF0000FF"),
-            Player("Player_3", "FF00FF00"),
-            Player("Player_4", "FF00FFFF"),
-            Player("Player_5", "FFFF00FF"),
-            Player("Player_6", "FFFFFF00"),
-            Player("Player_7", "FF000000"),
-            Player("Player_8", "FF000000"),
-            Player("Player_9", "FFFF0000"),
-            Player("Player_10", "FF0000FF"),
-            Player("Player_11", "FF00FF00"),
-            Player("Player_12", "FF00FFFF"),
-        ),
-        gameCode = "abcd",
-        isHost = true,
-        onGameEnd = {},
-        isEndGameButtonEnabled = false,
-        onPlayerKick = {},
-        localPlayerId = "Player_1"
-    )
+private fun PreviewPauseHostLight() {
+    AppTheme(useDarkTheme = false) {
+        Surface {
+            CompositionLocalProvider(LocalIndication provides NoFeedbackIndication()) {
+                PauseContent(
+                    players = listOf(
+                        Player(id = "p2", name = "HappyGil", color = NewPlayerColors.Red.hexCode),
+                        Player(id = "p3", name = "ExtraGuest", color = NewPlayerColors.Blue.hexCode)
+                    ),
+                    gameCode = "B7X2",
+                    isHost = true,
+                    isEndGameButtonEnabled = true,
+                    onGameEnd = {},
+                    onPlayerKick = {},
+                    onResume = {}
+                )
+            }
+        }
+    }
+}
+
+@Preview(
+    name = "Client View (Dark)",
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES
+)
+@Composable
+private fun PreviewPauseClientDark() {
+    AppTheme(useDarkTheme = true) {
+        Surface {
+            CompositionLocalProvider(LocalIndication provides NoFeedbackIndication()) {
+                PauseContent(
+                    players = listOf(
+                        Player(id = "p2", name = "HappyGil", color = NewPlayerColors.Red.hexCode)
+                    ),
+                    gameCode = "B7X2",
+                    isHost = false,
+                    isEndGameButtonEnabled = true,
+                    onGameEnd = {},
+                    onPlayerKick = {},
+                    onResume = {}
+                )
+            }
+        }
+    }
 }

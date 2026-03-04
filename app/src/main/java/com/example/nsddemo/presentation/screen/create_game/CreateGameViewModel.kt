@@ -82,6 +82,13 @@ class CreateGameViewModel @Inject constructor(
                     _eventFlow.emit(UiEvent.NavigateTo(Routes.MainMenu.route))
                 }
             }
+
+            CreateGameEvent.CancelGameCreation -> {
+                viewModelScope.launch {
+                    sessionController.stopSession()
+                    _eventFlow.emit(UiEvent.NavigateTo(Routes.MainMenu.route))
+                }
+            }
         }
     }
 
