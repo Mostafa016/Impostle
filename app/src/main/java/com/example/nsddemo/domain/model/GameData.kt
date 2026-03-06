@@ -17,6 +17,7 @@ data class GameData(
     val imposterId: String? = null,
     val category: GameCategory? = null,
     val word: String? = null,
+    val wordOptions: List<String> = emptyList(),
     val readyPlayerIds: Set<String> = emptySet(),
 
     // Game Mode Specific Turn Management

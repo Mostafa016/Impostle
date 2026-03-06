@@ -12,6 +12,7 @@ enum class Routes(val route: String) {
     Question("question_screen"),
     ReplayRoundChoice("choose_extra_questions_screen"),
     Voting("voting_screen"),
+    ImposterGuess("imposter_guess_screen"),
     VotingResults("voting_results_screen"),
     Scoreboard("scoreboard_screen"),
     EndGame("end_game_screen"),

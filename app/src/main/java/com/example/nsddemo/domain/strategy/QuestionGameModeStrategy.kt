@@ -138,7 +138,7 @@ class QuestionGameModeStrategy @Inject constructor(wordRepository: WordRepositor
                 )
             }
 
-            is GamePhase.GameResults, is GamePhase.GameReplayChoice -> {
+            is GamePhase.ImposterGuess, is GamePhase.GameResults, is GamePhase.GameReplayChoice -> {
                 GameStateTransition.Valid(
                     newGameData = data,
                     envelopes = listOf(

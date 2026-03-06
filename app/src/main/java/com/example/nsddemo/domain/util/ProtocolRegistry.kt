@@ -122,7 +122,7 @@ object ProtocolRegistry {
         ),
 
         // =================================================================
-        // PHASE 5: VOTING
+        // PHASE 5: VOTING & IMPOSTER GUESS
         // =================================================================
         ClientMessage.SubmitVote::class to MessageDefinition(
             code = "C_VOTE",
@@ -154,7 +154,18 @@ object ProtocolRegistry {
             direction = MessageDirection.ServerToClient,
             expectedPhase = GamePhase.GameVoting // Transition to Results
         ),
-
+        ServerMessage.StartImposterGuess::class to MessageDefinition(
+            code = "S_IGSS",
+            description = "Server starts imposter guess phase with word options",
+            direction = MessageDirection.ServerToClient,
+            expectedPhase = GamePhase.ImposterGuess
+        ),
+        ClientMessage.SubmitImposterGuess::class to MessageDefinition(
+            code = "C_IGSS",
+            description = "Imposter submits guessed word",
+            direction = MessageDirection.ClientToServer,
+            expectedPhase = GamePhase.ImposterGuess
+        ),
         // =================================================================
         // PHASE 6: RESULTS & END GAME CHOICE
         // =================================================================

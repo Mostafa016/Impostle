@@ -54,6 +54,10 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
                 data, playerID, message.votedPlayerID
             )
 
+            is ClientMessage.SubmitImposterGuess -> submitImposterGuess(
+                data, playerID, message.guessedWord
+            )
+
             ClientMessage.RequestContinueToGameChoice -> continueToGameChoice(data, playerID)
 
             ClientMessage.RequestReplayGame -> replayGame(data, playerID)
@@ -197,27 +201,53 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
         }
 
         val dataWithVote = data.copy(votes = data.votes + (playerID to votedPlayerID))
-        val currentGameScores = calculatePlayerScores(
-            dataWithVote.votes, dataWithVote.imposterId!!
-        )
-        val totalScores = (dataWithVote.scores.toList() + currentGameScores.toList())
-            .groupBy({ it.first }, { it.second })
-            .map { (key, values) -> key to values.sum() }
-            .toMap()
-        val dataWithScores = dataWithVote.copy(scores = totalScores)
-        if (dataWithScores.hasEveryoneVoted) {
+        if (dataWithVote.hasEveryoneVoted) {
+            val currentGameScores = calculatePlayerScores(
+                dataWithVote.votes, dataWithVote.imposterId!!
+            )
+            val totalScores = (dataWithVote.scores.toList() + currentGameScores.toList())
+                .groupBy({ it.first }, { it.second })
+                .map { (key, values) -> key to values.sum() }
+                .toMap()
+            val dataWithScores = dataWithVote.copy(scores = totalScores)
+
+            val actualWord =
+                dataWithScores.word ?: return GameStateTransition.Invalid("No word set")
+            val category =
+                dataWithScores.category ?: return GameStateTransition.Invalid("No category set")
+
+            // 1 actual word, 3 semantic, 2 random
+            val allWords = wordRepository.getWordsForCategory(category)
+            val semantics =
+                wordRepository.getSemanticWords(actualWord).filter { it != actualWord }.shuffled()
+                    .take(3)
+
+            val neededFromSemantic = 3
+            val actualSemantics = if (semantics.size < neededFromSemantic) {
+                val neededMore = neededFromSemantic - semantics.size
+                val candidates = allWords.filter { it != actualWord && it !in semantics }.shuffled()
+                semantics + candidates.take(neededMore)
+            } else {
+                semantics
+            }
+
+            val neededRandom = 2
+            val randoms = allWords.filter { it != actualWord && it !in actualSemantics }.shuffled()
+                .take(neededRandom)
+
+            val options = (listOf(actualWord) + actualSemantics + randoms).shuffled()
+
+            val finalData = dataWithScores.copy(wordOptions = options)
+
             return GameStateTransition.Valid(
-                newGameData = dataWithScores,
-                newPhase = GamePhase.GameResults,
+                newGameData = finalData,
+                newPhase = GamePhase.ImposterGuess,
                 envelopes = listOf(
                     Envelope.Broadcast(
                         ServerMessage.PlayerVoted(playerID, votedPlayerID)
-                    ), Envelope.Broadcast(
-                        ServerMessage.VoteResult(
-                            voteResult = dataWithScores.votes,
-                            imposterId = dataWithScores.imposterId!!,
-                            playerScores = dataWithScores.scores
-                        )
+                    ),
+                    Envelope.Broadcast(
+                        ServerMessage.StartImposterGuess(options)
                     )
                 )
             )
@@ -230,6 +260,37 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
                     ServerMessage.PlayerVoted(
                         playerID,
                         votedPlayerID
+                    )
+                )
+            )
+        )
+    }
+
+    private fun submitImposterGuess(
+        data: GameData, playerID: String, guessedWord: String
+    ): GameStateTransition {
+        if (data.imposterId != playerID) {
+            return GameStateTransition.Invalid("Only the imposter can submit a guess")
+        }
+
+        val isCorrect = guessedWord == data.word
+        val increment =
+            if (isCorrect) GameScoreIncrements.CORRECT_IMPOSTER_GUESS else GameScoreIncrements.INCORRECT_IMPOSTER_GUESS
+
+        val updatedScores = data.scores.toMutableMap()
+        updatedScores[playerID] = (updatedScores[playerID] ?: 0) + increment
+
+        val finalData = data.copy(scores = updatedScores)
+
+        return GameStateTransition.Valid(
+            newGameData = finalData,
+            newPhase = GamePhase.GameResults,
+            envelopes = listOf(
+                Envelope.Broadcast(
+                    ServerMessage.VoteResult(
+                        voteResult = finalData.votes,
+                        imposterId = finalData.imposterId!!,
+                        playerScores = finalData.scores
                     )
                 )
             )

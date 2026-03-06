@@ -11,6 +11,7 @@ class GameRouteMapper {
             is GamePhase.InRound -> Routes.Question.route
             is GamePhase.RoundReplayChoice -> Routes.ReplayRoundChoice.route
             is GamePhase.GameVoting -> Routes.Voting.route
+            is GamePhase.ImposterGuess -> Routes.ImposterGuess.route // Handled differently later based on role if needed
             is GamePhase.GameResults -> Routes.VotingResults.route
             is GamePhase.GameReplayChoice -> Routes.Scoreboard.route
             is GamePhase.Paused -> Routes.Paused.route

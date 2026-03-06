@@ -81,6 +81,10 @@ object ClientStateReducer {
                 scores = message.playerScores
             )
 
+            is ServerMessage.StartImposterGuess -> data.copy(
+                wordOptions = message.wordOptions
+            )
+
             // --- GAME END ---
             is ServerMessage.ContinueToGameChoice -> data
 

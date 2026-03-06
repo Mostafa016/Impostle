@@ -73,6 +73,9 @@ sealed class ServerMessage : Message() {
     data object StartVote : ServerMessage()
 
     @Serializable
+    data class StartImposterGuess(val wordOptions: List<String>) : ServerMessage()
+
+    @Serializable
     data class PlayerVoted(val playerId: String, val votedPlayerId: String) : ServerMessage()
 
     @Serializable
@@ -134,6 +137,9 @@ sealed class ClientMessage : Message() {
 
     @Serializable
     data class SubmitVote(val votedPlayerID: String) : ClientMessage()
+
+    @Serializable
+    data class SubmitImposterGuess(val guessedWord: String) : ClientMessage()
 
     //region Host-as-a-client messages
     @Serializable

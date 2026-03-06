@@ -159,6 +159,10 @@ class GameClient @AssistedInject constructor(
         clientNetworkRepository.sendToServer(ClientMessage.SubmitVote(targetPlayerId))
     }
 
+    suspend fun submitImposterGuess(guessedWord: String) {
+        clientNetworkRepository.sendToServer(ClientMessage.SubmitImposterGuess(guessedWord))
+    }
+
     suspend fun continueToGameChoice() {
         clientNetworkRepository.sendToServer(ClientMessage.RequestContinueToGameChoice)
     }

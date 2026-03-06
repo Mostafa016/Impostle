@@ -69,6 +69,12 @@ sealed interface GamePhase {
     @Serializable
     data object GameVoting : GamePhase, Active {
         override val validNextStates: Set<KClass<out GamePhase>> =
+            setOf(ImposterGuess::class, Paused::class)
+    }
+
+    @Serializable
+    data object ImposterGuess : GamePhase, Active {
+        override val validNextStates: Set<KClass<out GamePhase>> =
             setOf(GameResults::class, Paused::class)
     }
 
@@ -98,6 +104,7 @@ sealed interface GamePhase {
                 InRound::class,
                 RoundReplayChoice::class,
                 GameVoting::class,
+                ImposterGuess::class,
                 GameResults::class,
                 GameReplayChoice::class,
                 GameEnd::class

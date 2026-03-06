@@ -44,7 +44,10 @@ object GameFlowRegistry {
 
         is ServerMessage.ScoresAfterLeaver -> null
 
-        // Trigger to move from Voting -> Results
+        // Trigger to move from Voting -> Imposter Guess
+        is ServerMessage.StartImposterGuess -> GamePhase.ImposterGuess
+
+        // Trigger to move from Imposter Guess -> Results
         is ServerMessage.VoteResult -> GamePhase.GameResults
 
         // Trigger to navigate from Results (voting & scores) to the replay choice for the host client
@@ -100,6 +103,9 @@ object GameFlowRegistry {
 
         // Voting Action
         is ClientMessage.SubmitVote -> setOf(GamePhase.GameVoting)
+
+        // Imposter Guessing Actions
+        is ClientMessage.SubmitImposterGuess -> setOf(GamePhase.ImposterGuess)
 
         // Post-game Host Actions
         ClientMessage.RequestContinueToGameChoice -> setOf(GamePhase.GameResults)

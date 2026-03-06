@@ -35,6 +35,7 @@ import com.example.nsddemo.presentation.screen.choose_category.ChooseCategoryScr
 import com.example.nsddemo.presentation.screen.create_game.CreateGameLoadingScreen
 import com.example.nsddemo.presentation.screen.disconnected.DisconnectedScreen
 import com.example.nsddemo.presentation.screen.end_game.EndGameScreen
+import com.example.nsddemo.presentation.screen.imposter_guess.ImposterGuessScreen
 import com.example.nsddemo.presentation.screen.join_game.JoinGameLoadingScreen
 import com.example.nsddemo.presentation.screen.join_game.JoinGameScreen
 import com.example.nsddemo.presentation.screen.join_game.JoinGameViewModel
@@ -177,6 +178,9 @@ class MainActivity : AppCompatActivity() {
                                 }
                                 composable(Routes.Voting.route) {
                                     VotingScreen()
+                                }
+                                composable(Routes.ImposterGuess.route) {
+                                    ImposterGuessScreen()
                                 }
                                 composable(Routes.VotingResults.route) {
                                     VotingResultsScreen()

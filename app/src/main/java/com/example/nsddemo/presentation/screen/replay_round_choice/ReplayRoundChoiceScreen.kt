@@ -24,8 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.nsddemo.presentation.components.common.CornerBrackets
 import com.example.nsddemo.presentation.components.common.MarqueeBanner
+import com.example.nsddemo.presentation.components.common.WaitingMessage
 import com.example.nsddemo.presentation.components.modifier.brutalistGridBackground
-import com.example.nsddemo.presentation.screen.replay_round_choice.components.ClientWaitingMessage
 import com.example.nsddemo.presentation.screen.replay_round_choice.components.HeroDecisionCard
 import com.example.nsddemo.presentation.screen.replay_round_choice.components.HostDecisionControls
 import com.example.nsddemo.presentation.theme.AppTheme
@@ -110,7 +110,7 @@ fun ChooseExtraQuestionsContent(
                         onVoteClick = onVoteClick
                     )
                 } else {
-                    ClientWaitingMessage()
+                    WaitingMessage(text = "WAITING FOR HOST TO DECIDE...")
                 }
             }
         }
