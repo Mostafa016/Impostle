@@ -1,5 +1,7 @@
 package com.example.nsddemo.presentation.screen.role_reveal
 
+import android.util.Log
+import app.cash.turbine.test
 import com.example.nsddemo.domain.engine.GameClient
 import com.example.nsddemo.domain.engine.GameSession
 import com.example.nsddemo.domain.model.GameCategory
@@ -9,19 +11,31 @@ import com.example.nsddemo.presentation.util.MainDispatcherRule
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import kotlin.test.assertFalse
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RoleRevealViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Before
+    fun setUp() {
+        // Mock Log to prevent RuntimeExceptions in tests (as Log is static Android)
+        mockkStatic(Log::class)
+        every { Log.d(any(), any()) } returns 0
+        every { Log.e(any(), any(), any()) } returns 0
+        every { Log.e(any(), any()) } returns 0
+    }
 
     @Test
     fun `WHEN confirm clicked THEN state updates AND notifies client`() = runTest {
@@ -32,12 +46,16 @@ class RoleRevealViewModelTest {
         every { mockGameSession.gamePhase } returns MutableStateFlow(GamePhase.RoleDistribution)
         every { mockGameSession.activeClient } returns mockActiveClient
 
-        val viewModel = RoleRevealViewModel(mockGameSession)
+        val viewModel = RoleRevealViewModel(mockGameSession, UnconfinedTestDispatcher())
 
-        viewModel.onEvent(RoleRevealEvent.ConfirmRoleReveal)
-        advanceUntilIdle()
 
-        assertTrue(viewModel.state.value.isConfirmPressed)
+
+        viewModel.state.test {
+            assertFalse(awaitItem().isConfirmPressed)
+            viewModel.onEvent(RoleRevealEvent.ConfirmRoleReveal)
+            assertTrue(awaitItem().isConfirmPressed)
+        }
+
         coVerify(exactly = 1) { mockActiveClient.confirmRole() }
     }
 }

@@ -3,12 +3,13 @@ package com.example.nsddemo.presentation.screen.role_reveal
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.example.nsddemo.core.util.Debugging.TAG
+import com.example.nsddemo.di.IoDispatcher
 import com.example.nsddemo.domain.engine.GameSession
 import com.example.nsddemo.presentation.util.BaseGameViewModel
 import com.example.nsddemo.presentation.util.UiEvent
 import com.example.nsddemo.presentation.util.uiCategory
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -21,7 +22,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class RoleRevealViewModel @Inject constructor(
-    gameSession: GameSession
+    gameSession: GameSession,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : BaseGameViewModel(gameSession) {
 
     private val _isConfirmPressed = MutableStateFlow(false)
@@ -61,7 +63,7 @@ class RoleRevealViewModel @Inject constructor(
 
     private fun onConfirmClick() {
         _isConfirmPressed.value = true
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             Log.d(TAG, "RoleRevealViewModel: Sending confirmation to server")
             activeClient?.confirmRole()
         }

@@ -12,7 +12,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.sharp.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -20,8 +19,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
+import com.example.nsddemo.R
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
 import com.example.nsddemo.presentation.util.UiCategory
 
@@ -69,10 +71,13 @@ fun CategoryDisplay(
                     .padding(8.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Sharp.Star,
+                    imageVector = ImageVector.vectorResource(
+                        chosenCategory?.iconResId ?: R.drawable.sharp_question_mark_24
+                    ),
                     contentDescription = null,
                     tint = iconTint
                 )
+
             }
             Column {
                 Text(

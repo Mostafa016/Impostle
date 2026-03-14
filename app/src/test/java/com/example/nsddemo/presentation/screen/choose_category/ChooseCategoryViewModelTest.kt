@@ -40,11 +40,12 @@ class ChooseCategoryViewModelTest {
     }
 
     @Test
-    fun `WHEN category chosen THEN notifies client AND navigates to Lobby`() = runTest {
+    fun `WHEN category chosen confirmed THEN notifies client AND navigates to Lobby`() = runTest {
         val viewModel = ChooseCategoryViewModel(mockGameSession)
 
         viewModel.eventFlow.test {
             viewModel.onEvent(ChooseCategoryEvent.CategoryChosen(GameCategory.FOOD))
+            viewModel.onEvent(ChooseCategoryEvent.ConfirmSelection)
             advanceUntilIdle()
 
             coVerify(exactly = 1) { mockActiveClient.selectCategory(GameCategory.FOOD) }

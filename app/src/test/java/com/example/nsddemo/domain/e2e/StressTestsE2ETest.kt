@@ -152,7 +152,7 @@ class StressTestsE2ETest {
 
             // If a race condition occurred, the `merge` flow could double-process the final
             // vote counting, triggering state errors. Assert clean land:
-            assertEquals(GamePhase.GameResults, alice.gamePhase.value)
+            assertEquals(GamePhase.ImposterGuess, alice.gamePhase.value)
             assertEquals(4, alice.gameData.value.votes.size)
 
             players.forEach { it.stop() }
@@ -244,6 +244,19 @@ class StressTestsE2ETest {
                 voter.submitVote(target.playerId)
                 advanceUntilIdle()
             }
+
+            assertEquals(GamePhase.ImposterGuess, alice.gamePhase.value)
+
+            val imposterId = players.first { it.gameData.value.word == null }.playerId
+            val imposterPlayer = players.find { it.playerId == imposterId }!!
+
+            val wordGuessChoices = imposterPlayer.gameData.value.wordOptions.random()
+            imposterPlayer.submitImposterGuess(wordGuessChoices)
+            advanceUntilIdle()
+
+            assertEquals(GamePhase.GameResults, alice.gamePhase.value)
+
+
             alice.continueToGameChoice()
             advanceUntilIdle()
 

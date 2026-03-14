@@ -66,7 +66,7 @@ class AdvancedScenariosE2ETest : BaseE2ETest() {
 
             // ── Proceed to vote and results ───────────────────────────────────────
             driveVoting(players)
-            assertEquals(GamePhase.GameResults, alice.gamePhase.value)
+            assertEquals(GamePhase.ImposterGuess, alice.gamePhase.value)
             assertEquals(3, alice.gameData.value.votes.size)
 
             alice.stop(); bob.stop(); charlie.stop()
@@ -115,7 +115,7 @@ class AdvancedScenariosE2ETest : BaseE2ETest() {
             // ── Game 1: play through to results ──────────────────────────────────
             exhaustQuestionPairs(players)
             driveVoting(players)
-            assertEquals(GamePhase.GameResults, alice.gamePhase.value)
+            driveImposterGuess(players)
 
             val game1Scores = alice.gameData.value.scores
             assertTrue(
@@ -171,6 +171,7 @@ class AdvancedScenariosE2ETest : BaseE2ETest() {
 
             exhaustQuestionPairs(players)
             driveVoting(players)
+            driveImposterGuess(players)
             assertEquals(GamePhase.GameResults, alice.gamePhase.value)
 
             // Game 2 scores should be higher than (or equal to) game 1 (cumulative)
@@ -198,8 +199,7 @@ class AdvancedScenariosE2ETest : BaseE2ETest() {
             val players = listOf(alice, bob, charlie)
             exhaustQuestionPairs(players)
             driveVoting(players)
-
-            assertEquals(GamePhase.GameResults, alice.gamePhase.value)
+            driveImposterGuess(players)
 
             // Continue to game replay choice screen
             alice.continueToGameChoice()
@@ -229,7 +229,7 @@ class AdvancedScenariosE2ETest : BaseE2ETest() {
             val players = listOf(alice, bob, charlie)
             exhaustQuestionPairs(players)
             driveVoting(players)
-
+            driveImposterGuess(players)
             alice.continueToGameChoice()
             advanceUntilIdle()
 

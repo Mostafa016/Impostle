@@ -125,6 +125,9 @@ class HeadlessPlayer(
     suspend fun replayRound() = gameClient.replayRound()
     suspend fun startVote() = gameClient.startVote()
     suspend fun submitVote(targetId: String) = gameClient.submitVote(targetId)
+    suspend fun submitImposterGuess(guessedWord: String) =
+        gameClient.submitImposterGuess(guessedWord)
+
     suspend fun continueToGameChoice() = gameClient.continueToGameChoice()
     suspend fun replayGame() = gameClient.replayGame()
     suspend fun endGame() = gameClient.endGame()

@@ -107,6 +107,8 @@ abstract class BaseE2ETest {
             advanceUntilIdle()
         }
         assertEquals(GamePhase.RoundReplayChoice, alice.gamePhase.value)
+        assertEquals(GamePhase.RoundReplayChoice, bob.gamePhase.value)
+        assertEquals(GamePhase.RoundReplayChoice, charlie.gamePhase.value)
     }
 
     /**
@@ -118,13 +120,38 @@ abstract class BaseE2ETest {
         alice.startVote()
         advanceUntilIdle()
         assertEquals(GamePhase.GameVoting, alice.gamePhase.value)
+        assertEquals(GamePhase.GameVoting, bob.gamePhase.value)
+        assertEquals(GamePhase.GameVoting, charlie.gamePhase.value)
 
         players.forEach { voter ->
             val target = players.first { it.playerId != voter.playerId }
             voter.submitVote(target.playerId)
             advanceUntilIdle()
         }
+        assertEquals(GamePhase.ImposterGuess, alice.gamePhase.value)
+        assertEquals(GamePhase.ImposterGuess, bob.gamePhase.value)
+        assertEquals(GamePhase.ImposterGuess, charlie.gamePhase.value)
+    }
+
+    /**
+     * Drives the imposter to guess the secret word. By default, the imposter guesses a random word
+     * from the words provided to them that is guaranteed to be **incorrect**.
+     *
+     * Returns when [GamePhase.GameResults] is reached.
+     */
+    protected suspend fun TestScope.driveImposterGuess(players: List<HeadlessPlayer>) {
+        val imposterId = getImposterId(players)
+        val imposterPlayer = players.find { it.playerId == imposterId }!!
+        val correctWord = players.first { it.playerId != imposterId }.gameData.value.word!!
+
+        val wordGuessChoices =
+            imposterPlayer.gameData.value.wordOptions.filterNot { it != correctWord }.random()
+        imposterPlayer.submitImposterGuess(wordGuessChoices)
+        advanceUntilIdle()
+
         assertEquals(GamePhase.GameResults, alice.gamePhase.value)
+        assertEquals(GamePhase.GameResults, bob.gamePhase.value)
+        assertEquals(GamePhase.GameResults, charlie.gamePhase.value)
     }
 
     /**

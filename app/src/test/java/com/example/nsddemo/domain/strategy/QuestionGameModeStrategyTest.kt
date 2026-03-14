@@ -51,7 +51,8 @@ class QuestionGameModeStrategyTest {
     private val baseData = GameData(
         hostId = hostId,
         players = playersMap,
-        category = GameCategory.ANIMALS
+        category = GameCategory.ANIMALS,
+        word = "TestWord"
     )
 
     @Before
@@ -70,6 +71,8 @@ class QuestionGameModeStrategyTest {
 
         wordRepository = mockk()
         every { wordRepository.getWordsForCategory(any()) } returns listOf("Lion", "Tiger")
+        every { wordRepository.getSemanticWords(any()) } returns listOf("Bear", "Walrus")
+
 
         // Mock the Registry to avoid dependency on its implementation status
         mockkObject(GameFlowRegistry)
@@ -361,7 +364,7 @@ class QuestionGameModeStrategyTest {
     }
 
     @Test
-    fun `GIVEN Voting WHEN Last Vote Submitted THEN Calculate Scores & Transition`() {
+    fun `GIVEN Voting WHEN Last Vote Submitted THEN Calculates Scores & Transition to ImposterGuess`() {
         val data = baseData.copy(
             imposterId = p3Id, // Imposter is P3
             votes = mapOf(hostId to p3Id, p2Id to p3Id), // P1 & P2 voted Correctly
@@ -377,13 +380,10 @@ class QuestionGameModeStrategyTest {
         )
 
         val valid = result as GameStateTransition.Valid
-        assertEquals(GamePhase.GameResults, valid.newPhase)
+        assertEquals(GamePhase.ImposterGuess, valid.newPhase)
 
         // Scores check
-        val msg =
-            valid.envelopes.find { (it as Envelope.Broadcast).message is ServerMessage.VoteResult }
-        val resultMsg = (msg as Envelope.Broadcast).message as ServerMessage.VoteResult
-        val scores = resultMsg.playerScores
+        val scores = valid.newGameData.scores
 
         // Host & P2 should get points (Correct vote)
         assertEquals(GameScoreIncrements.CORRECT_PLAYER_GUESS, scores[hostId])

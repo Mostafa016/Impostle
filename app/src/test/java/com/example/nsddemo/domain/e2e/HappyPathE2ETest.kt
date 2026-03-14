@@ -28,14 +28,6 @@ class HappyPathE2ETest : BaseE2ETest() {
     fun `GIVEN 3 players WHEN full game round played THEN phases progress correctly and lobby re-entered`() =
         runTest {
             advanceToInRound()
-            bob.confirmRole()
-            charlie.confirmRole()
-            advanceUntilIdle()
-
-            // When all N players confirm, the server transitions to InRound
-            assertEquals(GamePhase.InRound, alice.gamePhase.value)
-            assertEquals(GamePhase.InRound, bob.gamePhase.value)
-            assertEquals(GamePhase.InRound, charlie.gamePhase.value)
 
             // ── 5. Play through all N question pairs ─────────────────────────────
             // With 3 players there are exactly 3 (asker, asked) pairs.
@@ -46,26 +38,11 @@ class HappyPathE2ETest : BaseE2ETest() {
             val players = listOf(alice, bob, charlie)
             exhaustQuestionPairs(players)
 
-            assertEquals(GamePhase.RoundReplayChoice, alice.gamePhase.value)
-            assertEquals(GamePhase.RoundReplayChoice, bob.gamePhase.value)
-            assertEquals(GamePhase.RoundReplayChoice, charlie.gamePhase.value)
-
-            // ── 6. Host starts vote ───────────────────────────────────────────────
-            alice.startVote()
-            advanceUntilIdle()
-
-            assertEquals(GamePhase.GameVoting, alice.gamePhase.value)
-            assertEquals(GamePhase.GameVoting, bob.gamePhase.value)
-            assertEquals(GamePhase.GameVoting, charlie.gamePhase.value)
-
+            // ── 6. All players vote ───────────────────────────────────────────────
             driveVoting(players)
 
-            // All voted → server transitions to GameResults
-            assertEquals(GamePhase.GameResults, alice.gamePhase.value)
-            assertEquals(GamePhase.GameResults, bob.gamePhase.value)
-            assertEquals(GamePhase.GameResults, charlie.gamePhase.value)
-
-            // VoteResult is stored in gameData
+            // ── 7. Imposter Guesses Word Randomly ───────────────────────────────────────────────
+            driveImposterGuess(players)
             assertNotNull(alice.gameData.value.imposterId)
             assertEquals(3, alice.gameData.value.votes.size)
 
@@ -76,7 +53,6 @@ class HappyPathE2ETest : BaseE2ETest() {
             assertEquals(GamePhase.GameReplayChoice, alice.gamePhase.value)
             assertEquals(GamePhase.GameReplayChoice, bob.gamePhase.value)
             assertEquals(GamePhase.GameReplayChoice, charlie.gamePhase.value)
-
             // ── 9. Host replays game → back to Lobby ─────────────────────────────
             alice.replayGame()
             advanceUntilIdle()
