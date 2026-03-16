@@ -53,10 +53,10 @@ class DisconnectedViewModel
 
         private fun quitToMainMenu() {
             if (!state.value.isGoToMainMenuButtonEnabled) return
-        _state.value = state.value.copy(isGoToMainMenuButtonEnabled = false)
-        sessionController.stopSession()
-        viewModelScope.launch {
-            _eventFlow.emit(UiEvent.NavigateTo(Routes.MainMenu.route))
+            _state.value = state.value.copy(isGoToMainMenuButtonEnabled = false)
+            sessionController.stopSession()
+            viewModelScope.launch {
+                _eventFlow.emit(UiEvent.NavigateTo(Routes.MainMenu.route))
+            }
         }
     }
-}

@@ -278,9 +278,9 @@ class SessionManager
                                     voteResult = emptyMap(), // Empty votes imply forfeit
                                     imposterId = playerIdToKick,
                                     playerScores = cleanScores, // Keep existing scores
+                                ),
                             ),
-                        ),
-                        Envelope.Broadcast(ServerMessage.GameResumed(GamePhase.GameResults)),
+                            Envelope.Broadcast(ServerMessage.GameResumed(GamePhase.GameResults)),
                         ),
                 )
             }
@@ -298,36 +298,36 @@ class SessionManager
             // 5. Decide to keep pausing or resume
             // Clear Pause State:
             return when (transition) {
-            is GameStateTransition.Valid -> {
-                transition.let {
-                    if (it.newGameData.isEveryoneConnected) {
-                        Log.d(TAG, "SessionManager: Resuming game")
+                is GameStateTransition.Valid -> {
+                    transition.let {
+                        if (it.newGameData.isEveryoneConnected) {
+                            Log.d(TAG, "SessionManager: Resuming game")
                             it.copy(
                                 newGameData =
                                     it.newGameData.copy(
-                                    phaseBeforePause = null,
-                                    phaseAfterPause = null,
-                                ),
-                            newPhase = transition.newPhase ?: logicPhase,
-                            envelopes =
-                                it.envelopes +
+                                        phaseBeforePause = null,
+                                        phaseAfterPause = null,
+                                    ),
+                                newPhase = transition.newPhase ?: logicPhase,
+                                envelopes =
+                                    it.envelopes +
                                         Envelope.Broadcast(
                                             ServerMessage.GameResumed(
                                                 transition.newPhase ?: logicPhase,
                                             ),
                                         ),
-                        )
-                    } else {
-                        Log.d(TAG, "SessionManager: Keeping game paused")
-                        it.copy(
-                            newGameData = it.newGameData.copy(phaseAfterPause = it.newPhase),
-                            newPhase = GamePhase.Paused,
-                        )
+                            )
+                        } else {
+                            Log.d(TAG, "SessionManager: Keeping game paused")
+                            it.copy(
+                                newGameData = it.newGameData.copy(phaseAfterPause = it.newPhase),
+                                newPhase = GamePhase.Paused,
+                            )
+                        }
                     }
                 }
-            }
 
-            is GameStateTransition.Invalid -> transition
+                is GameStateTransition.Invalid -> transition
+            }
         }
     }
-}

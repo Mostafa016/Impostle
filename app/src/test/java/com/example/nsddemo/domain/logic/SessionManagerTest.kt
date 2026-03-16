@@ -456,7 +456,7 @@ class SessionManagerTest {
                 any(),
             )
         } returns
-                GameStateTransition.Valid(
+            GameStateTransition.Valid(
                 newGameData = pausedData.copy(players = pausedData.players - playerId), // simplified return
                 newPhase = GamePhase.InRound,
             )

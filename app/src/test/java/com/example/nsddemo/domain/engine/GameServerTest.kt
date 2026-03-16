@@ -291,9 +291,9 @@ class GameServerTest {
 
             // Mock SessionManager returning Invalid transition with an envelope
             coEvery { sessionManager.registerPlayer(any(), any(), msg) } returns
-                    GameStateTransition.Invalid(
-                        reason = "Full",
-                        envelopes = listOf(Envelope.Unicast("p1", errorMsg)),
+                GameStateTransition.Invalid(
+                    reason = "Full",
+                    envelopes = listOf(Envelope.Unicast("p1", errorMsg)),
                 )
 
             val job = launch { gameServer.start("CODE", "123") }

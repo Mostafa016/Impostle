@@ -174,35 +174,39 @@ class HostServerNetworkRepository
         override suspend fun sendToPlayer(
             playerId: String,
             message: ServerMessage,
-    ) {
-        val transport = sessionManager.getTransport(playerId) ?: return
-        Log.d(TAG, "sendToPlayer: Sending to $playerId")
+        ) {
+            val transport = sessionManager.getTransport(playerId) ?: return
+            Log.d(TAG, "sendToPlayer: Sending to $playerId")
 
-        when (transport) {
-            is TransportEndpoint.Loopback -> {
-                Log.d(TAG, "sendToPlayer: [Loopback] Sending to $playerId")
-                loopbackDataSource.serverToClient.emit(
-                    LoopbackDataSource.LOCAL_HOST_CLIENT_ID to message,
-                )
-            }
+            when (transport) {
+                is TransportEndpoint.Loopback -> {
+                    Log.d(TAG, "sendToPlayer: [Loopback] Sending to $playerId")
+                    loopbackDataSource.serverToClient.emit(
+                        LoopbackDataSource.LOCAL_HOST_CLIENT_ID to message,
+                    )
+                }
 
-            is TransportEndpoint.Network -> {
-                Log.d(TAG, "sendToPlayer: [Remote] Sending to $playerId")
-                socketServer.sendToClient(transport.clientId, NetworkJson.encodeToString(message))
+                is TransportEndpoint.Network -> {
+                    Log.d(TAG, "sendToPlayer: [Remote] Sending to $playerId")
+                    socketServer.sendToClient(
+                        transport.clientId,
+                        NetworkJson.encodeToString(message),
+                    )
+                }
             }
         }
-    }
 
-    override suspend fun sendToAllPlayers(message: ServerMessage) {
+        override suspend fun sendToAllPlayers(message: ServerMessage) {
             socketServer.sendToAll(data = NetworkJson.encodeToString<ServerMessage>(message))
             loopbackDataSource.serverToClient.emit(LoopbackDataSource.LOCAL_HOST_CLIENT_ID to message)
         }
 
         override fun disconnectPlayer(playerId: String) {
-        val clientTransport = sessionManager.getTransport(playerId) as? TransportEndpoint.Network
+            val clientTransport =
+                sessionManager.getTransport(playerId) as? TransportEndpoint.Network
             clientTransport?.let {
                 socketServer.disconnectClient(it.clientId)
-        }
+            }
         }
 
         override fun cancelAdvertising() {
@@ -214,93 +218,93 @@ class HostServerNetworkRepository
             networkRegistration.unregisterService()
             sessionManager.clearALlSessions()
             _serverState.value = ServerState.Idle
-    }
-
-    //region start() Helpers
-    private suspend fun handleRegistration(
-        gameCode: String,
-        port: Int,
-    ) {
-        networkRegistration.registerService(gameCode, port)
-
-        try {
-            val state =
-                withTimeout(CONNECTION_STEP_TIMEOUT) {
-                    networkRegistration.registrationState.first {
-                        it is NsdRegistrationState.Registered || it is NsdRegistrationState.Failed
-                    }
-                }
-
-            when (state) {
-                is NsdRegistrationState.Registered -> {
-                    _serverState.value = ServerState.Running(port, gameCode)
-                }
-
-                is NsdRegistrationState.Failed -> {
-                    _serverState.value = ServerState.Error("NSD Failed: ${state.error}")
-                    socketServer.stopListening()
-                }
-
-                else -> {}
-            }
-        } catch (e: TimeoutCancellationException) {
-            _serverState.value = ServerState.Error("NSD Registration Timed Out")
-            socketServer.stopListening()
         }
-    }
-    //endregion
 
-    //region --- Helper Classes/Interfaces ---
-    private sealed interface TransportEndpoint {
-        data object Loopback : TransportEndpoint
-
-        data class Network(
-            val clientId: String,
-        ) : TransportEndpoint
-    }
-
-    private class SessionManager {
-        // Maps UUID -> IP/Loopback
-        private val idToTransport = ConcurrentHashMap<String, TransportEndpoint>()
-
-        // Maps IP/Loopback -> UUID
-        private val transportToId = ConcurrentHashMap<TransportEndpoint, String>()
-
-        fun registerSession(
-            domainId: String,
-            transport: TransportEndpoint,
+        //region start() Helpers
+        private suspend fun handleRegistration(
+            gameCode: String,
+            port: Int,
         ) {
-            // 1. Check if this ID was previously at a different transport (Reconnection)
-            val oldTransport = idToTransport[domainId]
-            if (oldTransport != null && oldTransport != transport) {
-                transportToId.remove(oldTransport)
+            networkRegistration.registerService(gameCode, port)
+
+            try {
+                val state =
+                    withTimeout(CONNECTION_STEP_TIMEOUT) {
+                        networkRegistration.registrationState.first {
+                            it is NsdRegistrationState.Registered || it is NsdRegistrationState.Failed
+                        }
+                    }
+
+                when (state) {
+                    is NsdRegistrationState.Registered -> {
+                        _serverState.value = ServerState.Running(port, gameCode)
+                    }
+
+                    is NsdRegistrationState.Failed -> {
+                        _serverState.value = ServerState.Error("NSD Failed: ${state.error}")
+                        socketServer.stopListening()
+                    }
+
+                    else -> {}
+                }
+            } catch (e: TimeoutCancellationException) {
+                _serverState.value = ServerState.Error("NSD Registration Timed Out")
+                socketServer.stopListening()
+            }
+        }
+        //endregion
+
+        //region --- Helper Classes/Interfaces ---
+        private sealed interface TransportEndpoint {
+            data object Loopback : TransportEndpoint
+
+            data class Network(
+                val clientId: String,
+            ) : TransportEndpoint
+        }
+
+        private class SessionManager {
+            // Maps UUID -> IP/Loopback
+            private val idToTransport = ConcurrentHashMap<String, TransportEndpoint>()
+
+            // Maps IP/Loopback -> UUID
+            private val transportToId = ConcurrentHashMap<TransportEndpoint, String>()
+
+            fun registerSession(
+                domainId: String,
+                transport: TransportEndpoint,
+            ) {
+                // 1. Check if this ID was previously at a different transport (Reconnection)
+                val oldTransport = idToTransport[domainId]
+                if (oldTransport != null && oldTransport != transport) {
+                    transportToId.remove(oldTransport)
+                }
+
+                // 2. Atomic Update
+                idToTransport[domainId] = transport
+                transportToId[transport] = domainId
             }
 
-            // 2. Atomic Update
-            idToTransport[domainId] = transport
-            transportToId[transport] = domainId
-        }
+            fun getDomainId(transport: TransportEndpoint): String? = transportToId[transport]
 
-        fun getDomainId(transport: TransportEndpoint): String? = transportToId[transport]
+            fun getTransport(domainId: String): TransportEndpoint? = idToTransport[domainId]
 
-        fun getTransport(domainId: String): TransportEndpoint? = idToTransport[domainId]
+            fun clearSession(transport: TransportEndpoint) {
+                val id = transportToId.remove(transport)
+                if (id != null) {
+                    idToTransport.remove(id)
+                }
+            }
 
-        fun clearSession(transport: TransportEndpoint) {
-            val id = transportToId.remove(transport)
-            if (id != null) {
-                idToTransport.remove(id)
+            fun clearALlSessions() {
+                idToTransport.clear()
+                transportToId.clear()
             }
         }
+        //endregion
 
-        fun clearALlSessions() {
-            idToTransport.clear()
-            transportToId.clear()
+        companion object {
+            const val CONNECTION_STEP_TIMEOUT = 2500L
+            const val NUMBER_OF_CONNECTION_STEPS = 2
         }
     }
-    //endregion
-
-    companion object {
-        const val CONNECTION_STEP_TIMEOUT = 2500L
-        const val NUMBER_OF_CONNECTION_STEPS = 2
-    }
-}

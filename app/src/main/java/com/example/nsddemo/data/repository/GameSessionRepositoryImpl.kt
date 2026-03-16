@@ -25,8 +25,8 @@ class GameSessionRepositoryImpl
 
         override fun updateGameData(transform: (GameData) -> GameData) = _gameData.update(transform)
 
-    override fun reset() {
-        _gameState.value = GamePhase.Idle
-        _gameData.value = GameData()
+        override fun reset() {
+            _gameState.value = GamePhase.Idle
+            _gameData.value = GameData()
+        }
     }
-}

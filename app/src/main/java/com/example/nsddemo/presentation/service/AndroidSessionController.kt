@@ -21,9 +21,9 @@ class AndroidSessionController
             playerId: String,
         ) {
             ServiceHelper.startJoin(context, gameCode, playerId)
-    }
+        }
 
-    override fun stopSession() {
-        ServiceHelper.stop(context)
+        override fun stopSession() {
+            ServiceHelper.stop(context)
+        }
     }
-}

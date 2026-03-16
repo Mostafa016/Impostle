@@ -111,34 +111,34 @@ class NsdNetworkDiscovery
             } else if (service.serviceName.contains(NSDConstants.BASE_SERVICE_NAME)) {
                 // Could be used for a feature where the client says they're interested
                 // to join a game and a list of players appears to the host to choose which one
-            // to invite
+                // to invite
 
-            // Not a host
-            val fullServiceNameSegmented = service.serviceName.split("_")
+                // Not a host
+                val fullServiceNameSegmented = service.serviceName.split("_")
                 if (fullServiceNameSegmented.size != 2) {
                     Log.d(Debugging.TAG, "${service.serviceName} does not belong to a host")
                     return false
                 }
 
-            // Not the host of the lobby I want to join
-            val serviceGameCode = fullServiceNameSegmented.last()
+                // Not the host of the lobby I want to join
+                val serviceGameCode = fullServiceNameSegmented.last()
                 if (serviceGameCode != gameCode) {
                     Log.d(
                         Debugging.TAG,
-                    "${service.serviceName} is not the host of the game I want to join with code $gameCode",
+                        "${service.serviceName} is not the host of the game I want to join with code $gameCode",
+                    )
+                    return false
+                }
+
+                // Correct host found
+                Log.d(
+                    Debugging.TAG,
+                    "Found service with code ($gameCode): ${service.serviceName}",
                 )
-                return false
+                return true
             }
-
-            // Correct host found
-            Log.d(
-                Debugging.TAG,
-                "Found service with code ($gameCode): ${service.serviceName}",
-            )
-            return true
+            return false
         }
-        return false
-    }
 
-    // endregion
-}
+        // endregion
+    }

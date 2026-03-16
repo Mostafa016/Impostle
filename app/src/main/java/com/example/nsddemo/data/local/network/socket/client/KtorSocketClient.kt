@@ -147,32 +147,32 @@ class KtorSocketClient
                         throw e
                     } catch (e: Exception) {
                         // Handle actual IO errors (timeout, malformed, etc)
-                    Log.e(TAG, "SocketClient: Read Loop Error: ${e.message}", e)
-                    _connectionEvents.emit(
-                        ConnectionEvent.Error(
-                            serverConnection.socket.remoteAddress.toString(),
-                            e.message ?: "Unknown Error",
-                        ),
-                    )
+                        Log.e(TAG, "SocketClient: Read Loop Error: ${e.message}", e)
+                        _connectionEvents.emit(
+                            ConnectionEvent.Error(
+                                serverConnection.socket.remoteAddress.toString(),
+                                e.message ?: "Unknown Error",
+                            ),
+                        )
+                    }
                 }
             }
-        }
 
-    private suspend fun cleanup() {
-        withContext(NonCancellable) {
-            try {
-                if (::serverConnection.isInitialized && !serverConnection.socket.isClosed) {
-                    serverConnection.socket.close()
+        private suspend fun cleanup() {
+            withContext(NonCancellable) {
+                try {
+                    if (::serverConnection.isInitialized && !serverConnection.socket.isClosed) {
+                        serverConnection.socket.close()
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error closing socket", e)
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error closing socket", e)
-            }
 
-            try {
-                selectorManager?.close()
-            } catch (e: Exception) {
-                Log.e(TAG, "Error closing selector", e)
+                try {
+                    selectorManager?.close()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error closing selector", e)
+                }
             }
         }
     }
-}

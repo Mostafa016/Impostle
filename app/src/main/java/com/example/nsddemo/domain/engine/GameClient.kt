@@ -154,48 +154,48 @@ class GameClient
 
         suspend fun endTurn() {
             clientNetworkRepository.sendToServer(ClientMessage.EndTurn)
-    }
+        }
 
-    suspend fun startVote() {
-        clientNetworkRepository.sendToServer(ClientMessage.RequestStartVote)
-    }
+        suspend fun startVote() {
+            clientNetworkRepository.sendToServer(ClientMessage.RequestStartVote)
+        }
 
-    suspend fun replayRound() {
-        clientNetworkRepository.sendToServer(ClientMessage.RequestReplayRound)
-    }
+        suspend fun replayRound() {
+            clientNetworkRepository.sendToServer(ClientMessage.RequestReplayRound)
+        }
 
-    suspend fun submitVote(targetPlayerId: String) {
-        clientNetworkRepository.sendToServer(ClientMessage.SubmitVote(targetPlayerId))
-    }
+        suspend fun submitVote(targetPlayerId: String) {
+            clientNetworkRepository.sendToServer(ClientMessage.SubmitVote(targetPlayerId))
+        }
 
-    suspend fun submitImposterGuess(guessedWord: String) {
-        clientNetworkRepository.sendToServer(ClientMessage.SubmitImposterGuess(guessedWord))
-    }
+        suspend fun submitImposterGuess(guessedWord: String) {
+            clientNetworkRepository.sendToServer(ClientMessage.SubmitImposterGuess(guessedWord))
+        }
 
-    suspend fun continueToGameChoice() {
-        clientNetworkRepository.sendToServer(ClientMessage.RequestContinueToGameChoice)
-    }
+        suspend fun continueToGameChoice() {
+            clientNetworkRepository.sendToServer(ClientMessage.RequestContinueToGameChoice)
+        }
 
-    suspend fun replayGame() {
-        clientNetworkRepository.sendToServer(ClientMessage.RequestReplayGame)
-    }
+        suspend fun replayGame() {
+            clientNetworkRepository.sendToServer(ClientMessage.RequestReplayGame)
+        }
 
-    suspend fun endGame() {
-        clientNetworkRepository.sendToServer(ClientMessage.RequestEndGame)
-    }
-    //endregion
+        suspend fun endGame() {
+            clientNetworkRepository.sendToServer(ClientMessage.RequestEndGame)
+        }
+        //endregion
 
-    suspend fun stop() {
-        gameSessionRepository.reset()
-        clientNetworkRepository.disconnect()
-    }
+        suspend fun stop() {
+            gameSessionRepository.reset()
+            clientNetworkRepository.disconnect()
+        }
 
-    companion object {
-        const val TIMEOUT_MS = 15_000L
-    }
+        companion object {
+            const val TIMEOUT_MS = 15_000L
+        }
 
-    @AssistedFactory
-    interface GameClientFactory {
-        fun create(clientNetworkRepository: ClientNetworkRepository): GameClient
+        @AssistedFactory
+        interface GameClientFactory {
+            fun create(clientNetworkRepository: ClientNetworkRepository): GameClient
+        }
     }
-}

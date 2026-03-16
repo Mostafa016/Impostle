@@ -64,17 +64,17 @@ class DataStoreSettingsRepository
 
         override suspend fun setDarkTheme(enabled: Boolean) {
             settingsDataStore.edit { it[DARK_THEME] = enabled }
-    }
+        }
 
-    override suspend fun setLanguage(locale: AppLocales) {
-        appLocaleHelper.changeLocale(locale)
-        settingsDataStore.edit { it[LANGUAGE] = locale.countryCode }
-    }
+        override suspend fun setLanguage(locale: AppLocales) {
+            appLocaleHelper.changeLocale(locale)
+            settingsDataStore.edit { it[LANGUAGE] = locale.countryCode }
+        }
 
-    private companion object {
-        val PLAYER_ID = stringPreferencesKey("player_id")
-        val PLAYER_NAME = stringPreferencesKey("player_name")
-        val DARK_THEME = booleanPreferencesKey("dark_theme")
-        val LANGUAGE = stringPreferencesKey("language")
+        private companion object {
+            val PLAYER_ID = stringPreferencesKey("player_id")
+            val PLAYER_NAME = stringPreferencesKey("player_name")
+            val DARK_THEME = booleanPreferencesKey("dark_theme")
+            val LANGUAGE = stringPreferencesKey("language")
+        }
     }
-}

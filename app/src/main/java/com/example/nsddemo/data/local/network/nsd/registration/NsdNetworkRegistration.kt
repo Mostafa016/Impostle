@@ -81,26 +81,26 @@ class NsdNetworkRegistration
                     // with other services advertised on the same network.
                     serviceName = actualServiceName + "_$gameCode"
                     serviceType = NSDConstants.SERVICE_TYPE
-                setPort(port)
-            }
-        nsdManager.registerService(
-            serviceInfo,
-            NsdManager.PROTOCOL_DNS_SD,
-            registrationListener,
+                    setPort(port)
+                }
+            nsdManager.registerService(
+                serviceInfo,
+                NsdManager.PROTOCOL_DNS_SD,
+                registrationListener,
             )
         }
 
         override fun unregisterService() {
             val registrationState = _registrationState.value
-        if (registrationState !is NsdRegistrationState.Registered) {
-            Log.d(
-                Debugging.TAG,
-                "Ignoring unregisterService call. Current state: $registrationState",
-            )
-            return
+            if (registrationState !is NsdRegistrationState.Registered) {
+                Log.d(
+                    Debugging.TAG,
+                    "Ignoring unregisterService call. Current state: $registrationState",
+                )
+                return
+            }
+            _registrationState.value = NsdRegistrationState.UnRegistering
+            actualServiceName = NSDConstants.BASE_SERVICE_NAME
+            nsdManager.unregisterService(registrationListener)
         }
-        _registrationState.value = NsdRegistrationState.UnRegistering
-        actualServiceName = NSDConstants.BASE_SERVICE_NAME
-        nsdManager.unregisterService(registrationListener)
     }
-}

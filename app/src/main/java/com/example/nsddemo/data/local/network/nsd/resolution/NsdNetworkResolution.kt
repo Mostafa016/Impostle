@@ -62,8 +62,8 @@ class NsdNetworkResolution
                             host = serviceInfo.host.hostAddress!!,
                             port = serviceInfo.port,
                         ) // Save port and ip address for communication with sockets
-                Log.i(Debugging.TAG, "Resolve Succeeded: $serviceInfo")
+                    Log.i(Debugging.TAG, "Resolve Succeeded: $serviceInfo")
+                }
             }
-        }
-    // endregion
-}
+        // endregion
+    }

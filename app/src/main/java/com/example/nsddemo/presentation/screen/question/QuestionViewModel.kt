@@ -76,23 +76,23 @@ class QuestionViewModel
             when (event) {
                 QuestionEvent.ShowWordDialog -> {
                     _state.value = _state.value.copy(isWordDialogVisible = true)
-            }
+                }
 
-            QuestionEvent.DismissWordDialog, QuestionEvent.ConfirmWordDialog -> {
+                QuestionEvent.DismissWordDialog, QuestionEvent.ConfirmWordDialog -> {
                     _state.value = _state.value.copy(isWordDialogVisible = false)
-            }
+                }
 
-            QuestionEvent.FinishAskingYourQuestion -> {
-                _state.value = _state.value.copy(isDoneAskingQuestionClicked = true)
-                viewModelScope.launch {
-                    activeClient?.endTurn()
+                QuestionEvent.FinishAskingYourQuestion -> {
+                    _state.value = _state.value.copy(isDoneAskingQuestionClicked = true)
+                    viewModelScope.launch {
+                        activeClient?.endTurn()
+                    }
                 }
             }
         }
-    }
 
-    override fun onCleared() {
-        super.onCleared()
-        Log.i(TAG, "QuestionViewModel: Cleared!")
+        override fun onCleared() {
+            super.onCleared()
+            Log.i(TAG, "QuestionViewModel: Cleared!")
+        }
     }
-}

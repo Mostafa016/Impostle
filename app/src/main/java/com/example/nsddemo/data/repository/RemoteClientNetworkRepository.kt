@@ -215,56 +215,56 @@ class RemoteClientNetworkRepository
                 }
 
                 is NsdResolutionState.Failed -> {
-                _clientState.value = ClientState.Error(resolutionState.error)
-                null
+                    _clientState.value = ClientState.Error(resolutionState.error)
+                    null
+                }
+
+                else -> null // Should be unreachable given the filter above
             }
-
-            else -> null // Should be unreachable given the filter above
         }
-    }
 
-    private suspend fun performSocketConnection(
-        host: String,
-        port: Int,
-    ) = coroutineScope {
+        private suspend fun performSocketConnection(
+            host: String,
+            port: Int,
+        ) = coroutineScope {
             launch(ioDispatcher) { socketClient.startSession(host, port) }
 
-        val event =
-            withTimeout(TIMEOUT_MS) {
-                socketClient.connectionEvents
-                    .first { it is ConnectionEvent.Connected || it is ConnectionEvent.Error }
-            }
-        Log.d(TAG, "performSocketConnection: event ($event)")
-        when (event) {
-            is ConnectionEvent.Connected -> {
-                _clientState.value = ClientState.Connected
-            }
+            val event =
+                withTimeout(TIMEOUT_MS) {
+                    socketClient.connectionEvents
+                        .first { it is ConnectionEvent.Connected || it is ConnectionEvent.Error }
+                }
+            Log.d(TAG, "performSocketConnection: event ($event)")
+            when (event) {
+                is ConnectionEvent.Connected -> {
+                    _clientState.value = ClientState.Connected
+                }
 
-            is ConnectionEvent.Error -> {
-                _clientState.value = ClientState.Error(event.message)
-            }
+                is ConnectionEvent.Error -> {
+                    _clientState.value = ClientState.Error(event.message)
+                }
 
-            else -> { // Ignore Disconnected events during startup
+                else -> { // Ignore Disconnected events during startup
+                }
             }
         }
-    }
 
-    private suspend fun cleanupResources() {
-        networkDiscovery.stopDiscovery()
-        socketClient.disconnect()
-    }
+        private suspend fun cleanupResources() {
+            networkDiscovery.stopDiscovery()
+            socketClient.disconnect()
+        }
 
-    /**
-     * Light-weight check to see if a raw JSON string corresponds to a graceful exit message.
-     * This avoids full deserialization overhead in the monitoring loop.
-     */
-    private fun isGracefulExitSignal(json: String): Boolean {
-        // Quick string check is faster and safer here than full decode
-        return json.contains("LobbyClosed") || json.contains("YouWereKicked")
-    }
-    //endregion
+        /**
+         * Light-weight check to see if a raw JSON string corresponds to a graceful exit message.
+         * This avoids full deserialization overhead in the monitoring loop.
+         */
+        private fun isGracefulExitSignal(json: String): Boolean {
+            // Quick string check is faster and safer here than full decode
+            return json.contains("LobbyClosed") || json.contains("YouWereKicked")
+        }
+        //endregion
 
-    companion object {
-        const val TIMEOUT_MS = 15_000L
+        companion object {
+            const val TIMEOUT_MS = 15_000L
+        }
     }
-}

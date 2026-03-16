@@ -34,6 +34,6 @@ class LoopbackClientNetworkRepository
 
         override suspend fun sendToServer(message: ClientMessage): Boolean {
             loopbackDataSource.clientToServer.emit(LoopbackDataSource.LOCAL_HOST_CLIENT_ID to message)
-        return true
+            return true
+        }
     }
-}

@@ -52,17 +52,17 @@ class LobbyViewModel
                     viewModelScope.launch {
                         activeClient?.startGame()
                     }
-            }
-
-            is LobbyEvent.KickPlayer ->
-                viewModelScope.launch {
-                    activeClient?.kickPlayer(event.playerId)
                 }
+
+                is LobbyEvent.KickPlayer ->
+                    viewModelScope.launch {
+                        activeClient?.kickPlayer(event.playerId)
+                    }
+            }
+        }
+
+        override fun onCleared() {
+            super.onCleared()
+            Log.i(TAG, "LobbyViewModel: Cleared!")
         }
     }
-
-    override fun onCleared() {
-        super.onCleared()
-        Log.i(TAG, "LobbyViewModel: Cleared!")
-    }
-}

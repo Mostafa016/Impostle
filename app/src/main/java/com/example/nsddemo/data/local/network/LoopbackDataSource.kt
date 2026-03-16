@@ -13,5 +13,5 @@ class LoopbackDataSource
 
         companion object {
             const val LOCAL_HOST_CLIENT_ID = "LOCAL_HOST_CONNECTION"
+        }
     }
-}

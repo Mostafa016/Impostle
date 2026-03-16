@@ -192,7 +192,7 @@ class InMemoryWordRepository
                         "Firefighter",
                         "Police Officer",
                     ),
-            "Driver" to
+                "Driver" to
                     listOf(
                         "Farmer",
                         "Construction Worker",
@@ -200,8 +200,8 @@ class InMemoryWordRepository
                         "Police Officer",
                         "Athlete",
                     ),
-            "Chef" to listOf("Waiter", "Farmer", "Driver", "Actor", "Singer"),
-        )
+                "Chef" to listOf("Waiter", "Farmer", "Driver", "Actor", "Singer"),
+            )
 
-    override fun getSemanticWords(word: String): List<String> = semanticGroups[word] ?: emptyList()
-}
+        override fun getSemanticWords(word: String): List<String> = semanticGroups[word] ?: emptyList()
+    }

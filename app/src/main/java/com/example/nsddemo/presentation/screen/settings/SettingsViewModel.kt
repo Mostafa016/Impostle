@@ -70,21 +70,21 @@ class SettingsViewModel
         }
 
         private fun navigateTo(
-        destination: String,
-        popPrevious: Boolean = true,
+            destination: String,
+            popPrevious: Boolean = true,
         ) {
             viewModelScope.launch {
                 _eventFlow.emit(
-                UiEvent.NavigateTo(
-                    destination = destination,
-                    popPrevious = popPrevious,
-                ),
-            )
+                    UiEvent.NavigateTo(
+                        destination = destination,
+                        popPrevious = popPrevious,
+                    ),
+                )
+            }
+        }
+
+        override fun onCleared() {
+            super.onCleared()
+            Log.i(TAG, "SettingsViewModel: Cleared!")
         }
     }
-
-    override fun onCleared() {
-        super.onCleared()
-        Log.i(TAG, "SettingsViewModel: Cleared!")
-    }
-}

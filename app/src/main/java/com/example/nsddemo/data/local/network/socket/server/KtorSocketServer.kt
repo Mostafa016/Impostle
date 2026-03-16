@@ -179,50 +179,50 @@ class KtorSocketServer
             try {
                 while (!connection.socket.isClosed) {
                     val line = connection.input.readPacket()
-                if (line == null) {
-                    Log.w(TAG, "Client $clientId disconnected (read null).")
-                    break // Exit loop on clean disconnect
+                    if (line == null) {
+                        Log.w(TAG, "Client $clientId disconnected (read null).")
+                        break // Exit loop on clean disconnect
+                    }
+                    Log.d(TAG, "Server received from $clientId: $line")
+                    _messageEvents.emit(MessageEvent.Received(clientId, line))
                 }
-                Log.d(TAG, "Server received from $clientId: $line")
-                _messageEvents.emit(MessageEvent.Received(clientId, line))
+            } catch (e: CancellationException) {
+                Log.i(TAG, "Client $clientId read loop cancelled.")
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Client $clientId read loop error: ${e.message}", e)
+            } finally {
+                Log.d(TAG, "Client $clientId read loop finished.")
+                cleanupClient(clientId)
             }
-        } catch (e: CancellationException) {
-            Log.i(TAG, "Client $clientId read loop cancelled.")
-            throw e
-        } catch (e: Exception) {
-            Log.e(TAG, "Client $clientId read loop error: ${e.message}", e)
-        } finally {
-            Log.d(TAG, "Client $clientId read loop finished.")
-            cleanupClient(clientId)
+        }
+        //endregion
+
+        //region General Helpers
+        private fun cleanupClient(clientId: String) {
+            clientConnections.remove(clientId)?.also { connection ->
+                connection.socket.close()
+                clientJobs.remove(clientId)?.cancel()
+                _connectionEvents.tryEmit(ConnectionEvent.Disconnected(clientId))
+                Log.i(TAG, "Cleaned up client: $clientId")
+            }
+        }
+
+        private fun cleanupAllClients() {
+            Log.d(TAG, "Cleaning up all clients...")
+            clientJobs.keys.toList().forEach { cleanupClient(it) }
+            Log.d(TAG, "Cleaned up all clients.")
+        }
+
+        private fun cleanupResources() {
+            cleanupAllClients()
+            if (socketServer?.isClosed == false) socketServer?.close()
+            socketServer = null
+            serverPort = null
+        }
+
+        //endregion
+        private companion object {
+            const val EVENT_BUFFER_CAPACITY = 64
         }
     }
-    //endregion
-
-    //region General Helpers
-    private fun cleanupClient(clientId: String) {
-        clientConnections.remove(clientId)?.also { connection ->
-            connection.socket.close()
-            clientJobs.remove(clientId)?.cancel()
-            _connectionEvents.tryEmit(ConnectionEvent.Disconnected(clientId))
-            Log.i(TAG, "Cleaned up client: $clientId")
-        }
-    }
-
-    private fun cleanupAllClients() {
-        Log.d(TAG, "Cleaning up all clients...")
-        clientJobs.keys.toList().forEach { cleanupClient(it) }
-        Log.d(TAG, "Cleaned up all clients.")
-    }
-
-    private fun cleanupResources() {
-        cleanupAllClients()
-        if (socketServer?.isClosed == false) socketServer?.close()
-        socketServer = null
-        serverPort = null
-    }
-
-    //endregion
-    private companion object {
-        const val EVENT_BUFFER_CAPACITY = 64
-    }
-}

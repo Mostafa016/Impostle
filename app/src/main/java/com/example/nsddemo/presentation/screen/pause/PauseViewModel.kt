@@ -58,19 +58,19 @@ class PauseViewModel
         }
 
         private fun kickPlayer(playerId: String) {
-        viewModelScope.launch(ioDispatcher) {
-            activeClient?.kickPlayer(playerId)
+            viewModelScope.launch(ioDispatcher) {
+                activeClient?.kickPlayer(playerId)
+            }
         }
-    }
 
-    private fun endGame() {
-        val isEndGameButtonPressedState = isEndGameButtonPressed.value
-        if (isEndGameButtonPressedState) {
-            return
-        }
-        isEndGameButtonPressed.value = true
-        viewModelScope.launch(ioDispatcher) {
-            activeClient?.endGame()
+        private fun endGame() {
+            val isEndGameButtonPressedState = isEndGameButtonPressed.value
+            if (isEndGameButtonPressedState) {
+                return
+            }
+            isEndGameButtonPressed.value = true
+            viewModelScope.launch(ioDispatcher) {
+                activeClient?.endGame()
+            }
         }
     }
-}

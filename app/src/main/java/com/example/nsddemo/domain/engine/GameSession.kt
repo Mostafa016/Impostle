@@ -198,17 +198,17 @@ class GameSession
                                             _sessionState.value = SessionState.Disconnected
                                             this.cancel()
                                         } else if (state is ClientState.Idle) {
-                                        Log.i(
-                                            TAG,
-                                            "GameSession: ClientState ($state) while running, setting sessionState as Idle",
-                                        )
-                                        _sessionState.value = SessionState.Idle
-                                        this.cancel()
+                                            Log.i(
+                                                TAG,
+                                                "GameSession: ClientState ($state) while running, setting sessionState as Idle",
+                                            )
+                                            _sessionState.value = SessionState.Idle
+                                            this.cancel()
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
-        }
-}
+            }
+    }

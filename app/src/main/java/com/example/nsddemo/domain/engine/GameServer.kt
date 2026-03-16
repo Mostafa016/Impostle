@@ -160,46 +160,46 @@ class GameServer
             handleTransition(transition)
             Log.i(TAG, "GameServer: masterGameData after $action: ${masterGameData.value}")
             Log.i(TAG, "GameServer: masterGamePhase after $action: ${masterGamePhase.value}")
-    }
+        }
 
-    private suspend fun handleTransition(transition: GameStateTransition) {
-        when (transition) {
-            is GameStateTransition.Valid -> {
-                masterGameData.value = transition.newGameData
+        private suspend fun handleTransition(transition: GameStateTransition) {
+            when (transition) {
+                is GameStateTransition.Valid -> {
+                    masterGameData.value = transition.newGameData
                     transition.newPhase?.also { masterGamePhase.value = it }
                 }
 
                 is GameStateTransition.Invalid -> {
                     Log.e(TAG, "Invalid transition: ${transition.reason}")
+                }
+            }
+            sendMessages(transition.envelopes)
+        }
+
+        private suspend fun sendMessages(envelopes: List<Envelope>) {
+            envelopes.forEach { envelope ->
+                when (envelope) {
+                    is Envelope.Unicast ->
+                        serverNetworkRepository.sendToPlayer(
+                            envelope.recipientId,
+                            envelope.message,
+                        )
+
+                    is Envelope.Broadcast -> serverNetworkRepository.sendToAllPlayers(envelope.message)
+                }
             }
         }
-        sendMessages(transition.envelopes)
-    }
 
-    private suspend fun sendMessages(envelopes: List<Envelope>) {
-        envelopes.forEach { envelope ->
-            when (envelope) {
-                is Envelope.Unicast ->
-                    serverNetworkRepository.sendToPlayer(
-                        envelope.recipientId,
-                        envelope.message,
-                    )
+        suspend fun stop() {
+            Log.d(TAG, "GameServer: Stopping server...")
+            serverNetworkRepository.sendToAllPlayers(ServerMessage.LobbyClosed)
+            delay(1000L)
+            masterGameData.value = GameData()
+            masterGamePhase.value = GamePhase.Lobby
+            serverNetworkRepository.stop()
+        }
 
-                is Envelope.Broadcast -> serverNetworkRepository.sendToAllPlayers(envelope.message)
-            }
+        companion object {
+            const val TIMEOUT_MS = 10_000L
         }
     }
-
-    suspend fun stop() {
-        Log.d(TAG, "GameServer: Stopping server...")
-        serverNetworkRepository.sendToAllPlayers(ServerMessage.LobbyClosed)
-        delay(1000L)
-        masterGameData.value = GameData()
-        masterGamePhase.value = GamePhase.Lobby
-        serverNetworkRepository.stop()
-    }
-
-    companion object {
-        const val TIMEOUT_MS = 10_000L
-    }
-}

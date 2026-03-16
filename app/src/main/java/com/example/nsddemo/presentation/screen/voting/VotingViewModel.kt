@@ -46,15 +46,15 @@ class VotingViewModel
                 VotingEvent.VoteConfirmed -> {
                     val target = _state.value.votedPlayer ?: return
                     _state.value = _state.value.copy(isVoteConfirmed = true)
-                viewModelScope.launch {
-                    activeClient?.submitVote(target.id)
+                    viewModelScope.launch {
+                        activeClient?.submitVote(target.id)
+                    }
                 }
             }
         }
-    }
 
-    override fun onCleared() {
-        super.onCleared()
-        Log.i(TAG, "VotingViewModel: Cleared!")
+        override fun onCleared() {
+            super.onCleared()
+            Log.i(TAG, "VotingViewModel: Cleared!")
+        }
     }
-}

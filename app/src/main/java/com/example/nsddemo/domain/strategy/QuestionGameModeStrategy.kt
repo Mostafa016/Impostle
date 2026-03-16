@@ -152,23 +152,23 @@ class QuestionGameModeStrategy
                                 Envelope.Broadcast(ServerMessage.ScoresAfterLeaver(data.scores)),
                             ),
                     )
-            }
+                }
 
                 is GamePhase.ImposterGuess, is GamePhase.GameResults, is GamePhase.GameReplayChoice -> {
                     GameStateTransition.Valid(
                         newGameData = data,
                         envelopes =
-                        listOf(
-                            Envelope.Broadcast(ServerMessage.PlayerList(remainingPlayers.values.toList())),
-                            Envelope.Broadcast(ServerMessage.ScoresAfterLeaver(data.scores)),
-                        ),
-                )
-            }
+                            listOf(
+                                Envelope.Broadcast(ServerMessage.PlayerList(remainingPlayers.values.toList())),
+                                Envelope.Broadcast(ServerMessage.ScoresAfterLeaver(data.scores)),
+                            ),
+                    )
+                }
 
-            is GamePhase.Idle, GamePhase.Lobby, is GamePhase.Paused, is GamePhase.GameEnd ->
-                GameStateTransition.Invalid(
-                    "Cannot kick player when phase is $phase",
-                )
+                is GamePhase.Idle, GamePhase.Lobby, is GamePhase.Paused, is GamePhase.GameEnd ->
+                    GameStateTransition.Invalid(
+                        "Cannot kick player when phase is $phase",
+                    )
+            }
         }
     }
-}

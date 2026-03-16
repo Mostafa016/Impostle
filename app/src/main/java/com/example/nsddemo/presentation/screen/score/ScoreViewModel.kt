@@ -55,16 +55,16 @@ class ScoreViewModel
                     viewModelScope.launch(Dispatchers.IO) { activeClient?.replayGame() }
                 }
 
-            ScoreEvent.EndGame -> {
-                viewModelScope.launch(Dispatchers.IO) {
-                    activeClient?.endGame()
+                ScoreEvent.EndGame -> {
+                    viewModelScope.launch(Dispatchers.IO) {
+                        activeClient?.endGame()
+                    }
                 }
             }
         }
-    }
 
-    override fun onCleared() {
-        super.onCleared()
-        Log.i(TAG, "ScoreViewModel: Cleared!")
+        override fun onCleared() {
+            super.onCleared()
+            Log.i(TAG, "ScoreViewModel: Cleared!")
+        }
     }
-}
