@@ -5,6 +5,7 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.compose'
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
+    id("org.jlleitschuh.gradle.ktlint")
 }
 
 android {
@@ -120,4 +121,12 @@ dependencies {
 composeCompiler {
     reportsDestination = layout.buildDirectory.dir("compose_compiler")
     stabilityConfigurationFile = rootProject.layout.projectDirectory.file("stability_config.conf")
+}
+
+ktlint {
+    android = true
+    ignoreFailures = true
+    reporters {
+        reporter "html"
+    }
 }
