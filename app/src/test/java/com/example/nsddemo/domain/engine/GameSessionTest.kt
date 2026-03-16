@@ -39,7 +39,6 @@ import javax.inject.Provider
 
 @ExperimentalCoroutinesApi
 class GameSessionTest {
-
     // SUT
     private lateinit var gameSession: GameSession
 
@@ -108,13 +107,14 @@ class GameSessionTest {
         coEvery { sessionRepo.reset() } just runs
 
         // 3. Init SUT
-        gameSession = GameSession(
-            clientFactory,
-            serverProvider,
-            remoteRepoProvider,
-            loopbackRepoProvider,
-            sessionRepo
-        )
+        gameSession =
+            GameSession(
+                clientFactory,
+                serverProvider,
+                remoteRepoProvider,
+                loopbackRepoProvider,
+                sessionRepo,
+            )
     }
 
     @After
@@ -128,173 +128,181 @@ class GameSessionTest {
     // ==========================================
 
     @Test
-    fun `GIVEN Host Start WHEN Server and Client Connect THEN Session is Running`() = runTest {
-        // Arrange
-        val job = launch { gameSession.startHostSession("CODE", "123") }
-        runCurrent() // Allow start to proceed to collection
+    fun `GIVEN Host Start WHEN Server and Client Connect THEN Session is Running`() =
+        runTest {
+            // Arrange
+            val job = launch { gameSession.startHostSession("CODE", "123") }
+            runCurrent() // Allow start to proceed to collection
 
-        // Verify "Connecting" state initially
-        assertEquals(SessionState.Connecting, gameSession.sessionState.first())
+            // Verify "Connecting" state initially
+            assertEquals(SessionState.Connecting, gameSession.sessionState.first())
 
-        // Act: Simulate Success
-        serverStateFlow.value = ServerState.Running(1234, "CODE")
-        clientStateFlow.value = ClientState.Connected
-        advanceUntilIdle()
+            // Act: Simulate Success
+            serverStateFlow.value = ServerState.Running(1234, "CODE")
+            clientStateFlow.value = ClientState.Connected
+            advanceUntilIdle()
 
-        // Assert
-        assertTrue(gameSession.sessionState.first() is SessionState.Running)
+            // Assert
+            assertTrue(gameSession.sessionState.first() is SessionState.Running)
 
-        // Verify Correct Dependencies used
-        verify { clientFactory.create(loopbackRepo) } // Host uses Loopback
-        verify { serverProvider.get() } // Host creates Server
+            // Verify Correct Dependencies used
+            verify { clientFactory.create(loopbackRepo) } // Host uses Loopback
+            verify { serverProvider.get() } // Host creates Server
 
-        // Verify Start calls
-        coVerify { mockGameServer.start("CODE", "123") }
-        coVerify { mockGameClient.start("CODE", "123") }
+            // Verify Start calls
+            coVerify { mockGameServer.start("CODE", "123") }
+            coVerify { mockGameClient.start("CODE", "123") }
 
-        job.cancel()
-    }
-
-    @Test
-    fun `GIVEN Host Start WHEN Server Fails THEN Session Error and Cleanup`() = runTest {
-        val job = launch { gameSession.startHostSession("CODE", "123") }
-        runCurrent()
-
-        // Act: Server fails
-        serverStateFlow.value = ServerState.Error("Port in use")
-        clientStateFlow.value = ClientState.Connected
-        advanceUntilIdle()
-
-        // Assert
-        val state = gameSession.sessionState.first()
-        assertTrue(state is SessionState.Error)
-        assertEquals("Port in use", (state as SessionState.Error).reason)
-
-        // Verify Cleanup
-        coVerify { mockGameServer.stop() }
-        coVerify { mockGameClient.stop() }
-
-        job.cancel()
-    }
+            job.cancel()
+        }
 
     @Test
-    fun `GIVEN Host Start WHEN Server Ready but Client Fails THEN Session Error`() = runTest {
-        val job = launch { gameSession.startHostSession("CODE", "123") }
-        runCurrent()
+    fun `GIVEN Host Start WHEN Server Fails THEN Session Error and Cleanup`() =
+        runTest {
+            val job = launch { gameSession.startHostSession("CODE", "123") }
+            runCurrent()
 
-        // Act: Server OK, Client Fails
-        serverStateFlow.value = ServerState.Running(1234, "CODE")
-        clientStateFlow.value = ClientState.Error("Loopback failed")
-        advanceUntilIdle()
+            // Act: Server fails
+            serverStateFlow.value = ServerState.Error("Port in use")
+            clientStateFlow.value = ClientState.Connected
+            advanceUntilIdle()
 
-        // Assert
-        val state = gameSession.sessionState.first()
-        assertTrue(state is SessionState.Error)
-        assertEquals("Loopback failed", (state as SessionState.Error).reason)
+            // Assert
+            val state = gameSession.sessionState.first()
+            assertTrue(state is SessionState.Error)
+            assertEquals("Port in use", (state as SessionState.Error).reason)
 
-        coVerify { mockGameServer.stop() } // Cleanup should still happen
+            // Verify Cleanup
+            coVerify { mockGameServer.stop() }
+            coVerify { mockGameClient.stop() }
 
-        job.cancel()
-    }
+            job.cancel()
+        }
 
     @Test
-    fun `GIVEN Host Start WHEN Timeout Reached THEN Session Error`() = runTest {
-        val job = launch { gameSession.startHostSession("CODE", "123") }
-        runCurrent()
+    fun `GIVEN Host Start WHEN Server Ready but Client Fails THEN Session Error`() =
+        runTest {
+            val job = launch { gameSession.startHostSession("CODE", "123") }
+            runCurrent()
 
-        // Act: Wait longer than timeout without states changing
-        advanceTimeBy(GameServer.TIMEOUT_MS + 1000)
+            // Act: Server OK, Client Fails
+            serverStateFlow.value = ServerState.Running(1234, "CODE")
+            clientStateFlow.value = ClientState.Error("Loopback failed")
+            advanceUntilIdle()
 
-        // Assert
-        val state = gameSession.sessionState.first()
-        assertTrue(state is SessionState.Error)
-        assertTrue((state as SessionState.Error).reason.contains("timed out"))
+            // Assert
+            val state = gameSession.sessionState.first()
+            assertTrue(state is SessionState.Error)
+            assertEquals("Loopback failed", (state as SessionState.Error).reason)
 
-        coVerify { mockGameServer.stop() }
+            coVerify { mockGameServer.stop() } // Cleanup should still happen
 
-        job.cancel()
-    }
+            job.cancel()
+        }
+
+    @Test
+    fun `GIVEN Host Start WHEN Timeout Reached THEN Session Error`() =
+        runTest {
+            val job = launch { gameSession.startHostSession("CODE", "123") }
+            runCurrent()
+
+            // Act: Wait longer than timeout without states changing
+            advanceTimeBy(GameServer.TIMEOUT_MS + 1000)
+
+            // Assert
+            val state = gameSession.sessionState.first()
+            assertTrue(state is SessionState.Error)
+            assertTrue((state as SessionState.Error).reason.contains("timed out"))
+
+            coVerify { mockGameServer.stop() }
+
+            job.cancel()
+        }
 
     // ==========================================
     // 2. CLIENT (JOIN) SESSION TESTS
     // ==========================================
 
     @Test
-    fun `GIVEN Join Start WHEN Client Connects THEN Session is Running`() = runTest {
-        val job = launch { gameSession.startJoinSession("CODE", "123") }
-        runCurrent()
+    fun `GIVEN Join Start WHEN Client Connects THEN Session is Running`() =
+        runTest {
+            val job = launch { gameSession.startJoinSession("CODE", "123") }
+            runCurrent()
 
-        assertEquals(SessionState.Connecting, gameSession.sessionState.first())
+            assertEquals(SessionState.Connecting, gameSession.sessionState.first())
 
-        // Act: Client Connects
-        clientStateFlow.value = ClientState.Connected
-        advanceUntilIdle()
+            // Act: Client Connects
+            clientStateFlow.value = ClientState.Connected
+            advanceUntilIdle()
 
-        // Assert
-        assertTrue(gameSession.sessionState.first() is SessionState.Running)
+            // Assert
+            assertTrue(gameSession.sessionState.first() is SessionState.Running)
 
-        // Verify Correct Dependencies
-        coVerify { clientFactory.create(remoteRepo) } // Join uses Remote
-        verify(exactly = 0) { serverProvider.get() } // Join does NOT create Server
+            // Verify Correct Dependencies
+            coVerify { clientFactory.create(remoteRepo) } // Join uses Remote
+            verify(exactly = 0) { serverProvider.get() } // Join does NOT create Server
 
-        job.cancel()
-    }
-
-    @Test
-    fun `GIVEN Join Start WHEN Client Fails THEN Session Error`() = runTest {
-        val job = launch { gameSession.startJoinSession("CODE", "123") }
-        runCurrent()
-
-        // Act
-        clientStateFlow.value = ClientState.Error("Host not found")
-        advanceUntilIdle()
-
-        // Assert
-        val state = gameSession.sessionState.first()
-        assertTrue(state is SessionState.Error)
-        assertEquals("Host not found", (state as SessionState.Error).reason)
-
-        job.cancel()
-    }
+            job.cancel()
+        }
 
     @Test
-    fun `GIVEN Join Start WHEN Timeout Reached THEN Session Error`() = runTest {
-        val job = launch { gameSession.startJoinSession("CODE", "123") }
-        runCurrent()
+    fun `GIVEN Join Start WHEN Client Fails THEN Session Error`() =
+        runTest {
+            val job = launch { gameSession.startJoinSession("CODE", "123") }
+            runCurrent()
 
-        // Act
-        advanceTimeBy(GameClient.TIMEOUT_MS + 1)
+            // Act
+            clientStateFlow.value = ClientState.Error("Host not found")
+            advanceUntilIdle()
 
-        // Assert
-        val state = gameSession.sessionState.first()
-        assertTrue(state is SessionState.Error)
-        assertTrue((state as SessionState.Error).reason.contains("timed out"))
+            // Assert
+            val state = gameSession.sessionState.first()
+            assertTrue(state is SessionState.Error)
+            assertEquals("Host not found", (state as SessionState.Error).reason)
 
-        job.cancel()
-    }
+            job.cancel()
+        }
+
+    @Test
+    fun `GIVEN Join Start WHEN Timeout Reached THEN Session Error`() =
+        runTest {
+            val job = launch { gameSession.startJoinSession("CODE", "123") }
+            runCurrent()
+
+            // Act
+            advanceTimeBy(GameClient.TIMEOUT_MS + 1)
+
+            // Assert
+            val state = gameSession.sessionState.first()
+            assertTrue(state is SessionState.Error)
+            assertTrue((state as SessionState.Error).reason.contains("timed out"))
+
+            job.cancel()
+        }
 
     // ==========================================
     // 3. CLEANUP TESTS
     // ==========================================
 
     @Test
-    fun `GIVEN Running Session WHEN Cleanup Called THEN Stops All and Resets`() = runTest {
-        // Arrange: Start a host session first to populate variables
-        val job = launch { gameSession.startHostSession("CODE", "123") }
-        runCurrent()
-        serverStateFlow.value = ServerState.Running(1, "C")
-        clientStateFlow.value = ClientState.Connected
-        advanceUntilIdle()
-        job.cancel() // Stop the startup job, session is now "Active" in memory
+    fun `GIVEN Running Session WHEN Cleanup Called THEN Stops All and Resets`() =
+        runTest {
+            // Arrange: Start a host session first to populate variables
+            val job = launch { gameSession.startHostSession("CODE", "123") }
+            runCurrent()
+            serverStateFlow.value = ServerState.Running(1, "C")
+            clientStateFlow.value = ClientState.Connected
+            advanceUntilIdle()
+            job.cancel() // Stop the startup job, session is now "Active" in memory
 
-        // Act
-        gameSession.reset()
+            // Act
+            gameSession.reset()
 
-        // Assert
-        coVerify { mockGameServer.stop() }
-        coVerify { mockGameClient.stop() }
+            // Assert
+            coVerify { mockGameServer.stop() }
+            coVerify { mockGameClient.stop() }
 
-        assertEquals(SessionState.Idle, gameSession.sessionState.first())
-        assertNull(gameSession.activeClient)
-    }
+            assertEquals(SessionState.Idle, gameSession.sessionState.first())
+            assertNull(gameSession.activeClient)
+        }
 }

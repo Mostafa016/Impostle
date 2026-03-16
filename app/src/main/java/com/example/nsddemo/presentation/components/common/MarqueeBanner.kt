@@ -12,35 +12,37 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.example.nsddemo.presentation.components.modifier.brutalistBorderBottom
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 
 @Composable
 fun MarqueeBanner(
     text: String,
     modifier: Modifier = Modifier,
     backgroundColor: Color = MaterialTheme.colorScheme.primary,
-    contentColor: Color = MaterialTheme.colorScheme.onPrimary
+    contentColor: Color = MaterialTheme.colorScheme.onPrimary,
 ) {
     // Note: We use .background() here instead of brutalistCard because banners are rectangular
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(backgroundColor)
-            .brutalistBorderBottom(MaterialTheme.colorScheme.outline)
-            .padding(vertical = BrutalistDimens.SpacingSmall)
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(backgroundColor)
+                .brutalistBorderBottom(MaterialTheme.colorScheme.outline)
+                .padding(vertical = Dimens.SpacingSmall),
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelSmall,
             color = contentColor,
             maxLines = 1,
-            modifier = Modifier.basicMarquee(
-                iterations = Int.MAX_VALUE,
-                spacing = MarqueeSpacing(BrutalistMarqueeSpacing)
-            )
+            modifier =
+                Modifier.basicMarquee(
+                    iterations = Int.MAX_VALUE,
+                    spacing = MarqueeSpacing(BrutalistMarqueeSpacing),
+                ),
         )
     }
 }
 
 // Extra marquee settings
-private val BrutalistMarqueeSpacing = BrutalistDimens.SpacingXLarge
+private val BrutalistMarqueeSpacing = Dimens.SpacingXLarge

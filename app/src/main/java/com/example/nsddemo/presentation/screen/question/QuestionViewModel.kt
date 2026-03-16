@@ -18,67 +18,72 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class QuestionViewModel @Inject constructor(
-    gameSession: GameSession
-) : BaseGameViewModel(gameSession) {
+class QuestionViewModel
+    @Inject
+    constructor(
+        gameSession: GameSession,
+    ) : BaseGameViewModel(gameSession) {
+        private val _eventFlow = MutableSharedFlow<UiEvent>()
+        val eventFlow = _eventFlow.asSharedFlow()
 
-    private val _eventFlow = MutableSharedFlow<UiEvent>()
-    val eventFlow = _eventFlow.asSharedFlow()
+        // --- Static Data (Fetched Synchronously) ---
+        // Safe because we only navigate here after the data is set in the previous phase
+        val categoryNameResId: Int =
+            gameData.value.category!!
+                .uiCategory.nameResId
+        val word: String? = gameData.value.word?.lowercase()
+        val isImposter: Boolean = gameData.value.isImposter
 
-    // --- Static Data (Fetched Synchronously) ---
-    // Safe because we only navigate here after the data is set in the previous phase
-    val categoryNameResId: Int = gameData.value.category!!.uiCategory.nameResId
-    val word: String? = gameData.value.word?.lowercase()
-    val isImposter: Boolean = gameData.value.isImposter
+        // --- Dynamic Data (Changes per turn) ---
+        private val _state =
+            MutableStateFlow(
+                QuestionState(
+                    askingPlayer = Player("Loading...", "FF000000"),
+                    askedPlayer = Player("Loading...", "FF000000"),
+                    isCurrentPlayerAsking = false,
+                    isCurrentPlayerAsked = false,
+                ),
+            )
+        val state = _state.asStateFlow()
 
-    // --- Dynamic Data (Changes per turn) ---
-    private val _uiState = MutableStateFlow(
-        QuestionState(
-            askingPlayer = Player("Loading...", "FF000000"),
-            askedPlayer = Player("Loading...", "FF000000"),
-            isCurrentPlayerAsking = false,
-            isCurrentPlayerAsked = false
-        )
-    )
-    val state = _uiState.asStateFlow()
+        init {
+            // Observe Round Changes (Next Question)
+            viewModelScope.launch {
+                gameData.collect { data ->
+                    val round = data.roundData
+                    if (round is RoundData.QuestionRoundData) {
+                        val askerId = round.currentAskerId!!
+                        val askedId = round.currentAskedId!!
 
-    init {
-        // Observe Round Changes (Next Question)
-        viewModelScope.launch {
-            gameData.collect { data ->
-                val round = data.roundData
-                if (round is RoundData.QuestionRoundData) {
-                    val askerId = round.currentAskerId!!
-                    val askedId = round.currentAskedId!!
+                        val asker = data.players[askerId]!!
+                        val asked = data.players[askedId]!!
+                        val localId = data.localPlayerId
 
-                    val asker = data.players[askerId]!!
-                    val asked = data.players[askedId]!!
-                    val localId = data.localPlayerId
-
-                    _uiState.value = _uiState.value.copy(
-                        askingPlayer = asker,
-                        askedPlayer = asked,
-                        isCurrentPlayerAsking = data.isMyTurn,
-                        isCurrentPlayerAsked = askedId == localId,
-                        isDoneAskingQuestionClicked = false
-                    )
+                        _state.value =
+                            _state.value.copy(
+                                askingPlayer = asker,
+                                askedPlayer = asked,
+                                isCurrentPlayerAsking = data.isMyTurn,
+                                isCurrentPlayerAsked = askedId == localId,
+                                isDoneAskingQuestionClicked = false,
+                            )
+                    }
                 }
             }
         }
-    }
 
-    fun onEvent(event: QuestionEvent) {
-        when (event) {
-            QuestionEvent.ShowWordDialog -> {
-                _uiState.value = _uiState.value.copy(isWordDialogVisible = true)
+        fun onEvent(event: QuestionEvent) {
+            when (event) {
+                QuestionEvent.ShowWordDialog -> {
+                    _state.value = _state.value.copy(isWordDialogVisible = true)
             }
 
             QuestionEvent.DismissWordDialog, QuestionEvent.ConfirmWordDialog -> {
-                _uiState.value = _uiState.value.copy(isWordDialogVisible = false)
+                    _state.value = _state.value.copy(isWordDialogVisible = false)
             }
 
             QuestionEvent.FinishAskingYourQuestion -> {
-                _uiState.value = _uiState.value.copy(isDoneAskingQuestionClicked = true)
+                _state.value = _state.value.copy(isDoneAskingQuestionClicked = true)
                 viewModelScope.launch {
                     activeClient?.endTurn()
                 }

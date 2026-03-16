@@ -28,7 +28,6 @@ import org.junit.Before
 import org.junit.Test
 
 class SessionManagerTest {
-
     private lateinit var sessionManager: SessionManager
 
     // Helper Data
@@ -37,10 +36,11 @@ class SessionManagerTest {
     private val player = Player("Bob", "Blue", playerId, isConnected = true)
 
     // Base data with one player already inside
-    private val baseData = GameData(
-        hostId = hostId,
-        players = mapOf(playerId to player)
-    )
+    private val baseData =
+        GameData(
+            hostId = hostId,
+            players = mapOf(playerId to player),
+        )
 
     @Before
     fun setUp() {
@@ -60,10 +60,11 @@ class SessionManagerTest {
         every { Log.i(any(), any()) } returns 0
         // Default Mocks
         every { ColorAllocator.assignColor(any()) } returns NewPlayerColors.Red
-        every { GameFlowRegistry.getValidPhasesFor(any()) } returns setOf(
-            GamePhase.Lobby,
-            GamePhase.Idle
-        )
+        every { GameFlowRegistry.getValidPhasesFor(any()) } returns
+            setOf(
+                GamePhase.Lobby,
+                GamePhase.Idle,
+            )
 
         sessionManager = SessionManager()
     }
@@ -106,10 +107,11 @@ class SessionManagerTest {
     @Test
     fun `GIVEN InRound Phase WHEN Register New Player THEN Invalid`() {
         val msg = ClientMessage.RegisterPlayer("Alice", "new_p3")
-        every { GameFlowRegistry.getValidPhasesFor(msg) } returns setOf(
-            GamePhase.Lobby,
-            GamePhase.Idle
-        )
+        every { GameFlowRegistry.getValidPhasesFor(msg) } returns
+            setOf(
+                GamePhase.Lobby,
+                GamePhase.Idle,
+            )
 
         val result = sessionManager.registerPlayer(baseData, GamePhase.InRound, msg)
 
@@ -118,7 +120,7 @@ class SessionManagerTest {
         assertTrue(invalid.reason.contains("already started"))
         assertEquals(
             ServerMessage.GameAlreadyStarted,
-            (invalid.envelopes.first() as Envelope.Unicast).message
+            (invalid.envelopes.first() as Envelope.Unicast).message,
         )
     }
 
@@ -133,7 +135,7 @@ class SessionManagerTest {
         assertTrue(result is GameStateTransition.Invalid)
         assertEquals(
             ServerMessage.GameFull,
-            ((result as GameStateTransition.Invalid).envelopes.first() as Envelope.Unicast).message
+            ((result as GameStateTransition.Invalid).envelopes.first() as Envelope.Unicast).message,
         )
     }
 
@@ -156,12 +158,13 @@ class SessionManagerTest {
         assertTrue(valid.newGameData.players[playerId]!!.isConnected)
 
         // Check Messages
-        val messages = valid.envelopes.map {
-            when (it) {
-                is Envelope.Broadcast -> it.message
-                is Envelope.Unicast -> it.message
+        val messages =
+            valid.envelopes.map {
+                when (it) {
+                    is Envelope.Broadcast -> it.message
+                    is Envelope.Unicast -> it.message
+                }
             }
-        }
         assertTrue(messages.any { it is ServerMessage.PlayerReconnected })
         assertTrue(messages.any { it is ServerMessage.ReconnectionFullStateSync })
     }
@@ -178,13 +181,15 @@ class SessionManagerTest {
     @Test
     fun `GIVEN Paused Game WHEN All Players Reconnected THEN Auto-Resume`() {
         // Arrange: Game paused because Bob disconnected from InRound
-        val pausedData = baseData.copy(
-            players = mapOf(
-                playerId to player.copy(isConnected = false), // Bob offline
-                hostId to Player("Host", "Red", hostId, isConnected = true) // Host online
-            ),
-            phaseAfterPause = GamePhase.InRound
-        )
+        val pausedData =
+            baseData.copy(
+                players =
+                    mapOf(
+                        playerId to player.copy(isConnected = false), // Bob offline
+                        hostId to Player("Host", "Red", hostId, isConnected = true), // Host online
+                    ),
+                phaseAfterPause = GamePhase.InRound,
+            )
         val msg = ClientMessage.RegisterPlayer("Bob", playerId)
 
         // Act: Bob reconnects
@@ -200,29 +205,32 @@ class SessionManagerTest {
         assertNull(valid.newGameData.phaseAfterPause)
 
         // 3. GameResumed broadcast sent
-        val messages = valid.envelopes.map {
-            when (it) {
-                is Envelope.Broadcast -> it.message
-                is Envelope.Unicast -> it.message
+        val messages =
+            valid.envelopes.map {
+                when (it) {
+                    is Envelope.Broadcast -> it.message
+                    is Envelope.Unicast -> it.message
+                }
             }
-        }
         assertTrue(
             "Should broadcast GameResumed",
-            messages.contains(ServerMessage.GameResumed(GamePhase.InRound))
+            messages.contains(ServerMessage.GameResumed(GamePhase.InRound)),
         )
     }
 
     @Test
     fun `GIVEN Paused Game WHEN One of Many Reconnects THEN Stay Paused`() {
         // Arrange: 2 players offline (Bob & Charlie). Host online.
-        val pausedData = baseData.copy(
-            players = mapOf(
-                playerId to player.copy(isConnected = false), // Bob
-                "p3" to Player("Charlie", "Green", "p3", isConnected = false), // Charlie
-                hostId to Player("Host", "Red", hostId, isConnected = true)
-            ),
-            phaseAfterPause = GamePhase.InRound
-        )
+        val pausedData =
+            baseData.copy(
+                players =
+                    mapOf(
+                        playerId to player.copy(isConnected = false), // Bob
+                        "p3" to Player("Charlie", "Green", "p3", isConnected = false), // Charlie
+                        hostId to Player("Host", "Red", hostId, isConnected = true),
+                    ),
+                phaseAfterPause = GamePhase.InRound,
+            )
         val msg = ClientMessage.RegisterPlayer("Bob", playerId)
 
         // Act: Bob reconnects (Charlie still missing)
@@ -238,26 +246,29 @@ class SessionManagerTest {
         assertEquals(GamePhase.InRound, valid.newGameData.phaseAfterPause)
 
         // 3. NO GameResumed message
-        val messages = valid.envelopes.map {
-            when (it) {
-                is Envelope.Broadcast -> it.message
-                is Envelope.Unicast -> it.message
+        val messages =
+            valid.envelopes.map {
+                when (it) {
+                    is Envelope.Broadcast -> it.message
+                    is Envelope.Unicast -> it.message
+                }
             }
-        }
         assertFalse(messages.contains(ServerMessage.GameResumed(GamePhase.InRound)))
     }
 
     @Test
     fun `GIVEN Reconnection WHEN RoundData is Question THEN Syncs Sliced Data`() {
         // Arrange: Round Data has 5 pairs, current index 0. Sync should only send index 0.
-        val roundData = RoundData.QuestionRoundData(
-            roundPairs = listOf("p1" to "p2", "p2" to "p3"),
-            currentPairIndex = 0
-        )
-        val gameData = baseData.copy(
-            players = mapOf(playerId to player.copy(isConnected = false)),
-            roundData = roundData
-        )
+        val roundData =
+            RoundData.QuestionRoundData(
+                roundPairs = listOf("p1" to "p2", "p2" to "p3"),
+                currentPairIndex = 0,
+            )
+        val gameData =
+            baseData.copy(
+                players = mapOf(playerId to player.copy(isConnected = false)),
+                roundData = roundData,
+            )
         val msg = ClientMessage.RegisterPlayer("Bob", playerId)
 
         val result = sessionManager.registerPlayer(gameData, GamePhase.InRound, msg)
@@ -320,14 +331,16 @@ class SessionManagerTest {
     @Test
     fun `GIVEN Already Paused WHEN Another Player Disconnects THEN Stay Paused & Preserve State`() {
         // Arrange: Already paused because Host disconnected previously
-        val pausedData = baseData.copy(
-            players = mapOf(
-                hostId to Player("Host", "Red", hostId, isConnected = false),
-                playerId to player // Bob is currently online
-            ),
-            phaseBeforePause = GamePhase.GameVoting,
-            phaseAfterPause = GamePhase.GameVoting // Was voting before pause
-        )
+        val pausedData =
+            baseData.copy(
+                players =
+                    mapOf(
+                        hostId to Player("Host", "Red", hostId, isConnected = false),
+                        playerId to player, // Bob is currently online
+                    ),
+                phaseBeforePause = GamePhase.GameVoting,
+                phaseAfterPause = GamePhase.GameVoting, // Was voting before pause
+            )
 
         val event = SystemEvent.PlayerDisconnected(playerId) // Bob disconnects too
 
@@ -360,18 +373,23 @@ class SessionManagerTest {
     fun `GIVEN Active Game WHEN Imposter is Kicked THEN Civilians Win Immediately`() {
         // Arrange
         val imposterId = playerId
-        val gameData = baseData.copy(
-            imposterId = imposterId,
-            roundNumber = 1,
-            players = baseData.players + mapOf(
-                hostId to Player(
-                    "Host",
-                    "Green",
-                    hostId,
-                    isConnected = true
-                ), ("123" to Player("Dummy", "Yellow", "123", isConnected = true))
+        val gameData =
+            baseData.copy(
+                imposterId = imposterId,
+                roundNumber = 1,
+                players =
+                    baseData.players +
+                        mapOf(
+                            hostId to
+                                Player(
+                                    "Host",
+                                    "Green",
+                                    hostId,
+                                    isConnected = true,
+                                ),
+                            ("123" to Player("Dummy", "Yellow", "123", isConnected = true)),
+                        ),
             )
-        )
 
         // Mock Strategy (needed because kickPlayer calls it if not imposter/min players)
         // But here we hit the Imposter check first, so strategy shouldn't be called for logic.
@@ -416,16 +434,18 @@ class SessionManagerTest {
         // So: Host(Online), P2(Offline).
         // If we KICK P2, only Host remains (Online). So "Everyone is connected".
 
-        val pausedData = GameData(
-            imposterId = hostId,
-            players = mapOf(
-                hostId to player.copy(id = hostId, isConnected = true),
-                playerId to player.copy(isConnected = false),
-                p3Id to p3
-            ),
-            phaseBeforePause = GamePhase.InRound,
-            phaseAfterPause = GamePhase.InRound
-        )
+        val pausedData =
+            GameData(
+                imposterId = hostId,
+                players =
+                    mapOf(
+                        hostId to player.copy(id = hostId, isConnected = true),
+                        playerId to player.copy(isConnected = false),
+                        p3Id to p3,
+                    ),
+                phaseBeforePause = GamePhase.InRound,
+                phaseAfterPause = GamePhase.InRound,
+            )
 
         // Mock Strategy: Must return a valid transition for the kick logic
         val mockStrategy = mockk<GameModeStrategy>()
@@ -433,12 +453,13 @@ class SessionManagerTest {
             mockStrategy.onPlayerRemoved(
                 any(),
                 any(),
-                any()
+                any(),
             )
-        } returns GameStateTransition.Valid(
-            newGameData = pausedData.copy(players = pausedData.players - playerId), // simplified return
-            newPhase = GamePhase.InRound
-        )
+        } returns
+                GameStateTransition.Valid(
+                newGameData = pausedData.copy(players = pausedData.players - playerId), // simplified return
+                newPhase = GamePhase.InRound,
+            )
 
         // Act: Kick the offline player
         val result = sessionManager.kickPlayer(pausedData, GamePhase.Paused, playerId, mockStrategy)
@@ -468,11 +489,12 @@ class SessionManagerTest {
     fun `GIVEN Imposter Reconnects WHEN Syncing THEN Receives ImposterId and NO Word`() {
         // Arrange
         val imposterId = playerId
-        val data = baseData.copy(
-            imposterId = imposterId,
-            word = "SecretWord",
-            players = mapOf(playerId to player.copy(isConnected = false))
-        )
+        val data =
+            baseData.copy(
+                imposterId = imposterId,
+                word = "SecretWord",
+                players = mapOf(playerId to player.copy(isConnected = false)),
+            )
         val msg = ClientMessage.RegisterPlayer("Bob", playerId)
 
         // Act
@@ -493,11 +515,12 @@ class SessionManagerTest {
         // Arrange
         val civId = playerId
         val imposterId = hostId // Host is imposter
-        val data = baseData.copy(
-            imposterId = imposterId,
-            word = "SecretWord",
-            players = mapOf(playerId to player.copy(isConnected = false))
-        )
+        val data =
+            baseData.copy(
+                imposterId = imposterId,
+                word = "SecretWord",
+                players = mapOf(playerId to player.copy(isConnected = false)),
+            )
         val msg = ClientMessage.RegisterPlayer("Bob", civId)
 
         // Act
@@ -515,14 +538,16 @@ class SessionManagerTest {
     @Test
     fun `GIVEN Reconnect InRound WHEN Syncing THEN Receives FULL Round Data (Not Sliced)`() {
         // Arrange
-        val roundData = RoundData.QuestionRoundData(
-            roundPairs = listOf("p1" to "p2", "p2" to "p3", "p3" to "p1"),
-            currentPairIndex = 1 // Middle of round
-        )
-        val data = baseData.copy(
-            roundData = roundData,
-            players = mapOf(playerId to player.copy(isConnected = false))
-        )
+        val roundData =
+            RoundData.QuestionRoundData(
+                roundPairs = listOf("p1" to "p2", "p2" to "p3", "p3" to "p1"),
+                currentPairIndex = 1, // Middle of round
+            )
+        val data =
+            baseData.copy(
+                roundData = roundData,
+                players = mapOf(playerId to player.copy(isConnected = false)),
+            )
         val msg = ClientMessage.RegisterPlayer("Bob", playerId)
 
         // Act

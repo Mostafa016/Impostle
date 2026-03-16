@@ -11,8 +11,15 @@ interface SocketServer {
     val messageEvents: SharedFlow<MessageEvent>
 
     suspend fun startListening()
+
     fun stopListening()
-    suspend fun sendToClient(clientId: String, data: String): Boolean
+
+    suspend fun sendToClient(
+        clientId: String,
+        data: String,
+    ): Boolean
+
     suspend fun sendToAll(data: String): Boolean
+
     fun disconnectClient(clientId: String)
 }

@@ -30,7 +30,6 @@ import org.junit.Before
  */
 @ExperimentalCoroutinesApi
 abstract class BaseE2ETest {
-
     protected lateinit var router: InMemoryNetworkRouter
     protected lateinit var alice: HeadlessPlayer
     protected lateinit var bob: HeadlessPlayer
@@ -76,7 +75,9 @@ abstract class BaseE2ETest {
         charlie.startIn(this)
         advanceUntilIdle()
 
-        alice.joinGame(); bob.joinGame(); charlie.joinGame()
+        alice.joinGame()
+        bob.joinGame()
+        charlie.joinGame()
         advanceUntilIdle()
 
         alice.selectCategory(category)
@@ -86,7 +87,9 @@ abstract class BaseE2ETest {
         advanceUntilIdle()
 
         // All three confirm roles
-        alice.confirmRole(); bob.confirmRole(); charlie.confirmRole()
+        alice.confirmRole()
+        bob.confirmRole()
+        charlie.confirmRole()
         advanceUntilIdle()
 
         assertEquals(GamePhase.InRound, alice.gamePhase.value)
@@ -142,10 +145,15 @@ abstract class BaseE2ETest {
     protected suspend fun TestScope.driveImposterGuess(players: List<HeadlessPlayer>) {
         val imposterId = getImposterId(players)
         val imposterPlayer = players.find { it.playerId == imposterId }!!
-        val correctWord = players.first { it.playerId != imposterId }.gameData.value.word!!
+        val correctWord =
+            players
+                .first { it.playerId != imposterId }
+                .gameData.value.word!!
 
         val wordGuessChoices =
-            imposterPlayer.gameData.value.wordOptions.filterNot { it != correctWord }.random()
+            imposterPlayer.gameData.value.wordOptions
+                .filterNot { it != correctWord }
+                .random()
         imposterPlayer.submitImposterGuess(wordGuessChoices)
         advanceUntilIdle()
 
@@ -157,6 +165,5 @@ abstract class BaseE2ETest {
     /**
      * Helper to find the imposter among a list of players.
      */
-    protected fun getImposterId(players: List<HeadlessPlayer>): String =
-        players.first { it.gameData.value.word == null }.playerId
+    protected fun getImposterId(players: List<HeadlessPlayer>): String = players.first { it.gameData.value.word == null }.playerId
 }

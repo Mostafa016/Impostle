@@ -24,7 +24,6 @@ import java.net.InetAddress
 
 @ExperimentalCoroutinesApi
 class NsdNetworkResolutionTest {
-
     private lateinit var nsdManagerMock: NsdManager
     private lateinit var nsdNetworkResolution: NsdNetworkResolution
     private lateinit var resolveListenerSlot: CapturingSlot<NsdManager.ResolveListener>
@@ -44,7 +43,7 @@ class NsdNetworkResolutionTest {
         every {
             nsdManagerMock.resolveService(
                 any(),
-                capture(resolveListenerSlot)
+                capture(resolveListenerSlot),
             )
         } just runs
 
@@ -57,16 +56,17 @@ class NsdNetworkResolutionTest {
     }
 
     @Test
-    fun `GIVEN Idle WHEN resolveService called THEN state becomes Resolving`() = runTest {
-        nsdNetworkResolution.resolutionState.test {
-            assertEquals(NsdResolutionState.Idle, awaitItem())
+    fun `GIVEN Idle WHEN resolveService called THEN state becomes Resolving`() =
+        runTest {
+            nsdNetworkResolution.resolutionState.test {
+                assertEquals(NsdResolutionState.Idle, awaitItem())
 
-            val serviceInfo = mockk<NsdServiceInfo>()
-            nsdNetworkResolution.resolveServiceWithGameCode(serviceInfo, "ABCD")
+                val serviceInfo = mockk<NsdServiceInfo>()
+                nsdNetworkResolution.resolveServiceWithGameCode(serviceInfo, "ABCD")
 
-            assertEquals(NsdResolutionState.Resolving, awaitItem())
+                assertEquals(NsdResolutionState.Resolving, awaitItem())
+            }
         }
-    }
 
     @Test
     fun `GIVEN Resolving WHEN resolution succeeds with matching code THEN state becomes Success`() =
@@ -126,23 +126,24 @@ class NsdNetworkResolutionTest {
         }
 
     @Test
-    fun `GIVEN Resolving WHEN resolution fails THEN state becomes Failed`() = runTest {
-        nsdNetworkResolution.resolutionState.test {
-            awaitItem() // Idle
-            val inputService = mockk<NsdServiceInfo>()
+    fun `GIVEN Resolving WHEN resolution fails THEN state becomes Failed`() =
+        runTest {
+            nsdNetworkResolution.resolutionState.test {
+                awaitItem() // Idle
+                val inputService = mockk<NsdServiceInfo>()
 
-            // Act 1: Start
-            nsdNetworkResolution.resolveServiceWithGameCode(inputService, "ABCD")
-            awaitItem() // Resolving
+                // Act 1: Start
+                nsdNetworkResolution.resolveServiceWithGameCode(inputService, "ABCD")
+                awaitItem() // Resolving
 
-            // Act 2: Fail
-            val errorCode = NsdManager.FAILURE_ALREADY_ACTIVE
-            resolveListenerSlot.captured.onResolveFailed(inputService, errorCode)
+                // Act 2: Fail
+                val errorCode = NsdManager.FAILURE_ALREADY_ACTIVE
+                resolveListenerSlot.captured.onResolveFailed(inputService, errorCode)
 
-            // Assert
-            val state = awaitItem()
-            assertTrue(state is NsdResolutionState.Failed)
-            assertTrue((state as NsdResolutionState.Failed).error.isNotEmpty())
+                // Assert
+                val state = awaitItem()
+                assertTrue(state is NsdResolutionState.Failed)
+                assertTrue((state as NsdResolutionState.Failed).error.isNotEmpty())
+            }
         }
-    }
 }

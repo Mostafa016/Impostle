@@ -8,10 +8,8 @@ data class GameData(
     val localPlayerId: String = "",
     val hostId: String = "",
     val gameCode: String = "",
-
     // --- Player Database (PlayerID -> Player)---
     val players: Map<String, Player> = emptyMap(),
-
     // --- Game Logic State ---
     val roundNumber: Int = 1,
     val imposterId: String? = null,
@@ -19,21 +17,16 @@ data class GameData(
     val word: String? = null,
     val wordOptions: List<String> = emptyList(),
     val readyPlayerIds: Set<String> = emptySet(),
-
     // Game Mode Specific Turn Management
     val roundData: RoundData = RoundData.Idle,
-
     // Voting State (VoterID -> TargetID)
     val votes: Map<String, String> = emptyMap(),
-
     // Scoreboard (PlayerID -> Score)
     val scores: Map<String, Int> = emptyMap(),
-
     // phase we were in before the first player disconnected
     val phaseBeforePause: GamePhase? = null,
-
     // phase we will be in after the all players are connected (last reconnect/kick)
-    val phaseAfterPause: GamePhase? = null
+    val phaseAfterPause: GamePhase? = null,
 ) {
     //region --- Identity Helpers ---
     val localPlayer: Player?
@@ -110,7 +103,6 @@ data class GameData(
 
 @Serializable
 sealed interface RoundData {
-
     fun isPlayerTurn(playerId: String): Boolean
 
     @Serializable
@@ -131,9 +123,7 @@ sealed interface RoundData {
         val isLastQuestion: Boolean
             get() = roundPairs.isNotEmpty() && currentPairIndex == roundPairs.lastIndex
 
-        override fun isPlayerTurn(playerId: String): Boolean {
-            return playerId.isNotEmpty() && playerId == currentAskerId
-        }
+        override fun isPlayerTurn(playerId: String): Boolean = playerId.isNotEmpty() && playerId == currentAskerId
         //endregion
     }
 }

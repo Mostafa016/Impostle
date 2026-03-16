@@ -23,12 +23,14 @@ class FakeClientNetworkRepository(
     private val gameCode: String,
     private val clientId: String,
 ) : ClientNetworkRepository {
-
+    @Suppress("ktlint:standard:backing-property-naming")
     val _clientState = MutableStateFlow<ClientState>(ClientState.Idle)
     override val clientState: StateFlow<ClientState> = _clientState.asStateFlow()
 
     /** Router feeds incoming server messages into this flow. */
-    val _incomingMessages = MutableSharedFlow<Pair<String, ServerMessage>>(extraBufferCapacity = 64)
+    @Suppress("ktlint:standard:backing-property-naming")
+    val _incomingMessages =
+        MutableSharedFlow<Pair<String, ServerMessage>>(extraBufferCapacity = 64)
     override val incomingMessages: Flow<Pair<String, ServerMessage>> =
         _incomingMessages.asSharedFlow()
 
@@ -45,7 +47,5 @@ class FakeClientNetworkRepository(
         router.unregisterClient(gameCode, clientId)
     }
 
-    override suspend fun sendToServer(message: ClientMessage): Boolean {
-        return router.routeToServer(gameCode, clientId, message)
-    }
+    override suspend fun sendToServer(message: ClientMessage): Boolean = router.routeToServer(gameCode, clientId, message)
 }

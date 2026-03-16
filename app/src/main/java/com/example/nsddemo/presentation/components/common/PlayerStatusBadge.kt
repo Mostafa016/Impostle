@@ -16,7 +16,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import com.example.nsddemo.R
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 
 /**
  * Standardized status indicator for player ready states.
@@ -24,27 +24,29 @@ import com.example.nsddemo.presentation.theme.BrutalistDimens
 @Composable
 fun PlayerStatusBadge(
     isReady: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val bgColor = when {
-        isReady -> Color(0xFF22C55E) // Green
-        else -> Color(0xFFE5E7EB)    // Gray
-    }
+    val bgColor =
+        when {
+            isReady -> Color(0xFF22C55E) // Green
+            else -> Color(0xFFE5E7EB) // Gray
+        }
 
     val iconColor = if (isReady) Color.White else Color.Gray
 
     Box(
-        modifier = modifier
-            .size(36.dp)
-            .background(bgColor, CircleShape)
-            .border(BrutalistDimens.BorderThin, Color.Black, CircleShape),
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .size(36.dp)
+                .background(bgColor, CircleShape)
+                .border(Dimens.BorderThin, Color.Black, CircleShape),
+        contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = if (isReady) Icons.Default.Check else ImageVector.vectorResource(R.drawable.sharp_hourglass_24),
             contentDescription = null,
             tint = iconColor,
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(20.dp),
         )
     }
 }

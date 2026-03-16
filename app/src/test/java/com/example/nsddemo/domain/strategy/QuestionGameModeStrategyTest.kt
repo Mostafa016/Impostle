@@ -28,7 +28,6 @@ import org.junit.Before
 import org.junit.Test
 
 class QuestionGameModeStrategyTest {
-
     private lateinit var strategy: QuestionGameModeStrategy
     private lateinit var wordRepository: WordRepository
 
@@ -41,19 +40,21 @@ class QuestionGameModeStrategyTest {
     private val player2 = Player("Bob", "Blue", p2Id, isConnected = true)
     private val player3 = Player("Charlie", "Green", p3Id, isConnected = true)
 
-    private val playersMap = mapOf(
-        player1.id to player1,
-        player2.id to player2,
-        player3.id to player3
-    )
+    private val playersMap =
+        mapOf(
+            player1.id to player1,
+            player2.id to player2,
+            player3.id to player3,
+        )
 
     // A standard base state
-    private val baseData = GameData(
-        hostId = hostId,
-        players = playersMap,
-        category = GameCategory.ANIMALS,
-        word = "TestWord"
-    )
+    private val baseData =
+        GameData(
+            hostId = hostId,
+            players = playersMap,
+            category = GameCategory.ANIMALS,
+            word = "TestWord",
+        )
 
     @Before
     fun setUp() {
@@ -72,7 +73,6 @@ class QuestionGameModeStrategyTest {
         wordRepository = mockk()
         every { wordRepository.getWordsForCategory(any()) } returns listOf("Lion", "Tiger")
         every { wordRepository.getSemanticWords(any()) } returns listOf("Bear", "Walrus")
-
 
         // Mock the Registry to avoid dependency on its implementation status
         mockkObject(GameFlowRegistry)
@@ -134,24 +134,26 @@ class QuestionGameModeStrategyTest {
     @Test
     fun `GIVEN Lobby WHEN Start Game with No Category THEN Invalid`() {
         val dataNoCat = baseData.copy(category = null)
-        val result = strategy.handleAction(
-            dataNoCat,
-            GamePhase.Lobby,
-            ClientMessage.RequestStartGame,
-            hostId
-        )
+        val result =
+            strategy.handleAction(
+                dataNoCat,
+                GamePhase.Lobby,
+                ClientMessage.RequestStartGame,
+                hostId,
+            )
         assertTrue((result as GameStateTransition.Invalid).reason.contains("No category"))
     }
 
     @Test
     fun `GIVEN Lobby WHEN Start Game with Insufficient Players THEN Invalid`() {
         val fewPlayers = baseData.copy(players = mapOf(hostId to player1)) // Only 1 player
-        val result = strategy.handleAction(
-            fewPlayers,
-            GamePhase.Lobby,
-            ClientMessage.RequestStartGame,
-            hostId
-        )
+        val result =
+            strategy.handleAction(
+                fewPlayers,
+                GamePhase.Lobby,
+                ClientMessage.RequestStartGame,
+                hostId,
+            )
         assertTrue((result as GameStateTransition.Invalid).reason.contains("Not enough"))
     }
 
@@ -174,12 +176,13 @@ class QuestionGameModeStrategyTest {
     @Test
     fun `GIVEN RoleDistribution WHEN First Player Confirms THEN Update Ready Count`() {
         val roleData = baseData.copy(word = "Lion", imposterId = p2Id)
-        val result = strategy.handleAction(
-            roleData,
-            GamePhase.RoleDistribution,
-            ClientMessage.ConfirmRoleReceived,
-            hostId
-        )
+        val result =
+            strategy.handleAction(
+                roleData,
+                GamePhase.RoleDistribution,
+                ClientMessage.ConfirmRoleReceived,
+                hostId,
+            )
 
         assertTrue(result is GameStateTransition.Valid)
         val valid = result as GameStateTransition.Valid
@@ -189,21 +192,24 @@ class QuestionGameModeStrategyTest {
 
     @Test
     fun `GIVEN RoleDistribution WHEN Last Player Confirms THEN Start Round`() {
-        val readyData = baseData.copy(
-            word = "Lion", imposterId = p2Id,
-            readyPlayerIds = setOf(hostId, p2Id)
-        )
+        val readyData =
+            baseData.copy(
+                word = "Lion",
+                imposterId = p2Id,
+                readyPlayerIds = setOf(hostId, p2Id),
+            )
         // RoundData must be set from StartGame
         val pairs = listOf(hostId to p2Id, p2Id to p3Id, p3Id to hostId)
         val dataWithRound =
             readyData.copy(roundData = RoundData.QuestionRoundData(roundPairs = pairs))
 
-        val result = strategy.handleAction(
-            dataWithRound,
-            GamePhase.RoleDistribution,
-            ClientMessage.ConfirmRoleReceived,
-            p3Id
-        )
+        val result =
+            strategy.handleAction(
+                dataWithRound,
+                GamePhase.RoleDistribution,
+                ClientMessage.ConfirmRoleReceived,
+                p3Id,
+            )
 
         val valid = result as GameStateTransition.Valid
         assertEquals(GamePhase.InRound, valid.newPhase)
@@ -258,7 +264,7 @@ class QuestionGameModeStrategyTest {
         assertEquals(GamePhase.RoundReplayChoice, valid.newPhase)
         assertEquals(
             ServerMessage.RoundEnd,
-            (valid.envelopes.first() as Envelope.Broadcast).message
+            (valid.envelopes.first() as Envelope.Broadcast).message,
         )
     }
 
@@ -268,20 +274,23 @@ class QuestionGameModeStrategyTest {
 
     @Test
     fun `GIVEN RoundReplayChoice WHEN Host Replays Round THEN Reset and Start`() {
-        val data = baseData.copy(
-            roundNumber = 1,
-            word = "Lion", imposterId = p2Id,
-            // Dirty state to ensure cleanup
-            readyPlayerIds = setOf(hostId),
-            votes = mapOf(hostId to p2Id)
-        )
+        val data =
+            baseData.copy(
+                roundNumber = 1,
+                word = "Lion",
+                imposterId = p2Id,
+                // Dirty state to ensure cleanup
+                readyPlayerIds = setOf(hostId),
+                votes = mapOf(hostId to p2Id),
+            )
 
-        val result = strategy.handleAction(
-            data,
-            GamePhase.RoundReplayChoice,
-            ClientMessage.RequestReplayRound,
-            hostId
-        )
+        val result =
+            strategy.handleAction(
+                data,
+                GamePhase.RoundReplayChoice,
+                ClientMessage.RequestReplayRound,
+                hostId,
+            )
 
         val valid = result as GameStateTransition.Valid
 
@@ -299,18 +308,19 @@ class QuestionGameModeStrategyTest {
 
     @Test
     fun `GIVEN RoundReplayChoice WHEN Host Starts Vote THEN Transition to Voting`() {
-        val result = strategy.handleAction(
-            baseData,
-            GamePhase.RoundReplayChoice,
-            ClientMessage.RequestStartVote,
-            hostId
-        )
+        val result =
+            strategy.handleAction(
+                baseData,
+                GamePhase.RoundReplayChoice,
+                ClientMessage.RequestStartVote,
+                hostId,
+            )
 
         val valid = result as GameStateTransition.Valid
         assertEquals(GamePhase.GameVoting, valid.newPhase)
         assertEquals(
             ServerMessage.StartVote,
-            (valid.envelopes.first() as Envelope.Broadcast).message
+            (valid.envelopes.first() as Envelope.Broadcast).message,
         )
     }
 
@@ -321,39 +331,43 @@ class QuestionGameModeStrategyTest {
     @Test
     fun `GIVEN Voting WHEN Player Votes Self THEN Invalid`() {
         val data = baseData.copy(imposterId = p3Id)
-        val result = strategy.handleAction(
-            data,
-            GamePhase.GameVoting,
-            ClientMessage.SubmitVote(hostId),
-            hostId
-        )
+        val result =
+            strategy.handleAction(
+                data,
+                GamePhase.GameVoting,
+                ClientMessage.SubmitVote(hostId),
+                hostId,
+            )
         assertTrue((result as GameStateTransition.Invalid).reason.contains("themselves"))
     }
 
     @Test
     fun `GIVEN Voting WHEN Player Votes Twice THEN Invalid`() {
-        val data = baseData.copy(
-            imposterId = p3Id,
-            votes = mapOf(hostId to p2Id) // Host already voted
-        )
-        val result = strategy.handleAction(
-            data,
-            GamePhase.GameVoting,
-            ClientMessage.SubmitVote(p3Id),
-            hostId
-        )
+        val data =
+            baseData.copy(
+                imposterId = p3Id,
+                votes = mapOf(hostId to p2Id), // Host already voted
+            )
+        val result =
+            strategy.handleAction(
+                data,
+                GamePhase.GameVoting,
+                ClientMessage.SubmitVote(p3Id),
+                hostId,
+            )
         assertTrue((result as GameStateTransition.Invalid).reason.contains("once"))
     }
 
     @Test
     fun `GIVEN Voting WHEN Vote Submitted (Not Last) THEN Update Data`() {
         val data = baseData.copy(imposterId = p3Id)
-        val result = strategy.handleAction(
-            data,
-            GamePhase.GameVoting,
-            ClientMessage.SubmitVote(p2Id),
-            hostId
-        )
+        val result =
+            strategy.handleAction(
+                data,
+                GamePhase.GameVoting,
+                ClientMessage.SubmitVote(p2Id),
+                hostId,
+            )
 
         val valid = result as GameStateTransition.Valid
         assertEquals(p2Id, valid.newGameData.votes[hostId])
@@ -365,19 +379,21 @@ class QuestionGameModeStrategyTest {
 
     @Test
     fun `GIVEN Voting WHEN Last Vote Submitted THEN Calculates Scores & Transition to ImposterGuess`() {
-        val data = baseData.copy(
-            imposterId = p3Id, // Imposter is P3
-            votes = mapOf(hostId to p3Id, p2Id to p3Id), // P1 & P2 voted Correctly
-            scores = mapOf(hostId to 0, p2Id to 0, p3Id to 0)
-        )
+        val data =
+            baseData.copy(
+                imposterId = p3Id, // Imposter is P3
+                votes = mapOf(hostId to p3Id, p2Id to p3Id), // P1 & P2 voted Correctly
+                scores = mapOf(hostId to 0, p2Id to 0, p3Id to 0),
+            )
 
         // P3 votes for P1 (Incorrect)
-        val result = strategy.handleAction(
-            data,
-            GamePhase.GameVoting,
-            ClientMessage.SubmitVote(hostId),
-            p3Id
-        )
+        val result =
+            strategy.handleAction(
+                data,
+                GamePhase.GameVoting,
+                ClientMessage.SubmitVote(hostId),
+                p3Id,
+            )
 
         val valid = result as GameStateTransition.Valid
         assertEquals(GamePhase.ImposterGuess, valid.newPhase)
@@ -398,31 +414,34 @@ class QuestionGameModeStrategyTest {
 
     @Test
     fun `GIVEN Results WHEN Host Continues THEN Transition to ReplayChoice`() {
-        val result = strategy.handleAction(
-            baseData,
-            GamePhase.GameResults,
-            ClientMessage.RequestContinueToGameChoice,
-            hostId
-        )
+        val result =
+            strategy.handleAction(
+                baseData,
+                GamePhase.GameResults,
+                ClientMessage.RequestContinueToGameChoice,
+                hostId,
+            )
         val valid = result as GameStateTransition.Valid
         assertEquals(GamePhase.GameReplayChoice, valid.newPhase)
     }
 
     @Test
     fun `GIVEN GameReplayChoice WHEN Host Replays Game THEN Soft Reset to Lobby`() {
-        val dirtyData = baseData.copy(
-            roundNumber = 5,
-            word = "UsedWord",
-            votes = mapOf(hostId to p2Id),
-            scores = mapOf(hostId to 1000)
-        )
+        val dirtyData =
+            baseData.copy(
+                roundNumber = 5,
+                word = "UsedWord",
+                votes = mapOf(hostId to p2Id),
+                scores = mapOf(hostId to 1000),
+            )
 
-        val result = strategy.handleAction(
-            dirtyData,
-            GamePhase.GameReplayChoice,
-            ClientMessage.RequestReplayGame,
-            hostId
-        )
+        val result =
+            strategy.handleAction(
+                dirtyData,
+                GamePhase.GameReplayChoice,
+                ClientMessage.RequestReplayGame,
+                hostId,
+            )
         val valid = result as GameStateTransition.Valid
 
         assertEquals(GamePhase.Lobby, valid.newPhase)
@@ -438,12 +457,13 @@ class QuestionGameModeStrategyTest {
 
     @Test
     fun `GIVEN GameReplayChoice WHEN Host Ends Game THEN Hard Reset to Idle`() {
-        val result = strategy.handleAction(
-            baseData,
-            GamePhase.GameReplayChoice,
-            ClientMessage.RequestEndGame,
-            hostId
-        )
+        val result =
+            strategy.handleAction(
+                baseData,
+                GamePhase.GameReplayChoice,
+                ClientMessage.RequestEndGame,
+                hostId,
+            )
         val valid = result as GameStateTransition.Valid
 
         assertEquals(GamePhase.Idle, valid.newPhase)
@@ -475,10 +495,11 @@ class QuestionGameModeStrategyTest {
     @Test
     fun `GIVEN InRound WHEN Player Removed THEN Regenerates Pairs and Restarts Round`() {
         // Arrange: Round was in progress
-        val oldRound = RoundData.QuestionRoundData(
-            roundPairs = listOf(hostId to p2Id, p2Id to p3Id, p3Id to hostId),
-            currentPairIndex = 1
-        )
+        val oldRound =
+            RoundData.QuestionRoundData(
+                roundPairs = listOf(hostId to p2Id, p2Id to p3Id, p3Id to hostId),
+                currentPairIndex = 1,
+            )
         val data = baseData.copy(roundData = oldRound)
 
         // Act: Remove p2

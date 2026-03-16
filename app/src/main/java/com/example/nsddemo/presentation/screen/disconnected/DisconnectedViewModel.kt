@@ -16,41 +16,43 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class DisconnectedViewModel @Inject constructor(
-    private val sessionController: SessionController,
-) : ViewModel() {
-    private val _state = MutableStateFlow(DisconnectedState())
-    val state = _state.asStateFlow()
+class DisconnectedViewModel
+    @Inject
+    constructor(
+        private val sessionController: SessionController,
+    ) : ViewModel() {
+        private val _state = MutableStateFlow(DisconnectedState())
+        val state = _state.asStateFlow()
 
-    private val _eventFlow = MutableSharedFlow<UiEvent>()
-    val eventFlow = _eventFlow.asSharedFlow()
+        private val _eventFlow = MutableSharedFlow<UiEvent>()
+        val eventFlow = _eventFlow.asSharedFlow()
 
-    fun onEvent(event: DisconnectedEvent) {
-        when (event) {
-            DisconnectedEvent.ReconnectButtonPressed -> {
-                reconnectToGame()
+        fun onEvent(event: DisconnectedEvent) {
+            when (event) {
+                DisconnectedEvent.ReconnectButtonPressed -> {
+                    reconnectToGame()
+                }
+
+                DisconnectedEvent.GoToMainMenuButtonPressed -> quitToMainMenu()
             }
-
-            DisconnectedEvent.GoToMainMenuButtonPressed -> quitToMainMenu()
         }
-    }
 
-    override fun onCleared() {
-        super.onCleared()
-        Log.i(TAG, "DisconnectedViewModel: Cleared!")
-    }
-
-    private fun reconnectToGame() {
-        if (!state.value.isReconnectButtonEnabled) return
-        _state.value = state.value.copy(isReconnectButtonEnabled = false)
-        sessionController.stopSession()
-        viewModelScope.launch {
-            _eventFlow.emit(UiEvent.NavigateTo(Routes.JoinGameGraph.route))
+        override fun onCleared() {
+            super.onCleared()
+            Log.i(TAG, "DisconnectedViewModel: Cleared!")
         }
-    }
 
-    private fun quitToMainMenu() {
-        if (!state.value.isGoToMainMenuButtonEnabled) return
+        private fun reconnectToGame() {
+            if (!state.value.isReconnectButtonEnabled) return
+            _state.value = state.value.copy(isReconnectButtonEnabled = false)
+            sessionController.stopSession()
+            viewModelScope.launch {
+                _eventFlow.emit(UiEvent.NavigateTo(Routes.JoinGameGraph.route))
+            }
+        }
+
+        private fun quitToMainMenu() {
+            if (!state.value.isGoToMainMenuButtonEnabled) return
         _state.value = state.value.copy(isGoToMainMenuButtonEnabled = false)
         sessionController.stopSession()
         viewModelScope.launch {

@@ -28,7 +28,6 @@ import org.junit.Test
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class AdvancedScenariosE2ETest : BaseE2ETest() {
-
     override val gameCode = "ADVANCED"
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -69,7 +68,9 @@ class AdvancedScenariosE2ETest : BaseE2ETest() {
             assertEquals(GamePhase.ImposterGuess, alice.gamePhase.value)
             assertEquals(3, alice.gameData.value.votes.size)
 
-            alice.stop(); bob.stop(); charlie.stop()
+            alice.stop()
+            bob.stop()
+            charlie.stop()
         }
 
     @Test
@@ -98,7 +99,9 @@ class AdvancedScenariosE2ETest : BaseE2ETest() {
             assertEquals(GamePhase.RoundReplayChoice, alice.gamePhase.value)
             assertEquals(3, alice.gameData.value.roundNumber)
 
-            alice.stop(); bob.stop(); charlie.stop()
+            alice.stop()
+            bob.stop()
+            charlie.stop()
         }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -120,7 +123,7 @@ class AdvancedScenariosE2ETest : BaseE2ETest() {
             val game1Scores = alice.gameData.value.scores
             assertTrue(
                 "Scores should be populated after voting",
-                game1Scores.isNotEmpty()
+                game1Scores.isNotEmpty(),
             )
 
             // ── Continue → game replay choice ─────────────────────────────────────
@@ -141,14 +144,18 @@ class AdvancedScenariosE2ETest : BaseE2ETest() {
             // — Word, imposter, votes and round data are cleared
             assertEquals(null, alice.gameData.value.word)
             assertEquals(null, alice.gameData.value.imposterId)
-            assertTrue("Votes should be empty after replay", alice.gameData.value.votes.isEmpty())
-            assertEquals(1, alice.gameData.value.roundNumber)      // Round resets to 1
+            assertTrue(
+                "Votes should be empty after replay",
+                alice.gameData.value.votes
+                    .isEmpty(),
+            )
+            assertEquals(1, alice.gameData.value.roundNumber) // Round resets to 1
             // — But cumulative scores persist
             val scoresAfterReplay = alice.gameData.value.scores
             assertEquals(
                 "Scores should be preserved after replayGame",
                 game1Scores.keys,
-                scoresAfterReplay.keys
+                scoresAfterReplay.keys,
             )
             // — All 3 players still in the roster
             assertEquals(3, alice.gameData.value.players.size)
@@ -165,7 +172,9 @@ class AdvancedScenariosE2ETest : BaseE2ETest() {
             players.forEach { assertEquals(GamePhase.RoleDistribution, it.gamePhase.value) }
 
             // Confirm roles and play game 2 all the way through
-            alice.confirmRole(); bob.confirmRole(); charlie.confirmRole()
+            alice.confirmRole()
+            bob.confirmRole()
+            charlie.confirmRole()
             advanceUntilIdle()
             assertEquals(GamePhase.InRound, alice.gamePhase.value)
 
@@ -180,10 +189,12 @@ class AdvancedScenariosE2ETest : BaseE2ETest() {
             val totalGame1Points = game1Scores.values.sum()
             assertTrue(
                 "Cumulative scores after game 2 should be >= game 1 scores",
-                totalGame2Points >= totalGame1Points
+                totalGame2Points >= totalGame1Points,
             )
 
-            alice.stop(); bob.stop(); charlie.stop()
+            alice.stop()
+            bob.stop()
+            charlie.stop()
         }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -192,7 +203,9 @@ class AdvancedScenariosE2ETest : BaseE2ETest() {
     @Test
     fun `GIVEN game at results WHEN host ends game THEN all clients reach GameEnd phase`() =
         runTest {
-            alice.startIn(this); bob.startIn(this); charlie.startIn(this)
+            alice.startIn(this)
+            bob.startIn(this)
+            charlie.startIn(this)
             advanceUntilIdle()
             advanceToInRound()
 
@@ -216,13 +229,17 @@ class AdvancedScenariosE2ETest : BaseE2ETest() {
             assertEquals(GamePhase.GameEnd, bob.gamePhase.value)
             assertEquals(GamePhase.GameEnd, charlie.gamePhase.value)
 
-            alice.stop(); bob.stop(); charlie.stop()
+            alice.stop()
+            bob.stop()
+            charlie.stop()
         }
 
     @Test
     fun `GIVEN game at GameReplayChoice WHEN host chooses endGame over replay THEN game does not re-enter Lobby`() =
         runTest {
-            alice.startIn(this); bob.startIn(this); charlie.startIn(this)
+            alice.startIn(this)
+            bob.startIn(this)
+            charlie.startIn(this)
             advanceUntilIdle()
             advanceToInRound()
 
@@ -243,7 +260,9 @@ class AdvancedScenariosE2ETest : BaseE2ETest() {
             assertEquals(GamePhase.GameEnd, alice.gamePhase.value)
             assertNotEquals(GamePhase.Lobby, alice.gamePhase.value)
 
-            alice.stop(); bob.stop(); charlie.stop()
+            alice.stop()
+            bob.stop()
+            charlie.stop()
         }
 
     // ═══════════════════════════════════════════════════════════════════════════

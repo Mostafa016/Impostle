@@ -10,8 +10,10 @@ class AppLocaleHelper {
         AppCompatDelegate.setApplicationLocales(appLocale)
     }
 
-    fun getCurrentLocale(): AppLocales {
-        return if (AppCompatDelegate.getApplicationLocales().isEmpty) AppLocales.English
-        else AppLocales.fromCountryCode(AppCompatDelegate.getApplicationLocales()[0].toString())
-    }
+    fun getCurrentLocale(): AppLocales =
+        if (AppCompatDelegate.getApplicationLocales().isEmpty) {
+            AppLocales.English
+        } else {
+            AppLocales.fromCountryCode(AppCompatDelegate.getApplicationLocales()[0].toString())
+        }
 }

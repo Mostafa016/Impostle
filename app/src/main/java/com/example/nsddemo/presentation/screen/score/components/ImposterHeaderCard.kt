@@ -22,35 +22,36 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 
 @Composable
 fun ImposterHeaderCard(
     imposterName: String,
     imposterColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .brutalistCard(
-                backgroundColor = MaterialTheme.colorScheme.surface,
-                borderColor = MaterialTheme.colorScheme.outline,
-                shadowOffset = BrutalistDimens.ShadowLarge,
-                borderWidth = BrutalistDimens.BorderThick
-            )
-            .padding(vertical = 32.dp, horizontal = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .brutalistCard(
+                    backgroundColor = MaterialTheme.colorScheme.surface,
+                    borderColor = MaterialTheme.colorScheme.outline,
+                    shadowOffset = Dimens.ShadowLarge,
+                    borderWidth = Dimens.BorderThick,
+                ).padding(vertical = 32.dp, horizontal = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
-            modifier = Modifier
-                .size(80.dp)
-                .background(imposterColor, RoundedCornerShape(12.dp))
-                .border(
-                    BrutalistDimens.BorderThick,
-                    MaterialTheme.colorScheme.outline,
-                    RoundedCornerShape(12.dp)
-                )
+            modifier =
+                Modifier
+                    .size(80.dp)
+                    .background(imposterColor, RoundedCornerShape(12.dp))
+                    .border(
+                        Dimens.BorderThick,
+                        MaterialTheme.colorScheme.outline,
+                        RoundedCornerShape(12.dp),
+                    ),
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -62,7 +63,7 @@ fun ImposterHeaderCard(
             fontWeight = FontWeight.Black,
             textAlign = TextAlign.Center,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -73,7 +74,7 @@ fun ImposterHeaderCard(
             color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Black,
             textAlign = TextAlign.Center,
-            lineHeight = 32.sp
+            lineHeight = 32.sp,
         )
     }
 }

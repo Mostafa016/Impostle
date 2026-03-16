@@ -11,56 +11,58 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 
 @Composable
 fun CornerBrackets(
     color: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        val stroke = BrutalistDimens.BorderThick
+        val stroke = Dimens.BorderThick
         val length = 48.dp
-        val padding = BrutalistDimens.SpacingLarge
+        val padding = Dimens.SpacingLarge
 
         // Bottom Left
         Canvas(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(padding)
-                .size(length)
+            modifier =
+                Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(padding)
+                    .size(length),
         ) {
             drawLine(
                 color,
                 start = Offset(0f, 0f),
                 end = Offset(0f, size.height),
-                strokeWidth = stroke.toPx()
+                strokeWidth = stroke.toPx(),
             )
             drawLine(
                 color,
                 start = Offset(0f, size.height),
                 end = Offset(size.width, size.height),
-                strokeWidth = stroke.toPx()
+                strokeWidth = stroke.toPx(),
             )
         }
         // Bottom Right
         Canvas(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(padding)
-                .size(length)
+            modifier =
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(padding)
+                    .size(length),
         ) {
             drawLine(
                 color,
                 start = Offset(size.width, 0f),
                 end = Offset(size.width, size.height),
-                strokeWidth = stroke.toPx()
+                strokeWidth = stroke.toPx(),
             )
             drawLine(
                 color,
                 start = Offset(0f, size.height),
                 end = Offset(size.width, size.height),
-                strokeWidth = stroke.toPx()
+                strokeWidth = stroke.toPx(),
             )
         }
     }

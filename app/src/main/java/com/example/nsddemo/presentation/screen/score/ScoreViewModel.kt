@@ -20,38 +20,40 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class ScoreViewModel @Inject constructor(
-    gameSession: GameSession,
-) : BaseGameViewModel(gameSession) {
-    private val _state = MutableStateFlow(ScoreState())
-    val state = _state.asStateFlow()
+class ScoreViewModel
+    @Inject
+    constructor(
+        gameSession: GameSession,
+    ) : BaseGameViewModel(gameSession) {
+        private val _state = MutableStateFlow(ScoreState())
+        val state = _state.asStateFlow()
 
-    private val _eventFlow = MutableSharedFlow<UiEvent>()
-    val eventFlow = _eventFlow.asSharedFlow()
+        private val _eventFlow = MutableSharedFlow<UiEvent>()
+        val eventFlow = _eventFlow.asSharedFlow()
 
-    // Static Properties
-    val isHost: Boolean = gameData.value.isHost
-    val currentPlayer: Player = gameData.value.localPlayer ?: Player("", "")
-    val isImposter: Boolean = gameData.value.isImposter
-    val imposter: Player =
-        gameData.value.players[gameData.value.imposterId] ?: Player("Unknown", "FF000000")
-    val playerScores = gameData.value.scoresAsPlayers
+        // Static Properties
+        val isHost: Boolean = gameData.value.isHost
+        val currentPlayer: Player = gameData.value.localPlayer ?: Player("", "")
+        val isImposter: Boolean = gameData.value.isImposter
+        val imposter: Player =
+            gameData.value.players[gameData.value.imposterId] ?: Player("Unknown", "FF000000")
+        val playerScores = gameData.value.scoresAsPlayers
 
-    init {
-        viewModelScope.launch(Dispatchers.IO) {
-            gamePhase.collectLatest { phase ->
-                if (phase is GamePhase.Lobby) {
-                    _eventFlow.emit(UiEvent.ShowSnackBar(R.string.continuing_playing))
+        init {
+            viewModelScope.launch(Dispatchers.IO) {
+                gamePhase.collectLatest { phase ->
+                    if (phase is GamePhase.Lobby) {
+                        _eventFlow.emit(UiEvent.ShowSnackBar(R.string.continuing_playing))
+                    }
                 }
             }
         }
-    }
 
-    fun onEvent(event: ScoreEvent) {
-        when (event) {
-            ScoreEvent.ReplayGame -> {
-                viewModelScope.launch(Dispatchers.IO) { activeClient?.replayGame() }
-            }
+        fun onEvent(event: ScoreEvent) {
+            when (event) {
+                ScoreEvent.ReplayGame -> {
+                    viewModelScope.launch(Dispatchers.IO) { activeClient?.replayGame() }
+                }
 
             ScoreEvent.EndGame -> {
                 viewModelScope.launch(Dispatchers.IO) {

@@ -16,32 +16,32 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 
 @Composable
 fun SettingColumn(
     label: String,
     iconResId: Int,
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(BrutalistDimens.SpacingSmall)
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSmall),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = ImageVector.vectorResource(iconResId),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp),
             )
-            Spacer(modifier = Modifier.width(BrutalistDimens.SpacingSmall))
+            Spacer(modifier = Modifier.width(Dimens.SpacingSmall))
             Text(
                 text = label.uppercase(),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                letterSpacing = 1.sp
+                letterSpacing = 1.sp,
             )
         }
         content()

@@ -13,39 +13,41 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 
 @Composable
 fun HeroRoomCodeCard(
     code: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .brutalistCard(
-                backgroundColor = MaterialTheme.colorScheme.surface,
-                borderColor = MaterialTheme.colorScheme.outline,
-                shadowOffset = BrutalistDimens.ShadowMedium,
-                borderWidth = BrutalistDimens.BorderThin
-            )
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .brutalistCard(
+                    backgroundColor = MaterialTheme.colorScheme.surface,
+                    borderColor = MaterialTheme.colorScheme.outline,
+                    shadowOffset = Dimens.ShadowMedium,
+                    borderWidth = Dimens.BorderThin,
+                ),
     ) {
         BrutalistSectionHeader(
             text = "ROOM CODE",
-            backgroundColor = Color.Transparent
+            backgroundColor = Color.Transparent,
         )
 
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp, horizontal = 24.dp),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp, horizontal = 24.dp),
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = code,
                 style = MaterialTheme.typography.displayMedium,
                 color = MaterialTheme.colorScheme.onSurface,
-                letterSpacing = 4.sp
+                letterSpacing = 4.sp,
             )
         }
     }

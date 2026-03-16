@@ -8,29 +8,29 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
 class FakeSettingsRepository(
-    initialPlayerName: String? = null
+    initialPlayerName: String? = null,
 ) : SettingsRepository {
-
-    private val _settings = MutableStateFlow(
-        UserSettings(
-            playerId = "test-uuid-1234",
-            playerName = initialPlayerName,
-            isDarkTheme = false,
-            languageCode = "en"
+    private val _userSettings =
+        MutableStateFlow(
+            UserSettings(
+                playerId = "test-uuid-1234",
+                playerName = initialPlayerName,
+                isDarkTheme = false,
+                languageCode = "en",
+            ),
         )
-    )
 
-    override val userSettings: Flow<UserSettings> = _settings
+    override val userSettings: Flow<UserSettings> = _userSettings
 
     override suspend fun setPlayerName(name: String) {
-        _settings.update { it.copy(playerName = name) }
+        _userSettings.update { it.copy(playerName = name) }
     }
 
     override suspend fun setDarkTheme(enabled: Boolean) {
-        _settings.update { it.copy(isDarkTheme = enabled) }
+        _userSettings.update { it.copy(isDarkTheme = enabled) }
     }
 
     override suspend fun setLanguage(locale: AppLocales) {
-        _settings.update { it.copy(languageCode = locale.countryCode) }
+        _userSettings.update { it.copy(languageCode = locale.countryCode) }
     }
 }

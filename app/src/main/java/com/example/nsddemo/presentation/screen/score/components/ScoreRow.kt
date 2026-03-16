@@ -24,7 +24,7 @@ import com.example.nsddemo.domain.model.NewPlayerColors
 import com.example.nsddemo.domain.model.Player
 import com.example.nsddemo.presentation.components.common.RankBadge
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 import com.example.nsddemo.presentation.util.toComposeColor
 
 @Composable
@@ -34,7 +34,7 @@ fun ScoreRow(
     rank: Int,
     isImposter: Boolean,
     isCurrentPlayer: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val outlineColor = MaterialTheme.colorScheme.outline
     val isTopRank = rank == 1
@@ -42,30 +42,30 @@ fun ScoreRow(
         if (isTopRank) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.surface
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .brutalistCard(
-                backgroundColor = backgroundColor,
-                borderColor = outlineColor,
-                shadowOffset = BrutalistDimens.ShadowSmall,
-                cornerRadius = BrutalistDimens.CornerMedium,
-                borderWidth = 2.dp
-            )
-            .padding(horizontal = 12.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .brutalistCard(
+                    backgroundColor = backgroundColor,
+                    borderColor = outlineColor,
+                    shadowOffset = Dimens.ShadowSmall,
+                    cornerRadius = Dimens.CornerMedium,
+                    borderWidth = 2.dp,
+                ).padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         RankBadge(rank)
 
         Spacer(modifier = Modifier.width(12.dp))
 
         Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(
-                    color = NewPlayerColors.fromHex(player.color).toComposeColor(),
-                    shape = RoundedCornerShape(4.dp)
-                )
-                .border(2.dp, outlineColor, RoundedCornerShape(4.dp))
+            modifier =
+                Modifier
+                    .size(40.dp)
+                    .background(
+                        color = NewPlayerColors.fromHex(player.color).toComposeColor(),
+                        shape = RoundedCornerShape(4.dp),
+                    ).border(2.dp, outlineColor, RoundedCornerShape(4.dp)),
         )
 
         Spacer(modifier = Modifier.width(12.dp))
@@ -76,14 +76,14 @@ fun ScoreRow(
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             if (isImposter) {
                 Text(
                     text = "IMPOSTER",
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             }
         }
@@ -92,7 +92,7 @@ fun ScoreRow(
             text = "$score PTS",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
     }
 }

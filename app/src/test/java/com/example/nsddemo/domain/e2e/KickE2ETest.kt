@@ -30,7 +30,6 @@ import org.junit.Test
  *  4. All remaining players jump to [GamePhase.GameResults] (civilians win).
  */
 class KickE2ETest : BaseE2ETest() {
-
     override val gameCode = "KICK"
 
     @Test
@@ -61,9 +60,14 @@ class KickE2ETest : BaseE2ETest() {
             assertEquals(GamePhase.InRound, remainingNonHost.gamePhase.value)
 
             assertEquals(2, alice.gameData.value.players.size)
-            assertFalse(alice.gameData.value.players.containsKey(civilianToKick.playerId))
+            assertFalse(
+                alice.gameData.value.players
+                    .containsKey(civilianToKick.playerId),
+            )
 
-            alice.stop(); bob.stop(); charlie.stop()
+            alice.stop()
+            bob.stop()
+            charlie.stop()
         }
 
     @Test
@@ -92,7 +96,9 @@ class KickE2ETest : BaseE2ETest() {
 
             assertEquals(imposterId, alice.gameData.value.imposterId)
 
-            alice.stop(); bob.stop(); charlie.stop()
+            alice.stop()
+            bob.stop()
+            charlie.stop()
         }
 
     @Test
@@ -103,7 +109,9 @@ class KickE2ETest : BaseE2ETest() {
             charlie.startIn(this)
             advanceUntilIdle()
 
-            alice.joinGame(); bob.joinGame(); charlie.joinGame()
+            alice.joinGame()
+            bob.joinGame()
+            charlie.joinGame()
             advanceUntilIdle()
             assertEquals(3, alice.gameData.value.players.size)
 
@@ -117,6 +125,8 @@ class KickE2ETest : BaseE2ETest() {
             assertEquals(GamePhase.Lobby, alice.gamePhase.value)
             assertEquals(2, alice.gameData.value.players.size)
 
-            alice.stop(); bob.stop(); charlie.stop()
+            alice.stop()
+            bob.stop()
+            charlie.stop()
         }
 }

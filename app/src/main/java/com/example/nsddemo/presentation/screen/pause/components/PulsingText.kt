@@ -19,17 +19,18 @@ import androidx.compose.ui.text.style.TextAlign
 fun PulsingText(
     text: String,
     color: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val transition = rememberInfiniteTransition(label = "pulse_text")
     val alpha by transition.animateFloat(
         initialValue = 0.4f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse_text_alpha"
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(1000, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "pulse_text_alpha",
     )
 
     Text(
@@ -37,6 +38,6 @@ fun PulsingText(
         modifier = modifier.alpha(alpha),
         style = MaterialTheme.typography.labelSmall,
         color = color,
-        textAlign = TextAlign.Center
+        textAlign = TextAlign.Center,
     )
 }

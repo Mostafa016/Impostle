@@ -14,49 +14,74 @@ import com.example.nsddemo.domain.util.GameFlowRegistry
 import com.example.nsddemo.domain.util.GameScoreIncrements
 import com.example.nsddemo.domain.util.PlayerCountLimits
 
-abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) : GameModeStrategy {
+abstract class BaseGameModeStrategy(
+    private val wordRepository: WordRepository,
+) : GameModeStrategy {
     override fun handleAction(
-        data: GameData, phase: GamePhase, message: ClientMessage, playerID: String
+        data: GameData,
+        phase: GamePhase,
+        message: ClientMessage,
+        playerID: String,
     ): GameStateTransition {
         val allowedPhases = GameFlowRegistry.getValidPhasesFor(message)
         if (phase !in allowedPhases) {
             return GameStateTransition.Invalid(
-                "Action ${message::class.simpleName} is NOT allowed in phase ${phase::class.simpleName}. " + "Valid phases: ${allowedPhases.joinToString { it::class.simpleName ?: "" }}"
+                "Action ${message::class.simpleName} is NOT allowed in phase ${phase::class.simpleName}. " +
+                    "Valid phases: ${allowedPhases.joinToString { it::class.simpleName ?: "" }}",
             )
         }
 
         return when (message) {
-            is ClientMessage.RequestSelectCategory -> selectCategory(
-                data, message.category, playerID
-            )
+            is ClientMessage.RequestSelectCategory ->
+                selectCategory(
+                    data,
+                    message.category,
+                    playerID,
+                )
 
-            is ClientMessage.RequestStartGame -> startGame(
-                data, playerID
-            )
+            is ClientMessage.RequestStartGame ->
+                startGame(
+                    data,
+                    playerID,
+                )
 
-            is ClientMessage.ConfirmRoleReceived -> handleRoleConfirm(
-                data, playerID
-            )
+            is ClientMessage.ConfirmRoleReceived ->
+                handleRoleConfirm(
+                    data,
+                    playerID,
+                )
 
-            ClientMessage.EndTurn -> endTurn(
-                data, playerID
-            )
+            ClientMessage.EndTurn ->
+                endTurn(
+                    data,
+                    playerID,
+                )
 
-            ClientMessage.RequestReplayRound -> replayRound(
-                data, playerID
-            )
+            ClientMessage.RequestReplayRound ->
+                replayRound(
+                    data,
+                    playerID,
+                )
 
-            ClientMessage.RequestStartVote -> startVote(
-                data, playerID
-            )
+            ClientMessage.RequestStartVote ->
+                startVote(
+                    data,
+                    playerID,
+                )
 
-            is ClientMessage.SubmitVote -> submitVote(
-                data, playerID, message.votedPlayerID
-            )
+            is ClientMessage.SubmitVote ->
+                submitVote(
+                    data,
+                    playerID,
+                    message.votedPlayerID,
+                )
 
-            is ClientMessage.SubmitImposterGuess -> submitImposterGuess(
-                data, playerID, message.guessedWord
-            )
+            is ClientMessage.SubmitImposterGuess ->
+                submitImposterGuess(
+                    data,
+                    playerID,
+                    message.guessedWord,
+                )
 
             ClientMessage.RequestContinueToGameChoice -> continueToGameChoice(data, playerID)
 
@@ -69,7 +94,9 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
     }
 
     private fun selectCategory(
-        data: GameData, category: GameCategory, playerID: String
+        data: GameData,
+        category: GameCategory,
+        playerID: String,
     ): GameStateTransition {
         if (data.hostId != playerID) {
             Log.i(TAG, "hostId: ${data.hostId} playerID: $playerID")
@@ -79,16 +106,19 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
         val newData = data.copy(category = category)
 
         return GameStateTransition.Valid(
-            newGameData = newData, envelopes = listOf(
-                Envelope.Broadcast(
-                    ServerMessage.CategorySelected(category)
-                )
-            )
+            newGameData = newData,
+            envelopes =
+                listOf(
+                    Envelope.Broadcast(
+                        ServerMessage.CategorySelected(category),
+                    ),
+                ),
         )
     }
 
     private fun startGame(
-        data: GameData, playerID: String
+        data: GameData,
+        playerID: String,
     ): GameStateTransition {
         if (data.hostId != playerID) {
             return GameStateTransition.Invalid("Only host can start game")
@@ -101,28 +131,34 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
         }
 
         val word = wordRepository.getWordsForCategory(selectedCategory).random()
-        //TODO: Important: allow host to be imposter once done with pause testing
+        // TODO: Important: allow host to be imposter once done with pause testing
         val imposterId =
-            data.players.keys.filter { it != data.hostId && it != "6190a1f9-122b-4bd2-9ca7-47a7286aec3d" }
+            data.players.keys
+                .filter { it != data.hostId && it != "6190a1f9-122b-4bd2-9ca7-47a7286aec3d" }
                 .random()
 
-        val dataWithRoles = data.copy(
-            word = word, imposterId = imposterId
-        )
+        val dataWithRoles =
+            data.copy(
+                word = word,
+                imposterId = imposterId,
+            )
         // Question Mode will generate pairs, Describe Mode will generate order
         val finalData = setupRoundSpecifics(dataWithRoles)
 
         val messages = mutableListOf<Envelope>()
         finalData.players.keys.forEach { targetPlayerId ->
-            val roleMessage = if (targetPlayerId == finalData.imposterId) {
-                ServerMessage.RoleAssigned(
-                    category = finalData.category!!, word = ""
-                )
-            } else {
-                ServerMessage.RoleAssigned(
-                    category = finalData.category!!, word = finalData.word!!
-                )
-            }
+            val roleMessage =
+                if (targetPlayerId == finalData.imposterId) {
+                    ServerMessage.RoleAssigned(
+                        category = finalData.category!!,
+                        word = "",
+                    )
+                } else {
+                    ServerMessage.RoleAssigned(
+                        category = finalData.category!!,
+                        word = finalData.word!!,
+                    )
+                }
 
             messages.add(Envelope.Unicast(targetPlayerId, roleMessage))
         }
@@ -130,12 +166,13 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
         return GameStateTransition.Valid(
             newGameData = finalData,
             newPhase = GamePhase.RoleDistribution,
-            envelopes = messages
+            envelopes = messages,
         )
     }
 
     private fun handleRoleConfirm(
-        data: GameData, playerId: String
+        data: GameData,
+        playerId: String,
     ): GameStateTransition {
         val dataWithNewConfirmation = data.copy(readyPlayerIds = data.readyPlayerIds + playerId)
         if (dataWithNewConfirmation.readyCount == data.players.size) {
@@ -144,24 +181,26 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
         }
 
         return GameStateTransition.Valid(
-            newGameData = dataWithNewConfirmation, envelopes = listOf(
-                Envelope.Broadcast(
-                    ServerMessage.PlayerReady(
-                        dataWithNewConfirmation.readyPlayerIds.toList()
-                    )
-                )
-            )
+            newGameData = dataWithNewConfirmation,
+            envelopes =
+                listOf(
+                    Envelope.Broadcast(
+                        ServerMessage.PlayerReady(
+                            dataWithNewConfirmation.readyPlayerIds.toList(),
+                        ),
+                    ),
+                ),
         )
     }
 
     private fun endTurn(
-        data: GameData, playerID: String
-    ): GameStateTransition {
-        return onTurnEnd(data, playerID)
-    }
+        data: GameData,
+        playerID: String,
+    ): GameStateTransition = onTurnEnd(data, playerID)
 
     private fun replayRound(
-        data: GameData, playerID: String
+        data: GameData,
+        playerID: String,
     ): GameStateTransition {
         if (data.hostId != playerID) {
             return GameStateTransition.Invalid("Only host can replay round")
@@ -177,7 +216,8 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
     }
 
     private fun startVote(
-        data: GameData, playerID: String
+        data: GameData,
+        playerID: String,
     ): GameStateTransition {
         if (data.hostId != playerID) {
             return GameStateTransition.Invalid("Only host can replay round")
@@ -186,12 +226,14 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
         return GameStateTransition.Valid(
             newGameData = data,
             newPhase = GamePhase.GameVoting,
-            envelopes = listOf(Envelope.Broadcast(ServerMessage.StartVote))
+            envelopes = listOf(Envelope.Broadcast(ServerMessage.StartVote)),
         )
     }
 
     private fun submitVote(
-        data: GameData, playerID: String, votedPlayerID: String
+        data: GameData,
+        playerID: String,
+        votedPlayerID: String,
     ): GameStateTransition {
         if (playerID == votedPlayerID) {
             return GameStateTransition.Invalid("A player can't vote for themselves")
@@ -202,13 +244,16 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
 
         val dataWithVote = data.copy(votes = data.votes + (playerID to votedPlayerID))
         if (dataWithVote.hasEveryoneVoted) {
-            val currentGameScores = calculatePlayerScores(
-                dataWithVote.votes, dataWithVote.imposterId!!
-            )
-            val totalScores = (dataWithVote.scores.toList() + currentGameScores.toList())
-                .groupBy({ it.first }, { it.second })
-                .map { (key, values) -> key to values.sum() }
-                .toMap()
+            val currentGameScores =
+                calculatePlayerScores(
+                    dataWithVote.votes,
+                    dataWithVote.imposterId!!,
+                )
+            val totalScores =
+                (dataWithVote.scores.toList() + currentGameScores.toList())
+                    .groupBy({ it.first }, { it.second })
+                    .map { (key, values) -> key to values.sum() }
+                    .toMap()
             val dataWithScores = dataWithVote.copy(scores = totalScores)
 
             val actualWord =
@@ -219,21 +264,29 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
             // 1 actual word, 3 semantic, 2 random
             val allWords = wordRepository.getWordsForCategory(category)
             val semantics =
-                wordRepository.getSemanticWords(actualWord).filter { it != actualWord }.shuffled()
+                wordRepository
+                    .getSemanticWords(actualWord)
+                    .filter { it != actualWord }
+                    .shuffled()
                     .take(3)
 
             val neededFromSemantic = 3
-            val actualSemantics = if (semantics.size < neededFromSemantic) {
-                val neededMore = neededFromSemantic - semantics.size
-                val candidates = allWords.filter { it != actualWord && it !in semantics }.shuffled()
-                semantics + candidates.take(neededMore)
-            } else {
-                semantics
-            }
+            val actualSemantics =
+                if (semantics.size < neededFromSemantic) {
+                    val neededMore = neededFromSemantic - semantics.size
+                    val candidates =
+                        allWords.filter { it != actualWord && it !in semantics }.shuffled()
+                    semantics + candidates.take(neededMore)
+                } else {
+                    semantics
+                }
 
             val neededRandom = 2
-            val randoms = allWords.filter { it != actualWord && it !in actualSemantics }.shuffled()
-                .take(neededRandom)
+            val randoms =
+                allWords
+                    .filter { it != actualWord && it !in actualSemantics }
+                    .shuffled()
+                    .take(neededRandom)
 
             val options = (listOf(actualWord) + actualSemantics + randoms).shuffled()
 
@@ -242,32 +295,36 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
             return GameStateTransition.Valid(
                 newGameData = finalData,
                 newPhase = GamePhase.ImposterGuess,
-                envelopes = listOf(
-                    Envelope.Broadcast(
-                        ServerMessage.PlayerVoted(playerID, votedPlayerID)
+                envelopes =
+                    listOf(
+                        Envelope.Broadcast(
+                            ServerMessage.PlayerVoted(playerID, votedPlayerID),
+                        ),
+                        Envelope.Broadcast(
+                            ServerMessage.StartImposterGuess(options),
+                        ),
                     ),
-                    Envelope.Broadcast(
-                        ServerMessage.StartImposterGuess(options)
-                    )
-                )
             )
         }
 
         return GameStateTransition.Valid(
             newGameData = dataWithVote,
-            envelopes = listOf(
-                Envelope.Broadcast(
-                    ServerMessage.PlayerVoted(
-                        playerID,
-                        votedPlayerID
-                    )
-                )
-            )
+            envelopes =
+                listOf(
+                    Envelope.Broadcast(
+                        ServerMessage.PlayerVoted(
+                            playerID,
+                            votedPlayerID,
+                        ),
+                    ),
+                ),
         )
     }
 
     private fun submitImposterGuess(
-        data: GameData, playerID: String, guessedWord: String
+        data: GameData,
+        playerID: String,
+        guessedWord: String,
     ): GameStateTransition {
         if (data.imposterId != playerID) {
             return GameStateTransition.Invalid("Only the imposter can submit a guess")
@@ -285,62 +342,77 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
         return GameStateTransition.Valid(
             newGameData = finalData,
             newPhase = GamePhase.GameResults,
-            envelopes = listOf(
-                Envelope.Broadcast(
-                    ServerMessage.VoteResult(
-                        voteResult = finalData.votes,
-                        imposterId = finalData.imposterId!!,
-                        playerScores = finalData.scores
-                    )
-                )
-            )
+            envelopes =
+                listOf(
+                    Envelope.Broadcast(
+                        ServerMessage.VoteResult(
+                            voteResult = finalData.votes,
+                            imposterId = finalData.imposterId!!,
+                            playerScores = finalData.scores,
+                        ),
+                    ),
+                ),
         )
     }
 
     private fun calculatePlayerScores(
-        votes: Map<String, String>, imposterId: String
+        votes: Map<String, String>,
+        imposterId: String,
     ): Map<String, Int> =
-        votes.entries.associate { it.key to (if (it.value == imposterId) GameScoreIncrements.CORRECT_PLAYER_GUESS else GameScoreIncrements.INCORRECT_PLAYER_GUESS) }
+        votes.entries.associate {
+            it.key to
+                (if (it.value == imposterId) GameScoreIncrements.CORRECT_PLAYER_GUESS else GameScoreIncrements.INCORRECT_PLAYER_GUESS)
+        }
 
-    private fun continueToGameChoice(data: GameData, playerId: String): GameStateTransition {
+    private fun continueToGameChoice(
+        data: GameData,
+        playerId: String,
+    ): GameStateTransition {
         if (data.hostId != playerId) return GameStateTransition.Invalid("Only host can continue to game choice")
 
         return GameStateTransition.Valid(
-            newGameData = data, newPhase = GamePhase.GameReplayChoice, envelopes = listOf(
-                Envelope.Broadcast(
-                    message = ServerMessage.ContinueToGameChoice
-                )
-            )
+            newGameData = data,
+            newPhase = GamePhase.GameReplayChoice,
+            envelopes =
+                listOf(
+                    Envelope.Broadcast(
+                        message = ServerMessage.ContinueToGameChoice,
+                    ),
+                ),
         )
     }
 
     private fun replayGame(
-        data: GameData, playerID: String
+        data: GameData,
+        playerID: String,
     ): GameStateTransition {
         if (data.hostId != playerID) {
             return GameStateTransition.Invalid("Only host can replay game")
         }
 
-        val cleanData = GameData(
-            localPlayerId = data.localPlayerId,
-            hostId = data.hostId,
-            gameCode = data.gameCode,
-            players = data.players.filterValues { it.isConnected },
-            scores = data.scores
-        )
+        val cleanData =
+            GameData(
+                localPlayerId = data.localPlayerId,
+                hostId = data.hostId,
+                gameCode = data.gameCode,
+                players = data.players.filterValues { it.isConnected },
+                scores = data.scores,
+            )
 
         return GameStateTransition.Valid(
             newGameData = cleanData,
             newPhase = GamePhase.Lobby,
-            envelopes = listOf(
-                Envelope.Broadcast(ServerMessage.ReplayGame),
-                Envelope.Broadcast(ServerMessage.PlayerList(cleanData.players.values.toList()))
-            )
+            envelopes =
+                listOf(
+                    Envelope.Broadcast(ServerMessage.ReplayGame),
+                    Envelope.Broadcast(ServerMessage.PlayerList(cleanData.players.values.toList())),
+                ),
         )
     }
 
     private fun endGame(
-        data: GameData, playerId: String
+        data: GameData,
+        playerId: String,
     ): GameStateTransition {
         if (data.hostId != playerId) {
             return GameStateTransition.Invalid("Only host can end game")
@@ -351,13 +423,18 @@ abstract class BaseGameModeStrategy(private val wordRepository: WordRepository) 
         return GameStateTransition.Valid(
             newGameData = emptyData,
             newPhase = GamePhase.Idle,
-            envelopes = listOf(Envelope.Broadcast(ServerMessage.EndGame))
+            envelopes = listOf(Envelope.Broadcast(ServerMessage.EndGame)),
         )
     }
 
     //region --- Template Methods ---
     protected abstract fun setupRoundSpecifics(data: GameData): GameData
+
     protected abstract fun onRoundStart(data: GameData): GameStateTransition
-    protected abstract fun onTurnEnd(data: GameData, playerID: String): GameStateTransition
+
+    protected abstract fun onTurnEnd(
+        data: GameData,
+        playerID: String,
+    ): GameStateTransition
     //endregion
 }

@@ -26,7 +26,7 @@ import com.example.nsddemo.R
 import com.example.nsddemo.domain.model.NewPlayerColors
 import com.example.nsddemo.domain.model.Player
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 import com.example.nsddemo.presentation.util.toComposeColor
 
 @Composable
@@ -35,46 +35,48 @@ fun VoteSelectionRow(
     isSelected: Boolean,
     isLocked: Boolean,
     onSelect: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val outlineColor = MaterialTheme.colorScheme.outline
 
     val borderColor =
         if (isSelected) MaterialTheme.colorScheme.primary else outlineColor.copy(alpha = 0.2f)
-    val borderWidth = if (isSelected) BrutalistDimens.BorderThin else 2.dp
-    val backgroundColor = if (isSelected)
-        MaterialTheme.colorScheme.background.compositeOver(MaterialTheme.colorScheme.primary)
-    else
-        MaterialTheme.colorScheme.surface
-    val shadow = if (isSelected) BrutalistDimens.ShadowSmall else 0.dp
+    val borderWidth = if (isSelected) Dimens.BorderThin else 2.dp
+    val backgroundColor =
+        if (isSelected) {
+            MaterialTheme.colorScheme.background.compositeOver(MaterialTheme.colorScheme.primary)
+        } else {
+            MaterialTheme.colorScheme.surface
+        }
+    val shadow = if (isSelected) Dimens.ShadowSmall else 0.dp
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .brutalistCard(
-                backgroundColor = backgroundColor,
-                borderColor = borderColor,
-                shadowOffset = shadow,
-                cornerRadius = BrutalistDimens.CornerMedium,
-                borderWidth = borderWidth
-            )
-            .clickable(enabled = !isLocked, onClick = onSelect)
-            .padding(12.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .brutalistCard(
+                    backgroundColor = backgroundColor,
+                    borderColor = borderColor,
+                    shadowOffset = shadow,
+                    cornerRadius = Dimens.CornerMedium,
+                    borderWidth = borderWidth,
+                ).clickable(enabled = !isLocked, onClick = onSelect)
+                .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(
-                        color = NewPlayerColors.fromHex(player.color).toComposeColor(),
-                        shape = RoundedCornerShape(6.dp)
-                    )
-                    .border(2.dp, outlineColor, RoundedCornerShape(6.dp))
+                modifier =
+                    Modifier
+                        .size(48.dp)
+                        .background(
+                            color = NewPlayerColors.fromHex(player.color).toComposeColor(),
+                            shape = RoundedCornerShape(6.dp),
+                        ).border(2.dp, outlineColor, RoundedCornerShape(6.dp)),
             )
 
             Text(
@@ -82,23 +84,24 @@ fun VoteSelectionRow(
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
 
         if (isSelected) {
             Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape)
-                    .border(2.dp, outlineColor, CircleShape),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(32.dp)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        .border(2.dp, outlineColor, CircleShape),
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = ImageVector.vectorResource(R.drawable.sharp_target_24),
                     contentDescription = "Selected",
                     tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
                 )
             }
         }

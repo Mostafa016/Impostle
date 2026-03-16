@@ -17,37 +17,41 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class LobbyViewModel @Inject constructor(
-    gameSession: GameSession
-) : BaseGameViewModel(gameSession) {
-    // Derived UI State
-    val gameCode = gameData.value.gameCode
-    val isHost = gameData.value.isHost
-    val localPlayerId = gameData.value.localPlayerId
+class LobbyViewModel
+    @Inject
+    constructor(
+        gameSession: GameSession,
+    ) : BaseGameViewModel(gameSession) {
+        // Derived UI State
+        val gameCode = gameData.value.gameCode
+        val isHost = gameData.value.isHost
+        val localPlayerId = gameData.value.localPlayerId
 
-    val state = gameSession.gameData.map {
-        LobbyState(
-            chosenCategory = it.category,
-            players = it.players.values.toList(),
-            isStartRoundButtonEnabled = it.players.size >= 2 && it.category != null
-        )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), LobbyState())
+        val state =
+            gameSession.gameData
+                .map {
+                    LobbyState(
+                        chosenCategory = it.category,
+                        players = it.players.values.toList(),
+                        isStartRoundButtonEnabled = it.players.size >= 2 && it.category != null,
+                    )
+                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), LobbyState())
 
-    private val _eventFlow = MutableSharedFlow<UiEvent>()
-    val eventFlow = _eventFlow.asSharedFlow()
+        private val _eventFlow = MutableSharedFlow<UiEvent>()
+        val eventFlow = _eventFlow.asSharedFlow()
 
-    fun onEvent(event: LobbyEvent) {
-        when (event) {
-            is LobbyEvent.ChooseCategoryButtonClick -> {
-                viewModelScope.launch {
-                    _eventFlow.emit(UiEvent.NavigateTo(Routes.ChooseCategory.route))
+        fun onEvent(event: LobbyEvent) {
+            when (event) {
+                is LobbyEvent.ChooseCategoryButtonClick -> {
+                    viewModelScope.launch {
+                        _eventFlow.emit(UiEvent.NavigateTo(Routes.ChooseCategory.route))
+                    }
                 }
-            }
 
-            is LobbyEvent.StartRound -> {
-                viewModelScope.launch {
-                    activeClient?.startGame()
-                }
+                is LobbyEvent.StartRound -> {
+                    viewModelScope.launch {
+                        activeClient?.startGame()
+                    }
             }
 
             is LobbyEvent.KickPlayer ->

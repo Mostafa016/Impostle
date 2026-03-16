@@ -11,30 +11,30 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 
 @Composable
 fun BrutalistStatusLabel(
     text: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier
-            .rotate(2f)
-            .brutalistCard(
-                backgroundColor = Color.Black,
-                borderColor = Color.Black,
-                cornerRadius = 4.dp,
-                shadowOffset = BrutalistDimens.ShadowMedium,
-                borderWidth = 0.dp
-            )
-            .padding(horizontal = 24.dp, vertical = 12.dp)
+        modifier =
+            modifier
+                .rotate(2f)
+                .brutalistCard(
+                    backgroundColor = Color.Black,
+                    borderColor = Color.Black,
+                    cornerRadius = 4.dp,
+                    shadowOffset = Dimens.ShadowMedium,
+                    borderWidth = 0.dp,
+                ).padding(horizontal = 24.dp, vertical = 12.dp),
     ) {
         Text(
             text = text.uppercase(),
             style = MaterialTheme.typography.titleMedium,
             color = Color.White,
-            letterSpacing = 2.sp
+            letterSpacing = 2.sp,
         )
     }
 }

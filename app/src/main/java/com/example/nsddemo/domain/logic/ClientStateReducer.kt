@@ -7,8 +7,11 @@ import com.example.nsddemo.domain.model.RoundData
 import com.example.nsddemo.domain.model.ServerMessage
 
 object ClientStateReducer {
-    fun reduce(data: GameData, message: ServerMessage): GameData {
-        return when (message) {
+    fun reduce(
+        data: GameData,
+        message: ServerMessage,
+    ): GameData =
+        when (message) {
             // --- LOBBY & SETUP ---
             is ServerMessage.PlayerList -> {
                 // Full replacement of player list
@@ -31,7 +34,7 @@ object ClientStateReducer {
                 data.copy(
                     category = message.category,
                     word = if (isImposter) null else message.word,
-                    imposterId = if (isImposter) data.localPlayerId else null
+                    imposterId = if (isImposter) data.localPlayerId else null,
                 )
             }
 
@@ -43,15 +46,18 @@ object ClientStateReducer {
                 val newRoundData: RoundData.QuestionRoundData
                 val newPair = message.askerId to message.askedId
                 if (data.roundData is RoundData.Idle) {
-                    newRoundData = RoundData.QuestionRoundData(
-                        roundPairs = listOf(newPair), currentPairIndex = 0
-                    )
+                    newRoundData =
+                        RoundData.QuestionRoundData(
+                            roundPairs = listOf(newPair),
+                            currentPairIndex = 0,
+                        )
                 } else {
                     val currentRoundData = data.roundData as RoundData.QuestionRoundData
-                    newRoundData = RoundData.QuestionRoundData(
-                        roundPairs = currentRoundData.roundPairs + newPair,
-                        currentPairIndex = currentRoundData.currentPairIndex + 1
-                    )
+                    newRoundData =
+                        RoundData.QuestionRoundData(
+                            roundPairs = currentRoundData.roundPairs + newPair,
+                            currentPairIndex = currentRoundData.currentPairIndex + 1,
+                        )
                 }
 
                 data.copy(
@@ -61,10 +67,11 @@ object ClientStateReducer {
 
             is ServerMessage.RoundEnd -> data
 
-            is ServerMessage.ReplayRound -> data.copy(
-                roundNumber = data.roundNumber + if (message.incrementRoundNumber) 1 else 0,
-                roundData = RoundData.Idle
-            )
+            is ServerMessage.ReplayRound ->
+                data.copy(
+                    roundNumber = data.roundNumber + if (message.incrementRoundNumber) 1 else 0,
+                    roundData = RoundData.Idle,
+                )
             // --- VOTING & RESULTS ---
             is ServerMessage.StartVote -> data
 
@@ -75,26 +82,29 @@ object ClientStateReducer {
 
             is ServerMessage.ScoresAfterLeaver -> data.copy(scores = message.scores)
 
-            is ServerMessage.VoteResult -> data.copy(
-                votes = message.voteResult,
-                imposterId = message.imposterId,
-                scores = message.playerScores
-            )
+            is ServerMessage.VoteResult ->
+                data.copy(
+                    votes = message.voteResult,
+                    imposterId = message.imposterId,
+                    scores = message.playerScores,
+                )
 
-            is ServerMessage.StartImposterGuess -> data.copy(
-                wordOptions = message.wordOptions
-            )
+            is ServerMessage.StartImposterGuess ->
+                data.copy(
+                    wordOptions = message.wordOptions,
+                )
 
             // --- GAME END ---
             is ServerMessage.ContinueToGameChoice -> data
 
-            is ServerMessage.ReplayGame -> GameData(
-                localPlayerId = data.localPlayerId,
-                hostId = data.hostId,
-                gameCode = data.gameCode,
-                players = data.players,
-                scores = data.scores
-            )
+            is ServerMessage.ReplayGame ->
+                GameData(
+                    localPlayerId = data.localPlayerId,
+                    hostId = data.hostId,
+                    gameCode = data.gameCode,
+                    players = data.players,
+                    scores = data.scores,
+                )
 
             is ServerMessage.EndGame -> GameData()
 
@@ -107,7 +117,7 @@ object ClientStateReducer {
                 } else {
                     Log.w(
                         TAG,
-                        "ClientStateReducer: Couldn't find player who disconnected in player list."
+                        "ClientStateReducer: Couldn't find player who disconnected in player list.",
                     )
                     data
                 }
@@ -116,10 +126,8 @@ object ClientStateReducer {
             is ServerMessage.PlayerReconnected ->
                 data.copy(players = data.players + (message.player.id to message.player))
 
-
             is ServerMessage.ReconnectionFullStateSync ->
                 message.data.copy(localPlayerId = data.localPlayerId)
-
 
             // --- MESSAGES WITHOUT DATA UPDATES (handled elsewhere) ---
             is ServerMessage.GameFull -> data
@@ -128,5 +136,4 @@ object ClientStateReducer {
             ServerMessage.LobbyClosed -> data
             ServerMessage.YouWereKicked -> data
         }
-    }
 }

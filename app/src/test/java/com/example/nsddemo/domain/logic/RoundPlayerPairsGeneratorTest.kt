@@ -7,12 +7,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RoundPlayerPairsGeneratorTest {
-
-    private fun createPlayers(count: Int): List<Player> {
-        return (1..count).map {
+    private fun createPlayers(count: Int): List<Player> =
+        (1..count).map {
             Player(id = "p$it", name = "Player $it", color = "", isConnected = true)
         }
-    }
 
     @Test
     fun `GIVEN 2 players WHEN generate THEN returns simple swap`() {

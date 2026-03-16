@@ -30,135 +30,147 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import javax.inject.Inject
 
-class GameServer @Inject constructor(
-    private val serverNetworkRepository: ServerNetworkRepository,
-    private val strategies: Map<GameMode, @JvmSuppressWildcards GameModeStrategy>,
-    private val sessionManager: SessionManager
-) {
-    private var gameModeStrategy: GameModeStrategy = strategies[GameMode.Question]!!
-    private val masterGamePhase = MutableStateFlow<GamePhase>(GamePhase.Lobby)
-    private val masterGameData =
-        MutableStateFlow(GameData(roundData = gameModeStrategy.roundData))
-    val serverState = serverNetworkRepository.serverState
-    private val playerConnectivityEvents =
-        serverNetworkRepository.playerConnectionEvents.mapNotNull { event ->
-            when (event) {
-                is PlayerConnectionEvent.PlayerConnected -> null
+class GameServer
+    @Inject
+    constructor(
+        private val serverNetworkRepository: ServerNetworkRepository,
+        private val strategies: Map<GameMode, @JvmSuppressWildcards GameModeStrategy>,
+        private val sessionManager: SessionManager,
+    ) {
+        private var gameModeStrategy: GameModeStrategy = strategies[GameMode.Question]!!
+        private val masterGamePhase = MutableStateFlow<GamePhase>(GamePhase.Lobby)
+        private val masterGameData =
+            MutableStateFlow(GameData(roundData = gameModeStrategy.roundData))
+        val serverState = serverNetworkRepository.serverState
+        private val playerConnectivityEvents =
+            serverNetworkRepository.playerConnectionEvents.mapNotNull { event ->
+                when (event) {
+                    is PlayerConnectionEvent.PlayerConnected -> null
 
-                is PlayerConnectionEvent.PlayerDisconnected -> GameAction.System(
-                    SystemEvent.PlayerDisconnected(
-                        event.id
-                    )
-                )
-            }
-        }
-
-    suspend fun start(gameCode: String, playerId: String) = coroutineScope {
-        masterGameData.update { it.copy(gameCode = gameCode, localPlayerId = playerId) }
-        val processingJob = launch(start = CoroutineStart.UNDISPATCHED) { processActions() }
-
-        serverNetworkRepository.start(gameCode)
-
-        try {
-            withTimeout(TIMEOUT_MS) {
-                serverState.first { it !is ServerState.Idle }
-            }
-        } catch (e: TimeoutCancellationException) {
-            processingJob.cancel()
-            stop()
-        }
-    }
-
-    private suspend fun processActions() = coroutineScope {
-        merge(serverNetworkRepository.incomingMessages.map { (id, msg) ->
-            GameAction.User(id, msg)
-        }, playerConnectivityEvents)
-            .collect { action ->
-                try {
-                    // Log that we are attempting to process an action
-                    Log.d(TAG, "GameServer: Processing action: $action")
-                    processAction(action)
-                    Log.d(TAG, "GameServer: Finished processing action: $action")
-                } catch (e: Exception) {
-                    // THIS IS THE CRITICAL LOG
-                    Log.e(TAG, "GameServer: CRITICAL LOGIC CRASH processing $action", e)
+                    is PlayerConnectionEvent.PlayerDisconnected ->
+                        GameAction.System(
+                            SystemEvent.PlayerDisconnected(
+                                event.id,
+                            ),
+                        )
                 }
             }
-    }
 
-    private suspend fun processAction(action: GameAction) {
-        val transition = when (action) {
-            is GameAction.User -> {
-                when (action.message) {
-                    is ClientMessage.RegisterPlayer -> {
-                        Log.d(TAG, "GameServer: Registering player ${action.playerId}")
-                        sessionManager.registerPlayer(
-                            data = masterGameData.value,
-                            phase = masterGamePhase.value,
-                            message = action.message,
-                        )
+        suspend fun start(
+            gameCode: String,
+            playerId: String,
+        ) = coroutineScope {
+            masterGameData.update { it.copy(gameCode = gameCode, localPlayerId = playerId) }
+            val processingJob = launch(start = CoroutineStart.UNDISPATCHED) { processActions() }
+
+            serverNetworkRepository.start(gameCode)
+
+            try {
+                withTimeout(TIMEOUT_MS) {
+                    serverState.first { it !is ServerState.Idle }
+                }
+            } catch (e: TimeoutCancellationException) {
+                processingJob.cancel()
+                stop()
+            }
+        }
+
+        private suspend fun processActions() =
+            coroutineScope {
+                merge(
+                    serverNetworkRepository.incomingMessages.map { (id, msg) ->
+                        GameAction.User(id, msg)
+                    },
+                    playerConnectivityEvents,
+                ).collect { action ->
+                    try {
+                        // Log that we are attempting to process an action
+                        Log.d(TAG, "GameServer: Processing action: $action")
+                        processAction(action)
+                        Log.d(TAG, "GameServer: Finished processing action: $action")
+                    } catch (e: Exception) {
+                        // THIS IS THE CRITICAL LOG
+                        Log.e(TAG, "GameServer: CRITICAL LOGIC CRASH processing $action", e)
                     }
+                }
+            }
 
-                    is ClientMessage.RequestKickPlayer -> {
-                        if (masterGameData.value.hostId != action.playerId) {
-                            GameStateTransition.Invalid("Only host can kick players")
-                        } else {
-                            Log.d(TAG, "GameServer: Kicking player ${action.message.playerId}")
-
-                            // 1. Notify the kicked player
-                            serverNetworkRepository.sendToPlayer(
-                                action.message.playerId,
-                                ServerMessage.YouWereKicked
-                            )
-                            // 2. Disconnect them from network
-                            serverNetworkRepository.disconnectPlayer(action.message.playerId)
-
-                            // 3. Update State
-                            if (masterGamePhase.value !is GamePhase.Lobby) {
-                                sessionManager.kickPlayer(
+        private suspend fun processAction(action: GameAction) {
+            val transition =
+                when (action) {
+                    is GameAction.User -> {
+                        when (action.message) {
+                            is ClientMessage.RegisterPlayer -> {
+                                Log.d(TAG, "GameServer: Registering player ${action.playerId}")
+                                sessionManager.registerPlayer(
                                     data = masterGameData.value,
                                     phase = masterGamePhase.value,
-                                    playerIdToKick = action.message.playerId,
-                                    strategy = gameModeStrategy
+                                    message = action.message,
                                 )
-                            } else {
-                                GameStateTransition.Valid(masterGameData.value)
+                            }
+
+                            is ClientMessage.RequestKickPlayer -> {
+                                if (masterGameData.value.hostId != action.playerId) {
+                                    GameStateTransition.Invalid("Only host can kick players")
+                                } else {
+                                    Log.d(TAG, "GameServer: Kicking player ${action.message.playerId}")
+
+                                    // 1. Notify the kicked player
+                                    serverNetworkRepository.sendToPlayer(
+                                        action.message.playerId,
+                                        ServerMessage.YouWereKicked,
+                                    )
+                                    // 2. Disconnect them from network
+                                    serverNetworkRepository.disconnectPlayer(action.message.playerId)
+
+                                    // 3. Update State
+                                    if (masterGamePhase.value !is GamePhase.Lobby) {
+                                        sessionManager.kickPlayer(
+                                            data = masterGameData.value,
+                                            phase = masterGamePhase.value,
+                                            playerIdToKick = action.message.playerId,
+                                            strategy = gameModeStrategy,
+                                        )
+                                    } else {
+                                        GameStateTransition.Valid(masterGameData.value)
+                                    }
+                                }
+                            }
+
+                            else -> {
+                                gameModeStrategy.handleAction(
+                                    data = masterGameData.value,
+                                    phase = masterGamePhase.value,
+                                    message = action.message,
+                                    playerID = action.playerId,
+                                )
                             }
                         }
                     }
 
-                    else -> {
-                        gameModeStrategy.handleAction(
+                    is GameAction.System -> {
+                        sessionManager.handleSystemEvent(
                             data = masterGameData.value,
                             phase = masterGamePhase.value,
-                            message = action.message,
-                            playerID = action.playerId
+                            event = action.event,
                         )
                     }
                 }
-            }
 
-            is GameAction.System -> {
-                sessionManager.handleSystemEvent(
-                    data = masterGameData.value, phase = masterGamePhase.value, event = action.event
-                )
-            }
-        }
-
-        handleTransition(transition)
-        Log.i(TAG, "GameServer: masterGameData after $action: ${masterGameData.value}")
-        Log.i(TAG, "GameServer: masterGamePhase after $action: ${masterGamePhase.value}")
+            handleTransition(transition)
+            Log.i(TAG, "GameServer: masterGameData after $action: ${masterGameData.value}")
+            Log.i(TAG, "GameServer: masterGamePhase after $action: ${masterGamePhase.value}")
     }
 
     private suspend fun handleTransition(transition: GameStateTransition) {
         when (transition) {
             is GameStateTransition.Valid -> {
                 masterGameData.value = transition.newGameData
-                transition.newPhase?.also { masterGamePhase.value = it }
-            }
+                    transition.newPhase?.also { masterGamePhase.value = it }
+                }
 
-            is GameStateTransition.Invalid -> {
-                Log.e(TAG, "Invalid transition: ${transition.reason}")
+                is GameStateTransition.Invalid -> {
+                    Log.e(TAG, "Invalid transition: ${transition.reason}")
             }
         }
         sendMessages(transition.envelopes)
@@ -167,9 +179,11 @@ class GameServer @Inject constructor(
     private suspend fun sendMessages(envelopes: List<Envelope>) {
         envelopes.forEach { envelope ->
             when (envelope) {
-                is Envelope.Unicast -> serverNetworkRepository.sendToPlayer(
-                    envelope.recipientId, envelope.message
-                )
+                is Envelope.Unicast ->
+                    serverNetworkRepository.sendToPlayer(
+                        envelope.recipientId,
+                        envelope.message,
+                    )
 
                 is Envelope.Broadcast -> serverNetworkRepository.sendToAllPlayers(envelope.message)
             }

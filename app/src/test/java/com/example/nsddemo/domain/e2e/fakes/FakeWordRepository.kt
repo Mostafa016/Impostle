@@ -11,13 +11,15 @@ import com.example.nsddemo.domain.repository.WordRepository
  */
 class FakeWordRepository : WordRepository {
     override fun getWordsForCategory(category: GameCategory): List<String> = listOf(TEST_WORD)
-    override fun getSemanticWords(word: String): List<String> = listOf(
-        TEST_WORD_SEMANTIC_1,
-        TEST_WORD_SEMANTIC_2,
-        TEST_WORD_SEMANTIC_3,
-        TEST_WORD_RANDOM_FROM_CATEGORY_1,
-        TEST_WORD_RANDOM_FROM_CATEGORY_2
-    )
+
+    override fun getSemanticWords(word: String): List<String> =
+        listOf(
+            TEST_WORD_SEMANTIC_1,
+            TEST_WORD_SEMANTIC_2,
+            TEST_WORD_SEMANTIC_3,
+            TEST_WORD_RANDOM_FROM_CATEGORY_1,
+            TEST_WORD_RANDOM_FROM_CATEGORY_2,
+        )
 
     companion object {
         const val TEST_WORD = "TestWord"

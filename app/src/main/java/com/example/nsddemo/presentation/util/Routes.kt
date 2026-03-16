@@ -1,6 +1,8 @@
 package com.example.nsddemo.presentation.util
 
-enum class Routes(val route: String) {
+enum class Routes(
+    val route: String,
+) {
     MainMenu("main_menu_screen"),
     Settings("settings_screen"),
     CreateGameLoading("create_game_screen"),
@@ -21,5 +23,5 @@ enum class Routes(val route: String) {
 
     JoinGameGraph("join_game_graph"),
     GameSessionGraph("game_session_graph"),
-    RootGraph("root_graph")
+    RootGraph("root_graph"),
 }

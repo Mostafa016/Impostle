@@ -19,17 +19,17 @@ import org.junit.Test
  * role privacy (nulling imposter ID/word), partial reconnects, and `GameResumed` emissions.
  */
 class ReconnectionIntegrationTest : BaseE2ETest() {
-
     override val gameCode = "RECONNECT_SYNC"
 
     private suspend fun kotlinx.coroutines.test.TestScope.reconnectPlayer(playerTemplate: HeadlessPlayer): HeadlessPlayer {
-        val reconnected = HeadlessPlayer(
-            playerId = playerTemplate.playerId,
-            name = playerTemplate.name,
-            gameCode = gameCode,
-            router = router,
-            isHost = false
-        )
+        val reconnected =
+            HeadlessPlayer(
+                playerId = playerTemplate.playerId,
+                name = playerTemplate.name,
+                gameCode = gameCode,
+                router = router,
+                isHost = false,
+            )
         reconnected.startIn(this)
         advanceUntilIdle()
         reconnected.joinGame()
@@ -58,7 +58,10 @@ class ReconnectionIntegrationTest : BaseE2ETest() {
             assertEquals(GamePhase.InRound, charlie.gamePhase.value)
             assertEquals(GamePhase.InRound, bobReconnected.gamePhase.value)
 
-            alice.stop(); charlie.stop(); bobReconnected.stop(); bob.stop()
+            alice.stop()
+            charlie.stop()
+            bobReconnected.stop()
+            bob.stop()
         }
 
     @Test
@@ -76,7 +79,10 @@ class ReconnectionIntegrationTest : BaseE2ETest() {
             assertEquals(alice.playerId, syncedData.hostId)
             assertEquals(GameCategory.ANIMALS, syncedData.category)
 
-            alice.stop(); bob.stop(); charlieReconnected.stop(); charlie.stop()
+            alice.stop()
+            bob.stop()
+            charlieReconnected.stop()
+            charlie.stop()
         }
 
     @Test
@@ -99,7 +105,10 @@ class ReconnectionIntegrationTest : BaseE2ETest() {
             // 2. Must receive the actual word
             assertNotNull("Civilian must receive the word in sync data", syncedData.word)
 
-            alice.stop(); bob.stop(); charlie.stop(); civilianReconnected.stop()
+            alice.stop()
+            bob.stop()
+            charlie.stop()
+            civilianReconnected.stop()
         }
 
     @Test
@@ -122,7 +131,10 @@ class ReconnectionIntegrationTest : BaseE2ETest() {
             // 2. Word must be null (imposter doesn't know the word)
             assertNull("Imposter should receive null word in sync data", syncedData.word)
 
-            alice.stop(); bob.stop(); charlie.stop(); imposterReconnected.stop()
+            alice.stop()
+            bob.stop()
+            charlie.stop()
+            imposterReconnected.stop()
         }
 
     @Test
@@ -144,7 +156,10 @@ class ReconnectionIntegrationTest : BaseE2ETest() {
             assertEquals(GamePhase.Paused, alice.gamePhase.value)
             assertEquals(GamePhase.Paused, bobReconnected.gamePhase.value)
 
-            alice.stop(); bobReconnected.stop(); charlie.stop(); bob.stop()
+            alice.stop()
+            bobReconnected.stop()
+            charlie.stop()
+            bob.stop()
         }
 
     @Test
@@ -157,7 +172,9 @@ class ReconnectionIntegrationTest : BaseE2ETest() {
             advanceUntilIdle()
 
             // Reach Lobby
-            alice.joinGame(); bob.joinGame(); charlie.joinGame()
+            alice.joinGame()
+            bob.joinGame()
+            charlie.joinGame()
             advanceUntilIdle()
 
             // Select category and start game -> lands in RoleDistribution
@@ -183,7 +200,10 @@ class ReconnectionIntegrationTest : BaseE2ETest() {
             assertEquals(GamePhase.RoleDistribution, bob.gamePhase.value)
             assertEquals(GamePhase.RoleDistribution, charlieReconnected.gamePhase.value)
 
-            alice.stop(); bob.stop(); charlie.stop(); charlieReconnected.stop()
+            alice.stop()
+            bob.stop()
+            charlie.stop()
+            charlieReconnected.stop()
         }
 
     @Test
@@ -208,7 +228,10 @@ class ReconnectionIntegrationTest : BaseE2ETest() {
                 assertEquals(ClientEvent.PlayerRejoined(bob.playerId), awaitItem())
                 assertEquals(ClientEvent.GameResumed, awaitItem())
 
-                alice.stop(); charlie.stop(); bob.stop(); bobReconnected.stop()
+                alice.stop()
+                charlie.stop()
+                bob.stop()
+                bobReconnected.stop()
             }
         }
 }

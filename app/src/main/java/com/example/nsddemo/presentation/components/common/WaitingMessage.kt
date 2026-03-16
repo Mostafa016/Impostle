@@ -13,21 +13,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 
 @Composable
-fun WaitingMessage(modifier: Modifier = Modifier, text: String) {
+fun WaitingMessage(
+    modifier: Modifier = Modifier,
+    text: String,
+) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .brutalistCard(
-                backgroundColor = MaterialTheme.colorScheme.primary,
-                borderColor = MaterialTheme.colorScheme.outline,
-                shadowOffset = BrutalistDimens.ShadowMedium,
-                borderWidth = BrutalistDimens.BorderThick
-            )
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .brutalistCard(
+                    backgroundColor = MaterialTheme.colorScheme.primary,
+                    borderColor = MaterialTheme.colorScheme.outline,
+                    shadowOffset = Dimens.ShadowMedium,
+                    borderWidth = Dimens.BorderThick,
+                ).padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         PulsingDots(color = MaterialTheme.colorScheme.onPrimary)
 
@@ -37,7 +40,7 @@ fun WaitingMessage(modifier: Modifier = Modifier, text: String) {
             text = text,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onPrimary,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }

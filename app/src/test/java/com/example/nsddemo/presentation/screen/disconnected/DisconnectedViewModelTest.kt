@@ -18,7 +18,6 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DisconnectedViewModelTest {
-
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 

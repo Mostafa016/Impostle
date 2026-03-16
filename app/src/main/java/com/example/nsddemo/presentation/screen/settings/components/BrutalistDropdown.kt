@@ -25,7 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
 import com.example.nsddemo.presentation.screen.settings.GameLocales
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 
 @Composable
 fun BrutalistDropdown(
@@ -35,47 +35,48 @@ fun BrutalistDropdown(
     onDismissRequest: () -> Unit,
     options: List<GameLocales>,
     onOptionSelected: (GameLocales) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .brutalistCard(
-                    backgroundColor = MaterialTheme.colorScheme.surface,
-                    borderColor = MaterialTheme.colorScheme.outline,
-                    cornerRadius = BrutalistDimens.CornerMedium,
-                    shadowOffset = BrutalistDimens.ShadowSmall,
-                    borderWidth = BrutalistDimens.BorderThin
-                )
-                .clickable { onExpandChange(!expanded) }
-                .padding(horizontal = 16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .brutalistCard(
+                        backgroundColor = MaterialTheme.colorScheme.surface,
+                        borderColor = MaterialTheme.colorScheme.outline,
+                        cornerRadius = Dimens.CornerMedium,
+                        shadowOffset = Dimens.ShadowSmall,
+                        borderWidth = Dimens.BorderThin,
+                    ).clickable { onExpandChange(!expanded) }
+                    .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
                 text = currentValue.uppercase(),
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Icon(
                 imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurface
+                tint = MaterialTheme.colorScheme.onSurface,
             )
         }
 
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = onDismissRequest,
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.surface)
-                .border(
-                    BrutalistDimens.BorderThin,
-                    MaterialTheme.colorScheme.outline,
-                    RoundedCornerShape(4.dp)
-                )
+            modifier =
+                Modifier
+                    .background(MaterialTheme.colorScheme.surface)
+                    .border(
+                        Dimens.BorderThin,
+                        MaterialTheme.colorScheme.outline,
+                        RoundedCornerShape(4.dp),
+                    ),
         ) {
             options.forEach { locale ->
                 DropdownMenuItem(
@@ -83,13 +84,13 @@ fun BrutalistDropdown(
                         Text(
                             text = stringResource(locale.languageStringResId).uppercase(),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                     },
                     onClick = {
                         onOptionSelected(locale)
                         onDismissRequest()
-                    }
+                    },
                 )
             }
         }

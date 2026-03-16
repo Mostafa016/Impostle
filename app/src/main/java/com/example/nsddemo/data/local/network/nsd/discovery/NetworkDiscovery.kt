@@ -8,5 +8,6 @@ interface NetworkDiscovery {
     val discoveredServiceEvent: Flow<NsdDiscoveryEvent> // Flow<> to support multiple services
 
     fun startDiscovery(targetGameCode: String)
+
     fun stopDiscovery()
 }

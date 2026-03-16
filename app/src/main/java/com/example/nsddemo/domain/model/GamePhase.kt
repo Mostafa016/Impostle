@@ -6,6 +6,7 @@ import kotlin.reflect.KClass
 // 1. The Root FSM Interface
 
 //region Marker Interfaces (Logical Grouping)
+
 /** Indicates the app is connected to a session (Lobby or Game) */
 interface Connected
 
@@ -26,14 +27,12 @@ sealed interface GamePhase {
     fun checkTransitionOrThrow(newState: GamePhase) {
         if (!isTransitionValid(newState)) {
             throw IllegalStateException(
-                "Invalid State Transition: Cannot go from ${this::class.simpleName} to ${newState::class.simpleName}"
+                "Invalid State Transition: Cannot go from ${this::class.simpleName} to ${newState::class.simpleName}",
             )
         }
     }
 
-    private fun isTransitionValid(newState: GamePhase): Boolean {
-        return newState::class in validNextStates
-    }
+    private fun isTransitionValid(newState: GamePhase): Boolean = newState::class in validNextStates
 
     //region Phases
     @Serializable
@@ -98,18 +97,18 @@ sealed interface GamePhase {
     @Serializable
     data object Paused : GamePhase, Connected {
         override val validNextStates: Set<KClass<out GamePhase>>
-            get() = setOf(
-                Lobby::class,
-                RoleDistribution::class,
-                InRound::class,
-                RoundReplayChoice::class,
-                GameVoting::class,
-                ImposterGuess::class,
-                GameResults::class,
-                GameReplayChoice::class,
-                GameEnd::class
-            )
+            get() =
+                setOf(
+                    Lobby::class,
+                    RoleDistribution::class,
+                    InRound::class,
+                    RoundReplayChoice::class,
+                    GameVoting::class,
+                    ImposterGuess::class,
+                    GameResults::class,
+                    GameReplayChoice::class,
+                    GameEnd::class,
+                )
     }
     //endregion
 }
-

@@ -20,29 +20,31 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun RankBadge(
     rank: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val (bgColor, textColor) = when (rank) {
-        1 -> Color(0xFFFACC15) to Color.Black // Gold
-        2 -> Color(0xFFE5E7EB) to Color.Black // Silver
-        3 -> Color(0xFFD97706) to Color.White // Bronze
-        else -> Color.Transparent to Color.Gray
-    }
+    val (bgColor, textColor) =
+        when (rank) {
+            1 -> Color(0xFFFACC15) to Color.Black // Gold
+            2 -> Color(0xFFE5E7EB) to Color.Black // Silver
+            3 -> Color(0xFFD97706) to Color.White // Bronze
+            else -> Color.Transparent to Color.Gray
+        }
 
     val borderStroke = if (rank <= 3) 2.dp else 1.dp
 
     Box(
-        modifier = modifier
-            .size(32.dp)
-            .background(bgColor, CircleShape)
-            .border(borderStroke, MaterialTheme.colorScheme.outline, CircleShape),
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .size(32.dp)
+                .background(bgColor, CircleShape)
+                .border(borderStroke, MaterialTheme.colorScheme.outline, CircleShape),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
             text = rank.toString(),
             style = MaterialTheme.typography.titleSmall,
             color = textColor,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
     }
 }

@@ -28,35 +28,36 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.nsddemo.R
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 
 @Composable
 fun DisconnectedHeroCard(modifier: Modifier = Modifier) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .brutalistCard(
-                backgroundColor = MaterialTheme.colorScheme.surface,
-                borderColor = MaterialTheme.colorScheme.outline,
-                shadowOffset = BrutalistDimens.ShadowLarge,
-                borderWidth = BrutalistDimens.BorderThick
-            )
-            .padding(vertical = 40.dp, horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .brutalistCard(
+                    backgroundColor = MaterialTheme.colorScheme.surface,
+                    borderColor = MaterialTheme.colorScheme.outline,
+                    shadowOffset = Dimens.ShadowLarge,
+                    borderWidth = Dimens.BorderThick,
+                ).padding(vertical = 40.dp, horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
-            modifier = Modifier
-                .rotate(3f)
-                .size(80.dp)
-                .background(MaterialTheme.colorScheme.error, CircleShape)
-                .border(BrutalistDimens.BorderThin, MaterialTheme.colorScheme.outline, CircleShape),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .rotate(3f)
+                    .size(80.dp)
+                    .background(MaterialTheme.colorScheme.error, CircleShape)
+                    .border(Dimens.BorderThin, MaterialTheme.colorScheme.outline, CircleShape),
+            contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = Icons.Default.Close,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onError,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(48.dp),
             )
         }
 
@@ -64,23 +65,25 @@ fun DisconnectedHeroCard(modifier: Modifier = Modifier) {
 
         Text(
             text = "DISCONNECTED",
-            style = MaterialTheme.typography.displayMedium.copy(
-                fontSize = 32.sp,
-                lineHeight = 36.sp,
-                letterSpacing = (-1).sp
-            ),
+            style =
+                MaterialTheme.typography.displayMedium.copy(
+                    fontSize = 32.sp,
+                    lineHeight = 36.sp,
+                    letterSpacing = (-1).sp,
+                ),
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Black
+            fontWeight = FontWeight.Black,
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Box(
-            modifier = Modifier
-                .width(64.dp)
-                .height(4.dp)
-                .background(MaterialTheme.colorScheme.outline, RoundedCornerShape(2.dp))
+            modifier =
+                Modifier
+                    .width(64.dp)
+                    .height(4.dp)
+                    .background(MaterialTheme.colorScheme.outline, RoundedCornerShape(2.dp)),
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -89,7 +92,7 @@ fun DisconnectedHeroCard(modifier: Modifier = Modifier) {
             text = stringResource(R.string.you_have_been_disconnected),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }

@@ -7,6 +7,5 @@ data class Player(
     val name: String,
     val color: String,
     val id: String = "",
-    val isConnected: Boolean = true
+    val isConnected: Boolean = true,
 )
-

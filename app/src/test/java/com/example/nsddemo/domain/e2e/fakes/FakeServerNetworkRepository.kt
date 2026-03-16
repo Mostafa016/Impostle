@@ -24,19 +24,22 @@ class FakeServerNetworkRepository(
     private val router: InMemoryNetworkRouter,
     private val gameCode: String,
 ) : ServerNetworkRepository {
-
     private val _serverState = MutableStateFlow<ServerState>(ServerState.Idle)
     override val serverState: StateFlow<ServerState> = _serverState.asStateFlow()
 
     /** Router feeds incoming client messages into this flow. */
-    val _incomingMessages = MutableSharedFlow<Pair<String, ClientMessage>>(extraBufferCapacity = 64)
+    @Suppress("ktlint:standard:backing-property-naming")
+    val _incomingMessages =
+        MutableSharedFlow<Pair<String, ClientMessage>>(extraBufferCapacity = 64)
     override val incomingMessages: Flow<Pair<String, ClientMessage>> =
         _incomingMessages.asSharedFlow()
 
     /** Router feeds connect/disconnect events into this flow. */
-    val _connectionEvents = MutableSharedFlow<PlayerConnectionEvent>(extraBufferCapacity = 64)
+    @Suppress("ktlint:standard:backing-property-naming")
+    val _playerConnectionEvents =
+        MutableSharedFlow<PlayerConnectionEvent>(extraBufferCapacity = 64)
     override val playerConnectionEvents: Flow<PlayerConnectionEvent> =
-        _connectionEvents.asSharedFlow()
+        _playerConnectionEvents.asSharedFlow()
 
     // Not used in E2E tests – the router intercepts outgoing messages at the send* call sites.
     override val outGoingMessages: Flow<Pair<String, ServerMessage>> = MutableSharedFlow()
@@ -46,7 +49,10 @@ class FakeServerNetworkRepository(
         _serverState.value = ServerState.Running(port = 0, gameCode = gameCode)
     }
 
-    override suspend fun sendToPlayer(playerId: String, message: ServerMessage) {
+    override suspend fun sendToPlayer(
+        playerId: String,
+        message: ServerMessage,
+    ) {
         router.deliverToClient(gameCode, playerId, message)
     }
 
@@ -60,11 +66,11 @@ class FakeServerNetworkRepository(
      * flow so [GameServer.processActions] is notified, and also clears the client side.
      */
     override fun disconnectPlayer(playerId: String) {
-        _connectionEvents.tryEmit(PlayerConnectionEvent.PlayerDisconnected(playerId))
+        _playerConnectionEvents.tryEmit(PlayerConnectionEvent.PlayerDisconnected(playerId))
         router.dropClientSide(gameCode, playerId)
     }
 
-    override fun cancelAdvertising() { /* no-op in tests */
+    override fun cancelAdvertising() { // no-op in tests
     }
 
     override suspend fun stop() {

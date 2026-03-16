@@ -26,27 +26,19 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
     @Binds
-    abstract fun bindServerNetworkRepository(
-        hostServerNetworkRepository: HostServerNetworkRepository
-    ): ServerNetworkRepository
+    abstract fun bindServerNetworkRepository(hostServerNetworkRepository: HostServerNetworkRepository): ServerNetworkRepository
 
     @Binds
     @Singleton
-    abstract fun bindSettingsRepository(
-        dataStoreSettingsRepository: DataStoreSettingsRepository
-    ): SettingsRepository
+    abstract fun bindSettingsRepository(dataStoreSettingsRepository: DataStoreSettingsRepository): SettingsRepository
 
     @Binds
     @Singleton
-    abstract fun bindGameSessionRepository(
-        impl: GameSessionRepositoryImpl
-    ): GameSessionRepository
+    abstract fun bindGameSessionRepository(impl: GameSessionRepositoryImpl): GameSessionRepository
 
     @Binds
     @Singleton
-    abstract fun bindWordRepository(
-        inMemoryWordRepository: InMemoryWordRepository
-    ): WordRepository
+    abstract fun bindWordRepository(inMemoryWordRepository: InMemoryWordRepository): WordRepository
 
     companion object {
         @Provides
@@ -54,18 +46,17 @@ abstract class RepositoryModule {
             networkDiscovery: NetworkDiscovery,
             networkResolution: NetworkResolution,
             socketClient: SocketClient,
-            @IoDispatcher ioDispatcher: CoroutineDispatcher
+            @IoDispatcher ioDispatcher: CoroutineDispatcher,
         ) = RemoteClientNetworkRepository(
             networkDiscovery,
             networkResolution,
             socketClient,
-            ioDispatcher
+            ioDispatcher,
         )
 
         @Provides
-        fun provideLoopbackClientNetworkRepository(
-            loopbackDataSource: LoopbackDataSource
-        ) = LoopbackClientNetworkRepository(loopbackDataSource)
+        fun provideLoopbackClientNetworkRepository(loopbackDataSource: LoopbackDataSource) =
+            LoopbackClientNetworkRepository(loopbackDataSource)
 
         @Provides
         @Singleton

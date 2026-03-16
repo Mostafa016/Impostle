@@ -11,6 +11,8 @@ interface ClientNetworkRepository {
     val outGoingMessages: Flow<Pair<String, ClientMessage>>
 
     suspend fun connect(gameCode: String)
+
     suspend fun disconnect()
+
     suspend fun sendToServer(message: ClientMessage): Boolean
 }

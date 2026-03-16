@@ -48,7 +48,7 @@ import com.example.nsddemo.presentation.screen.pause.components.HostPauseControl
 import com.example.nsddemo.presentation.screen.pause.components.PauseBanner
 import com.example.nsddemo.presentation.screen.pause.components.PulsingText
 import com.example.nsddemo.presentation.theme.AppTheme
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 import com.example.nsddemo.presentation.util.NoFeedbackIndication
 
 // ============================================================================
@@ -56,9 +56,7 @@ import com.example.nsddemo.presentation.util.NoFeedbackIndication
 // ============================================================================
 
 @Composable
-fun PauseScreen(
-    viewModel: PausedViewModel = hiltViewModel(),
-) {
+fun PauseScreen(viewModel: PauseViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     PauseContent(
@@ -68,7 +66,7 @@ fun PauseScreen(
         isEndGameButtonEnabled = state.isEndGameButtonEnabled,
         onGameEnd = { viewModel.onEvent(PauseEvent.EndGame) },
         onPlayerKick = { viewModel.onEvent(PauseEvent.KickPlayer(it)) },
-        onResume = { viewModel.onEvent(PauseEvent.ContinueGameAnyway) }
+        onResume = { viewModel.onEvent(PauseEvent.ContinueGameAnyway) },
     )
 }
 
@@ -84,37 +82,40 @@ fun PauseContent(
     isEndGameButtonEnabled: Boolean,
     onGameEnd: () -> Unit,
     onPlayerKick: (String) -> Unit,
-    onResume: () -> Unit
+    onResume: () -> Unit,
 ) {
     val gridColor = MaterialTheme.colorScheme.surfaceVariant
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .brutalistGridBackground(
-                backgroundColor = MaterialTheme.colorScheme.background,
-                gridLineColor = gridColor
-            )
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .brutalistGridBackground(
+                    backgroundColor = MaterialTheme.colorScheme.background,
+                    gridLineColor = gridColor,
+                ),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .displayCutoutPadding()
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .displayCutoutPadding(),
         ) {
             // --- TOP BANNER ---
             PauseBanner()
 
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .systemBarsPadding()
-                    .padding(horizontal = BrutalistDimens.SpacingLarge)
-                    .padding(
-                        top = BrutalistDimens.SpacingLarge,
-                        bottom = BrutalistDimens.SpacingMedium
-                    ),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .systemBarsPadding()
+                        .padding(horizontal = Dimens.SpacingLarge)
+                        .padding(
+                            top = Dimens.SpacingLarge,
+                            bottom = Dimens.SpacingMedium,
+                        ),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 // --- ROOM CODE CARD ---
                 HeroRoomCodeCard(gameCode)
@@ -122,20 +123,22 @@ fun PauseContent(
                 // --- DISCONNECTED PLAYERS LIST ---
                 if (players.isNotEmpty()) {
                     Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxWidth(),
                     ) {
                         // List Container
                         Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .brutalistCard(
-                                    backgroundColor = MaterialTheme.colorScheme.surface,
-                                    borderColor = MaterialTheme.colorScheme.outline,
-                                    shadowOffset = BrutalistDimens.ShadowMedium,
-                                    borderWidth = BrutalistDimens.BorderThick
-                                )
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .brutalistCard(
+                                        backgroundColor = MaterialTheme.colorScheme.surface,
+                                        borderColor = MaterialTheme.colorScheme.outline,
+                                        shadowOffset = Dimens.ShadowMedium,
+                                        borderWidth = Dimens.BorderThick,
+                                    ),
                         ) {
                             // List Title
                             BrutalistSectionHeader(
@@ -146,41 +149,45 @@ fun PauseContent(
                                         imageVector = ImageVector.vectorResource(R.drawable.sharp_wifi_off_24),
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(20.dp)
+                                        modifier = Modifier.size(20.dp),
                                     )
-                                }
+                                },
                             )
 
                             Spacer(modifier = Modifier.height(8.dp))
 
                             LazyColumn(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxWidth(),
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .fillMaxWidth(),
                                 contentPadding = PaddingValues(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 items(players) { player ->
                                     DisconnectedPlayerRow(
                                         player = player,
                                         isHost = isHost,
-                                        onKick = { onPlayerKick(player.id) }
+                                        onKick = { onPlayerKick(player.id) },
                                     )
                                 }
                             }
 
                             // Footer Note
                             Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(MaterialTheme.colorScheme.background)
-                                    .brutalistBorderBottom(MaterialTheme.colorScheme.outline, 2.dp)
-                                    .padding(12.dp),
-                                contentAlignment = Alignment.Center
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .background(MaterialTheme.colorScheme.background)
+                                        .brutalistBorderBottom(
+                                            MaterialTheme.colorScheme.outline,
+                                            2.dp,
+                                        ).padding(12.dp),
+                                contentAlignment = Alignment.Center,
                             ) {
                                 PulsingText(
                                     text = "WAITING FOR PLAYERS TO RETURN...",
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
@@ -194,7 +201,7 @@ fun PauseContent(
                     HostPauseControls(
                         isEndGameEnabled = isEndGameButtonEnabled,
                         onResume = onResume,
-                        onGameEnd = onGameEnd
+                        onGameEnd = onGameEnd,
                     )
                 } else {
                     ClientWaitingStatus()
@@ -203,7 +210,7 @@ fun PauseContent(
                         icon = Icons.AutoMirrored.Filled.ExitToApp,
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
-                        onClick = onGameEnd // Client leaving acts as ending their game
+                        onClick = onGameEnd, // Client leaving acts as ending their game
                     )
                 }
             }
@@ -214,7 +221,6 @@ fun PauseContent(
 // ============================================================================
 // 3. SUB-COMPONENTS
 // ============================================================================
-
 
 // ============================================================================
 // 4. PREVIEWS
@@ -227,16 +233,25 @@ private fun PreviewPauseHostLight() {
         Surface {
             CompositionLocalProvider(LocalIndication provides NoFeedbackIndication()) {
                 PauseContent(
-                    players = listOf(
-                        Player(id = "p2", name = "HappyGil", color = NewPlayerColors.Red.hexCode),
-                        Player(id = "p3", name = "ExtraGuest", color = NewPlayerColors.Blue.hexCode)
-                    ),
+                    players =
+                        listOf(
+                            Player(
+                                id = "p2",
+                                name = "HappyGil",
+                                color = NewPlayerColors.Red.hexCode,
+                            ),
+                            Player(
+                                id = "p3",
+                                name = "ExtraGuest",
+                                color = NewPlayerColors.Blue.hexCode,
+                            ),
+                        ),
                     gameCode = "B7X2",
                     isHost = true,
                     isEndGameButtonEnabled = true,
                     onGameEnd = {},
                     onPlayerKick = {},
-                    onResume = {}
+                    onResume = {},
                 )
             }
         }
@@ -246,7 +261,7 @@ private fun PreviewPauseHostLight() {
 @Preview(
     name = "Client View (Dark)",
     showBackground = true,
-    uiMode = Configuration.UI_MODE_NIGHT_YES
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
 )
 @Composable
 private fun PreviewPauseClientDark() {
@@ -254,15 +269,20 @@ private fun PreviewPauseClientDark() {
         Surface {
             CompositionLocalProvider(LocalIndication provides NoFeedbackIndication()) {
                 PauseContent(
-                    players = listOf(
-                        Player(id = "p2", name = "HappyGil", color = NewPlayerColors.Red.hexCode)
-                    ),
+                    players =
+                        listOf(
+                            Player(
+                                id = "p2",
+                                name = "HappyGil",
+                                color = NewPlayerColors.Red.hexCode,
+                            ),
+                        ),
                     gameCode = "B7X2",
                     isHost = false,
                     isEndGameButtonEnabled = true,
                     onGameEnd = {},
                     onPlayerKick = {},
-                    onResume = {}
+                    onResume = {},
                 )
             }
         }

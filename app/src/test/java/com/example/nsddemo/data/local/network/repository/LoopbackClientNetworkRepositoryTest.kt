@@ -14,7 +14,6 @@ import org.junit.Test
 
 @ExperimentalCoroutinesApi
 class LoopbackClientNetworkRepositoryTest {
-
     // System Under Test
     private lateinit var repository: LoopbackClientNetworkRepository
 
@@ -30,34 +29,36 @@ class LoopbackClientNetworkRepositoryTest {
     //region --- Connection State Logic ---
 
     @Test
-    fun `GIVEN Idle Repo WHEN connect called THEN state becomes Connected`() = runTest {
-        repository.clientState.test {
-            // Initial state
-            assertEquals(ClientState.Idle, awaitItem())
+    fun `GIVEN Idle Repo WHEN connect called THEN state becomes Connected`() =
+        runTest {
+            repository.clientState.test {
+                // Initial state
+                assertEquals(ClientState.Idle, awaitItem())
 
-            // Act
-            repository.connect("ABCD")
+                // Act
+                repository.connect("ABCD")
 
-            // Assert
-            assertEquals(ClientState.Connected, awaitItem())
+                // Assert
+                assertEquals(ClientState.Connected, awaitItem())
+            }
         }
-    }
 
     @Test
-    fun `GIVEN Connected Repo WHEN disconnect called THEN state becomes Disconnected`() = runTest {
-        repository.clientState.test {
-            assertEquals(ClientState.Idle, awaitItem())
+    fun `GIVEN Connected Repo WHEN disconnect called THEN state becomes Disconnected`() =
+        runTest {
+            repository.clientState.test {
+                assertEquals(ClientState.Idle, awaitItem())
 
-            repository.connect("ABCD")
-            assertEquals(ClientState.Connected, awaitItem())
+                repository.connect("ABCD")
+                assertEquals(ClientState.Connected, awaitItem())
 
-            // Act
-            repository.disconnect()
+                // Act
+                repository.disconnect()
 
-            // Assert
-            assertEquals(ClientState.Disconnected, awaitItem())
+                // Assert
+                assertEquals(ClientState.Disconnected, awaitItem())
+            }
         }
-    }
 
     //endregion
 

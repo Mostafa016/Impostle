@@ -28,7 +28,6 @@ import org.junit.Test
 
 @ExperimentalCoroutinesApi
 class NsdNetworkRegistrationTest {
-
     private lateinit var nsdManagerMock: NsdManager
     private lateinit var nsdNetworkRegistration: NsdNetworkRegistration
     private lateinit var registrationListenerSlot: CapturingSlot<NsdManager.RegistrationListener>
@@ -47,7 +46,7 @@ class NsdNetworkRegistrationTest {
             nsdManagerMock.registerService(
                 any(),
                 any(),
-                capture(registrationListenerSlot)
+                capture(registrationListenerSlot),
             )
         } just runs
 
@@ -76,7 +75,7 @@ class NsdNetworkRegistrationTest {
                 assertEquals(
                     "State should be Registering",
                     NsdRegistrationState.Registering,
-                    awaitItem()
+                    awaitItem(),
                 )
 
                 // VERIFY SUT's internal object creation and interaction
@@ -91,7 +90,7 @@ class NsdNetworkRegistrationTest {
                             verify { serviceInfo.setPort(testPort) }
                         },
                         NsdManager.PROTOCOL_DNS_SD,
-                        any()
+                        any(),
                     )
                 }
 
@@ -104,7 +103,7 @@ class NsdNetworkRegistrationTest {
                 //    This is where we provide the "answers" to MockK.
                 every { callbackServiceInfo.serviceName } returns "RegisteredServiceName_TESTCODE"
                 every { callbackServiceInfo.host } returns mockk() // Can return another mock if we don't care about the InetAddress object.
-                every { callbackServiceInfo.port } returns 54321   // Return a dummy port number.
+                every { callbackServiceInfo.port } returns 54321 // Return a dummy port number.
 
                 // 3. Trigger the callback on our captured listener, passing our fully stubbed mock.
                 registrationListenerSlot.captured.onServiceRegistered(callbackServiceInfo)
@@ -114,12 +113,12 @@ class NsdNetworkRegistrationTest {
                 val registeredState = awaitItem()
                 assertTrue(
                     "Final state should be Registered",
-                    registeredState is NsdRegistrationState.Registered
+                    registeredState is NsdRegistrationState.Registered,
                 )
                 assertEquals(
                     "Service name in state should match callback",
                     "RegisteredServiceName_TESTCODE",
-                    (registeredState as NsdRegistrationState.Registered).serviceName
+                    (registeredState as NsdRegistrationState.Registered).serviceName,
                 )
                 cancelAndConsumeRemainingEvents()
             }
@@ -140,19 +139,19 @@ class NsdNetworkRegistrationTest {
                 val unRegisteringState = awaitItem()
                 assertTrue(
                     "State after calling unregisterService should be UnRegistering",
-                    unRegisteringState is NsdRegistrationState.UnRegistering
+                    unRegisteringState is NsdRegistrationState.UnRegistering,
                 )
 
                 val unregisteredState = awaitItem()
                 assertTrue(
                     "Final state should be UnRegistered",
-                    unregisteredState is NsdRegistrationState.UnRegistered
+                    unregisteredState is NsdRegistrationState.UnRegistered,
                 )
 
                 assertEquals(
                     "Service name in state should match callback",
                     callbackServiceInfo.serviceName,
-                    (unregisteredState as NsdRegistrationState.UnRegistered).serviceName
+                    (unregisteredState as NsdRegistrationState.UnRegistered).serviceName,
                 )
                 cancelAndConsumeRemainingEvents()
             }
@@ -161,70 +160,71 @@ class NsdNetworkRegistrationTest {
 
     //region ---- Error Path Tests ---
     @Test
-    fun `GIVEN Idle state WHEN registerService is failure THEN emits Failed state`() = runTest {
-        nsdNetworkRegistration.registrationState.test {
-            // Arrange
-            assertEquals("Initial state should be Idle", NsdRegistrationState.Idle, awaitItem())
-            val testGameCode = "TESTCODE"
-            val testPort = 12345
+    fun `GIVEN Idle state WHEN registerService is failure THEN emits Failed state`() =
+        runTest {
+            nsdNetworkRegistration.registrationState.test {
+                // Arrange
+                assertEquals("Initial state should be Idle", NsdRegistrationState.Idle, awaitItem())
+                val testGameCode = "TESTCODE"
+                val testPort = 12345
 
-            // ACT
-            nsdNetworkRegistration.registerService(testGameCode, testPort)
+                // ACT
+                nsdNetworkRegistration.registerService(testGameCode, testPort)
 
-            assertEquals(
-                "State should be Registering",
-                NsdRegistrationState.Registering,
-                awaitItem()
-            )
-
-            // VERIFY SUT's internal object creation and interaction
-            verify {
-                nsdManagerMock.registerService(
-                    withArg { serviceInfo ->
-                        verify {
-                            serviceInfo.serviceName =
-                                "${NSDConstants.BASE_SERVICE_NAME}_$testGameCode"
-                        }
-                        verify { serviceInfo.serviceType = NSDConstants.SERVICE_TYPE }
-                        verify { serviceInfo.setPort(testPort) }
-                    },
-                    NsdManager.PROTOCOL_DNS_SD,
-                    any()
+                assertEquals(
+                    "State should be Registering",
+                    NsdRegistrationState.Registering,
+                    awaitItem(),
                 )
+
+                // VERIFY SUT's internal object creation and interaction
+                verify {
+                    nsdManagerMock.registerService(
+                        withArg { serviceInfo ->
+                            verify {
+                                serviceInfo.serviceName =
+                                    "${NSDConstants.BASE_SERVICE_NAME}_$testGameCode"
+                            }
+                            verify { serviceInfo.serviceType = NSDConstants.SERVICE_TYPE }
+                            verify { serviceInfo.setPort(testPort) }
+                        },
+                        NsdManager.PROTOCOL_DNS_SD,
+                        any(),
+                    )
+                }
+
+                // --- SIMULATE AND ASSERT CALLBACK ---
+
+                // 1. Create a mock for the NsdServiceInfo object that will be passed into our listener.
+                val callbackServiceInfo = mockk<NsdServiceInfo>()
+                val nsdErrorCode = NsdManager.FAILURE_INTERNAL_ERROR
+
+                // 2. Stub ALL the methods that will be called on this mock inside the onRegistrationFailed method.
+                every { callbackServiceInfo.serviceName } returns "${NSDConstants.BASE_SERVICE_NAME}_TESTCODE"
+                every { callbackServiceInfo.host } returns mockk()
+                every { callbackServiceInfo.port } returns testPort
+
+                // 3. Trigger the callback on our captured listener, passing our fully stubbed mock.
+                registrationListenerSlot.captured.onRegistrationFailed(
+                    callbackServiceInfo,
+                    nsdErrorCode,
+                )
+
+                // --- ASSERT FINAL STATE (This part remains the same) ---
+                val failedState = awaitItem()
+                assertTrue(
+                    "Final state should be Failed",
+                    failedState is NsdRegistrationState.Failed,
+                )
+                assertEquals(
+                    "Error string should match that in NSDConstants",
+                    NSDConstants.nsdErrorCodeToString(nsdErrorCode),
+                    (failedState as NsdRegistrationState.Failed).error,
+                )
+
+                cancelAndConsumeRemainingEvents()
             }
-
-            // --- SIMULATE AND ASSERT CALLBACK ---
-
-            // 1. Create a mock for the NsdServiceInfo object that will be passed into our listener.
-            val callbackServiceInfo = mockk<NsdServiceInfo>()
-            val nsdErrorCode = NsdManager.FAILURE_INTERNAL_ERROR
-
-            // 2. Stub ALL the methods that will be called on this mock inside the onRegistrationFailed method.
-            every { callbackServiceInfo.serviceName } returns "${NSDConstants.BASE_SERVICE_NAME}_TESTCODE"
-            every { callbackServiceInfo.host } returns mockk()
-            every { callbackServiceInfo.port } returns testPort
-
-            // 3. Trigger the callback on our captured listener, passing our fully stubbed mock.
-            registrationListenerSlot.captured.onRegistrationFailed(
-                callbackServiceInfo,
-                nsdErrorCode
-            )
-
-            // --- ASSERT FINAL STATE (This part remains the same) ---
-            val failedState = awaitItem()
-            assertTrue(
-                "Final state should be Failed",
-                failedState is NsdRegistrationState.Failed
-            )
-            assertEquals(
-                "Error string should match that in NSDConstants",
-                NSDConstants.nsdErrorCodeToString(nsdErrorCode),
-                (failedState as NsdRegistrationState.Failed).error
-            )
-
-            cancelAndConsumeRemainingEvents()
         }
-    }
 
     @Test
     fun `GIVEN Registered WHEN unregisterService is failure THEN emits Failed state`() =
@@ -238,7 +238,7 @@ class NsdNetworkRegistrationTest {
                 val nsdErrorCode = NsdManager.FAILURE_OPERATION_NOT_RUNNING
                 registrationListenerSlot.captured.onUnregistrationFailed(
                     callbackServiceInfo,
-                    nsdErrorCode
+                    nsdErrorCode,
                 )
 
                 // --- Assert ---
@@ -250,18 +250,18 @@ class NsdNetworkRegistrationTest {
                 val unRegisteringState = awaitItem()
                 assertTrue(
                     "State after calling unregisterService should be UnRegistering",
-                    unRegisteringState is NsdRegistrationState.UnRegistering
+                    unRegisteringState is NsdRegistrationState.UnRegistering,
                 )
                 // Final Assertions
                 val failedState = awaitItem()
                 assertTrue(
                     "Final state should be Failed",
-                    failedState is NsdRegistrationState.Failed
+                    failedState is NsdRegistrationState.Failed,
                 )
                 assertEquals(
                     "rror string should match that in NSDConstants",
                     NSDConstants.nsdErrorCodeToString(nsdErrorCode),
-                    (failedState as NsdRegistrationState.Failed).error
+                    (failedState as NsdRegistrationState.Failed).error,
                 )
                 cancelAndConsumeRemainingEvents()
             }
@@ -296,56 +296,58 @@ class NsdNetworkRegistrationTest {
         }
 
     @Test
-    fun `GIVEN UnRegistered WHEN unregisterService is called THEN it is ignored`() = runTest {
-        nsdNetworkRegistration.registrationState.test {
-            // --- Arrange ---
-            successfullyUnregisterTheService()
+    fun `GIVEN UnRegistered WHEN unregisterService is called THEN it is ignored`() =
+        runTest {
+            nsdNetworkRegistration.registrationState.test {
+                // --- Arrange ---
+                successfullyUnregisterTheService()
 
-            // --- Act ---
-            repeat(10) {
-                launch {
-                    nsdNetworkRegistration.unregisterService()
+                // --- Act ---
+                repeat(10) {
+                    launch {
+                        nsdNetworkRegistration.unregisterService()
+                    }
                 }
-            }
 
-            // --- Assert ---
-            val numOfCalls = 1
-            verify(exactly = numOfCalls) {
-                nsdManagerMock.unregisterService(any())
-            }
+                // --- Assert ---
+                val numOfCalls = 1
+                verify(exactly = numOfCalls) {
+                    nsdManagerMock.unregisterService(any())
+                }
 
-            expectNoEvents()
+                expectNoEvents()
+            }
         }
-    }
 
     // Unregister when Idle
     @Test
-    fun `GIVEN Idle state WHEN unregisterService is called THEN it is ignored`() = runTest {
-        nsdNetworkRegistration.registrationState.test {
-            // --- Arrange ---
-            // Consume Idle state
-            val initialState = awaitItem()
-            assertTrue(
-                "Expected initial state: Idle. Found $initialState",
-                initialState is NsdRegistrationState.Idle
-            )
+    fun `GIVEN Idle state WHEN unregisterService is called THEN it is ignored`() =
+        runTest {
+            nsdNetworkRegistration.registrationState.test {
+                // --- Arrange ---
+                // Consume Idle state
+                val initialState = awaitItem()
+                assertTrue(
+                    "Expected initial state: Idle. Found $initialState",
+                    initialState is NsdRegistrationState.Idle,
+                )
 
-            // --- Act ---
-            repeat(10) {
-                launch {
-                    nsdNetworkRegistration.unregisterService()
+                // --- Act ---
+                repeat(10) {
+                    launch {
+                        nsdNetworkRegistration.unregisterService()
+                    }
                 }
-            }
 
-            // --- Assert ---
-            val numOfCalls = 0
-            verify(exactly = numOfCalls) {
-                nsdManagerMock.unregisterService(any())
-            }
+                // --- Assert ---
+                val numOfCalls = 0
+                verify(exactly = numOfCalls) {
+                    nsdManagerMock.unregisterService(any())
+                }
 
-            expectNoEvents()
+                expectNoEvents()
+            }
         }
-    }
 
     // Register when unRegistered
     @Test
@@ -380,19 +382,19 @@ class NsdNetworkRegistrationTest {
                 val unRegisteringState = awaitItem()
                 assertTrue(
                     "State after calling unregisterService should be UnRegistering",
-                    unRegisteringState is NsdRegistrationState.UnRegistering
+                    unRegisteringState is NsdRegistrationState.UnRegistering,
                 )
 
                 val unregisteredState = awaitItem()
                 assertTrue(
                     "Final state should be UnRegistered",
-                    unregisteredState is NsdRegistrationState.UnRegistered
+                    unregisteredState is NsdRegistrationState.UnRegistered,
                 )
 
                 assertEquals(
                     "Service name in state should match callback",
                     callbackServiceInfo.serviceName,
-                    (unregisteredState as NsdRegistrationState.UnRegistered).serviceName
+                    (unregisteredState as NsdRegistrationState.UnRegistered).serviceName,
                 )
 
                 cancelAndConsumeRemainingEvents()
@@ -439,7 +441,7 @@ class NsdNetworkRegistrationTest {
                             verify { serviceInfo.setPort(54321) }
                         },
                         NsdManager.PROTOCOL_DNS_SD,
-                        any()
+                        any(),
                     )
                 }
 
@@ -492,7 +494,7 @@ class NsdNetworkRegistrationTest {
                 // This is the most important assertion for proving the race condition was handled.
                 verify(exactly = 1) {
                     nsdManagerMock.unregisterService(
-                        any()
+                        any(),
                     )
                 }
 
@@ -516,12 +518,13 @@ class NsdNetworkRegistrationTest {
     //endregion
 
     // region --- Helper Functions For Modularity ---
+
     /**
      * A private helper function to perform the common "arrange" step of getting the
      * SUT into a successfully registered state.
      */
     private suspend fun TurbineTestContext<NsdRegistrationState>.successfullyRegisterTheService(
-        checkForIdleState: Boolean = true
+        checkForIdleState: Boolean = true,
     ): NsdServiceInfo {
         // Consume the initial Idle state
         if (checkForIdleState) assertEquals(NsdRegistrationState.Idle, awaitItem())
@@ -552,7 +555,7 @@ class NsdNetworkRegistrationTest {
      * SUT into a successfully unregistered state.
      */
     private suspend fun TurbineTestContext<NsdRegistrationState>.successfullyUnregisterTheService(
-        checkForIdleState: Boolean = true
+        checkForIdleState: Boolean = true,
     ): String {
         // Arrange
         val callbackServiceInfo = successfullyRegisterTheService(checkForIdleState)
@@ -564,18 +567,18 @@ class NsdNetworkRegistrationTest {
         // Assert
         assertTrue(
             "State after calling unregisterService should be UnRegistering",
-            awaitItem() is NsdRegistrationState.UnRegistering
+            awaitItem() is NsdRegistrationState.UnRegistering,
         )
 
         val unregisteredState = awaitItem()
         assertTrue(
             "Final state should be UnRegistered",
-            unregisteredState is NsdRegistrationState.UnRegistered
+            unregisteredState is NsdRegistrationState.UnRegistered,
         )
         assertEquals(
             "Service name in state should match callback",
             callbackServiceInfo.serviceName,
-            (unregisteredState as NsdRegistrationState.UnRegistered).serviceName
+            (unregisteredState as NsdRegistrationState.UnRegistered).serviceName,
         )
 
         return callbackServiceInfo.serviceName

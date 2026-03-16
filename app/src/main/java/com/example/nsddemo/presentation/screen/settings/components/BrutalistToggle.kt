@@ -21,13 +21,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 
 @Composable
 fun BrutalistToggle(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val trackColor =
         if (checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
@@ -37,32 +37,35 @@ fun BrutalistToggle(
 
     val thumbOffset by animateDpAsState(
         targetValue = if (checked) 32.dp else 2.dp,
-        label = "thumb_animation"
+        label = "thumb_animation",
     )
 
     Box(
-        modifier = modifier
-            .width(64.dp)
-            .height(32.dp)
-            .clip(RoundedCornerShape(50))
-            .background(trackColor)
-            .border(BrutalistDimens.BorderThin, borderColor, RoundedCornerShape(50))
-            .clickable { onCheckedChange(!checked) },
-        contentAlignment = Alignment.CenterStart
+        modifier =
+            modifier
+                .width(64.dp)
+                .height(32.dp)
+                .clip(RoundedCornerShape(50))
+                .background(trackColor)
+                .border(Dimens.BorderThin, borderColor, RoundedCornerShape(50))
+                .clickable { onCheckedChange(!checked) },
+        contentAlignment = Alignment.CenterStart,
     ) {
         Box(
-            modifier = Modifier
-                .offset(x = thumbOffset)
-                .size(28.dp)
-                .background(MaterialTheme.colorScheme.surface, CircleShape)
-                .border(BrutalistDimens.BorderThin, borderColor, CircleShape)
-                .padding(4.dp)
+            modifier =
+                Modifier
+                    .offset(x = thumbOffset)
+                    .size(28.dp)
+                    .background(MaterialTheme.colorScheme.surface, CircleShape)
+                    .border(Dimens.BorderThin, borderColor, CircleShape)
+                    .padding(4.dp),
         ) {
             if (checked) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(thumbColor, CircleShape)
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(thumbColor, CircleShape),
                 )
             }
         }
@@ -72,16 +75,17 @@ fun BrutalistToggle(
                 text = "ON",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.padding(start = 10.dp)
+                modifier = Modifier.padding(start = 10.dp),
             )
         } else {
             Text(
                 text = "OFF",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = 10.dp)
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 10.dp),
             )
         }
     }

@@ -20,7 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 
 @Composable
 fun BrutalistButton(
@@ -33,7 +33,7 @@ fun BrutalistButton(
     // Variants
     containerColor: Color = MaterialTheme.colorScheme.surface,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
-    borderColor: Color = MaterialTheme.colorScheme.outline
+    borderColor: Color = MaterialTheme.colorScheme.outline,
 ) {
     // Logic: If disabled, gray out everything
     val finalContainer = if (enabled) containerColor else MaterialTheme.colorScheme.surfaceVariant
@@ -43,30 +43,30 @@ fun BrutalistButton(
         if (enabled) borderColor else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .brutalistCard(
-                backgroundColor = finalContainer,
-                borderColor = finalBorder,
-                cornerRadius = BrutalistDimens.CornerLarge,
-                borderWidth = if (enabled) BrutalistDimens.BorderThick else BrutalistDimens.BorderThin // Thick border for active buttons
-            )
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(BrutalistDimens.SpacingMedium),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .brutalistCard(
+                    backgroundColor = finalContainer,
+                    borderColor = finalBorder,
+                    cornerRadius = Dimens.CornerLarge,
+                    borderWidth = if (enabled) Dimens.BorderThick else Dimens.BorderThin,
+                ).clickable(enabled = enabled, onClick = onClick)
+                .padding(Dimens.SpacingMedium),
         horizontalArrangement = if (icon == null) Arrangement.Center else Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(verticalArrangement = Arrangement.Center) {
             Text(
                 text = text.uppercase(),
                 style = MaterialTheme.typography.titleLarge,
-                color = finalContent
+                color = finalContent,
             )
             if (subtext != null) {
                 Text(
                     text = subtext,
                     style = MaterialTheme.typography.labelSmall,
-                    color = finalContent.copy(alpha = 0.8f)
+                    color = finalContent.copy(alpha = 0.8f),
                 )
             }
         }
@@ -74,21 +74,24 @@ fun BrutalistButton(
         if (icon != null) {
             // The semi-transparent box around the icon
             Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        color = if (containerColor == MaterialTheme.colorScheme.primary)
-                            Color.White.copy(alpha = 0.2f)
-                        else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(BrutalistDimens.CornerMedium)
-                    ),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(40.dp)
+                        .background(
+                            color =
+                                if (containerColor == MaterialTheme.colorScheme.primary) {
+                                    Color.White.copy(alpha = 0.2f)
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                                },
+                            shape = RoundedCornerShape(Dimens.CornerMedium),
+                        ),
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = finalContent
+                    tint = finalContent,
                 )
             }
         }

@@ -20,7 +20,6 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class VotingViewModelTest {
-
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 

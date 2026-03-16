@@ -13,13 +13,10 @@ import dagger.multibindings.IntoMap
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class StrategyModule {
-
     @Binds
     @IntoMap
     @GameModeKey(GameMode.Question)
-    abstract fun bindQuestionStrategy(
-        strategy: QuestionGameModeStrategy
-    ): GameModeStrategy
+    abstract fun bindQuestionStrategy(strategy: QuestionGameModeStrategy): GameModeStrategy
 
     // Future:
     // @Binds @IntoMap @GameModeKey(GameMode.Describe)
@@ -28,4 +25,6 @@ abstract class StrategyModule {
 
 // The Map Key Definition
 @MapKey
-annotation class GameModeKey(val value: GameMode)
+annotation class GameModeKey(
+    val value: GameMode,
+)

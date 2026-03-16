@@ -12,22 +12,21 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun BrutalistDashedDivider(
-    modifier: Modifier = Modifier
-) {
+fun BrutalistDashedDivider(modifier: Modifier = Modifier) {
     val dividerColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
     Canvas(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(48.dp)
-            .padding(vertical = 24.dp)
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .padding(vertical = 24.dp),
     ) {
         drawLine(
             color = dividerColor,
             start = Offset(0f, size.height / 2),
             end = Offset(size.width, size.height / 2),
             strokeWidth = 2.dp.toPx(),
-            pathEffect = PathEffect.dashPathEffect(floatArrayOf(15f, 15f), 0f)
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(15f, 15f), 0f),
         )
     }
 }

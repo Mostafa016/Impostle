@@ -2,5 +2,5 @@ package com.example.nsddemo.presentation.screen.score
 
 data class ScoreState(
     val isReplayGameButtonEnabled: Boolean = true,
-    val isEndGameButtonEnabled: Boolean = true
+    val isEndGameButtonEnabled: Boolean = true,
 )

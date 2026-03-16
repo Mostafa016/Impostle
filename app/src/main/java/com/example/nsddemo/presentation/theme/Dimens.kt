@@ -2,7 +2,7 @@ package com.example.nsddemo.presentation.theme
 
 import androidx.compose.ui.unit.dp
 
-object BrutalistDimens {
+object Dimens {
     // Borders
     val BorderThin = 2.dp
     val BorderThick = 4.dp

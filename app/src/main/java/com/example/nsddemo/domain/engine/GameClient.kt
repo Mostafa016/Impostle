@@ -24,127 +24,136 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 
-class GameClient @AssistedInject constructor(
-    private val gameSessionRepository: GameSessionRepository,
-    @Assisted private val clientNetworkRepository: ClientNetworkRepository
-) {
-    val gameData = gameSessionRepository.gameData
-    val gamePhase = gameSessionRepository.gameState
+class GameClient
+    @AssistedInject
+    constructor(
+        private val gameSessionRepository: GameSessionRepository,
+        @Assisted private val clientNetworkRepository: ClientNetworkRepository,
+    ) {
+        val gameData = gameSessionRepository.gameData
+        val gamePhase = gameSessionRepository.gameState
 
-    val clientState = clientNetworkRepository.clientState
+        val clientState = clientNetworkRepository.clientState
 
-    private val _clientEvent = MutableSharedFlow<ClientEvent>()
-    val clientEvent = _clientEvent.asSharedFlow()
+        private val _clientEvent = MutableSharedFlow<ClientEvent>()
+        val clientEvent = _clientEvent.asSharedFlow()
 
-    suspend fun start(gameCode: String, playerId: String) = coroutineScope {
-        gameSessionRepository.updateGameData {
-            it.copy(
-                gameCode = gameCode,
-                localPlayerId = playerId
-            )
-        }
-        val listeningJob = launch(start = CoroutineStart.UNDISPATCHED) { startListening() }
-
-        launch { clientNetworkRepository.connect(gameCode) }
-
-        try {
-            withTimeout(TIMEOUT_MS) {
-                clientState.first { it is ClientState.Connected }
+        suspend fun start(
+            gameCode: String,
+            playerId: String,
+        ) = coroutineScope {
+            gameSessionRepository.updateGameData {
+                it.copy(
+                    gameCode = gameCode,
+                    localPlayerId = playerId,
+                )
             }
-        } catch (e: TimeoutCancellationException) {
-            listeningJob.cancel()
-            stop()
-        }
-    }
+            val listeningJob = launch(start = CoroutineStart.UNDISPATCHED) { startListening() }
 
-    private suspend fun startListening() {
-        Log.d(TAG, "GameClient: startListening STARTED")
-        clientNetworkRepository.incomingMessages.collect { (_, message) ->
-            Log.d(TAG, "GameClient: Received message $message")
-            handleServerMessage(message)
-        }
-        Log.d(TAG, "GameClient: startListening ENDED")
-    }
+            launch { clientNetworkRepository.connect(gameCode) }
 
-    private suspend fun handleServerMessage(message: ServerMessage) {
-        // A. Update Data
-        gameSessionRepository.updateGameData { currentData ->
-            val gameData = ClientStateReducer.reduce(currentData, message)
-            Log.i(TAG, "GameClient: gameData after $message: $gameData")
-            gameData
+            try {
+                withTimeout(TIMEOUT_MS) {
+                    clientState.first { it is ClientState.Connected }
+                }
+            } catch (e: TimeoutCancellationException) {
+                listeningJob.cancel()
+                stop()
+            }
         }
 
-        // B. Update Phase
-        when (message) {
-            is ServerMessage.YouWereKicked -> {
-                _clientEvent.emit(ClientEvent.KickedFromGame)
-                stop() // Trigger intentional disconnect (State -> Idle)
-                return
+        private suspend fun startListening() {
+            Log.d(TAG, "GameClient: startListening STARTED")
+            clientNetworkRepository.incomingMessages.collect { (_, message) ->
+                Log.d(TAG, "GameClient: Received message $message")
+                handleServerMessage(message)
+            }
+            Log.d(TAG, "GameClient: startListening ENDED")
+        }
+
+        private suspend fun handleServerMessage(message: ServerMessage) {
+            // A. Update Data
+            gameSessionRepository.updateGameData { currentData ->
+                val gameData = ClientStateReducer.reduce(currentData, message)
+                Log.i(TAG, "GameClient: gameData after $message: $gameData")
+                gameData
             }
 
-            is ServerMessage.LobbyClosed -> {
-                _clientEvent.emit(ClientEvent.LobbyClosed)
-                stop() // Trigger intentional disconnect (State -> Idle)
-                return
-            }
+            // B. Update Phase
+            when (message) {
+                is ServerMessage.YouWereKicked -> {
+                    _clientEvent.emit(ClientEvent.KickedFromGame)
+                    stop() // Trigger intentional disconnect (State -> Idle)
+                    return
+                }
 
-            is ServerMessage.GameResumed -> {
-                gameSessionRepository.updateGamePhase(message.phaseAfterPause)
-            }
+                is ServerMessage.LobbyClosed -> {
+                    _clientEvent.emit(ClientEvent.LobbyClosed)
+                    stop() // Trigger intentional disconnect (State -> Idle)
+                    return
+                }
 
-            else -> {
-                if (gamePhase.value != GamePhase.Paused || message is ServerMessage.EndGame) {
-                    val nextPhase = GameFlowRegistry.getTransitionFor(message)
-                    if (nextPhase != null && nextPhase != gamePhase.value) {
-                        gameSessionRepository.updateGamePhase(nextPhase)
+                is ServerMessage.GameResumed -> {
+                    gameSessionRepository.updateGamePhase(message.phaseAfterPause)
+                }
+
+                else -> {
+                    if (gamePhase.value != GamePhase.Paused || message is ServerMessage.EndGame) {
+                        val nextPhase = GameFlowRegistry.getTransitionFor(message)
+                        if (nextPhase != null && nextPhase != gamePhase.value) {
+                            gameSessionRepository.updateGamePhase(nextPhase)
+                        }
                     }
                 }
             }
-        }
-        Log.i(TAG, "GameClient: gamePhase after $message: ${gamePhase.value}")
+            Log.i(TAG, "GameClient: gamePhase after $message: ${gamePhase.value}")
 
-        // C. Emit Domain Events
-        when (message) {
-            is ServerMessage.GameFull -> _clientEvent.emit(ClientEvent.LobbyFull)
-            is ServerMessage.GameAlreadyStarted -> _clientEvent.emit(ClientEvent.GameAlreadyStarted)
-            is ServerMessage.PlayerDisconnected -> _clientEvent.emit(ClientEvent.PlayerLeft(message.playerId))
-            is ServerMessage.PlayerReconnected -> _clientEvent.emit(
-                ClientEvent.PlayerRejoined(
-                    message.player.id
-                )
-            )
+            // C. Emit Domain Events
+            when (message) {
+                is ServerMessage.GameFull -> _clientEvent.emit(ClientEvent.LobbyFull)
+                is ServerMessage.GameAlreadyStarted -> _clientEvent.emit(ClientEvent.GameAlreadyStarted)
+                is ServerMessage.PlayerDisconnected -> _clientEvent.emit(ClientEvent.PlayerLeft(message.playerId))
+                is ServerMessage.PlayerReconnected ->
+                    _clientEvent.emit(
+                        ClientEvent.PlayerRejoined(
+                            message.player.id,
+                        ),
+                    )
 
-            is ServerMessage.GameResumed -> {
-                _clientEvent.emit(ClientEvent.GameResumed)
+                is ServerMessage.GameResumed -> {
+                    _clientEvent.emit(ClientEvent.GameResumed)
+                }
+
+                else -> {}
             }
-
-            else -> {}
         }
-    }
 
-    //region --- Actions ---
-    suspend fun registerPlayer(name: String, playerId: String) {
-        clientNetworkRepository.sendToServer(ClientMessage.RegisterPlayer(name, playerId))
-    }
+        //region --- Actions ---
+        suspend fun registerPlayer(
+            name: String,
+            playerId: String,
+        ) {
+            clientNetworkRepository.sendToServer(ClientMessage.RegisterPlayer(name, playerId))
+        }
 
-    suspend fun kickPlayer(playerId: String) {
-        clientNetworkRepository.sendToServer(ClientMessage.RequestKickPlayer(playerId))
-    }
+        suspend fun kickPlayer(playerId: String) {
+            clientNetworkRepository.sendToServer(ClientMessage.RequestKickPlayer(playerId))
+        }
 
-    suspend fun selectCategory(category: GameCategory) {
-        clientNetworkRepository.sendToServer(ClientMessage.RequestSelectCategory(category))
-    }
+        suspend fun selectCategory(category: GameCategory) {
+            clientNetworkRepository.sendToServer(ClientMessage.RequestSelectCategory(category))
+        }
 
-    suspend fun startGame() {
-        clientNetworkRepository.sendToServer(ClientMessage.RequestStartGame)
-    }
+        suspend fun startGame() {
+            clientNetworkRepository.sendToServer(ClientMessage.RequestStartGame)
+        }
 
-    suspend fun confirmRole() {
-        clientNetworkRepository.sendToServer(ClientMessage.ConfirmRoleReceived)
-    }
+        suspend fun confirmRole() {
+            clientNetworkRepository.sendToServer(ClientMessage.ConfirmRoleReceived)
+        }
 
-    suspend fun endTurn() {
-        clientNetworkRepository.sendToServer(ClientMessage.EndTurn)
+        suspend fun endTurn() {
+            clientNetworkRepository.sendToServer(ClientMessage.EndTurn)
     }
 
     suspend fun startVote() {

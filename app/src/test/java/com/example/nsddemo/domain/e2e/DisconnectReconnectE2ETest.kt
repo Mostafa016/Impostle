@@ -21,7 +21,6 @@ import org.junit.Test
  *  6. Bob receives a [ServerMessage.ReconnectionFullStateSync] and his local state is in sync.
  */
 class DisconnectReconnectE2ETest : BaseE2ETest() {
-
     override val gameCode = "RECONNECT"
 
     @Test
@@ -45,13 +44,14 @@ class DisconnectReconnectE2ETest : BaseE2ETest() {
             // Create a new HeadlessPlayer with the *same* playerId — this is the
             // reconnection scenario. SessionManager.registerPlayer detects the existing
             // (disconnected) player entry and calls performReconnection().
-            val bobReconnected = HeadlessPlayer(
-                playerId = bob.playerId, // same ID = reconnection path
-                name = "Bob",
-                gameCode = gameCode,
-                router = router,
-                isHost = false,
-            )
+            val bobReconnected =
+                HeadlessPlayer(
+                    playerId = bob.playerId, // same ID = reconnection path
+                    name = "Bob",
+                    gameCode = gameCode,
+                    router = router,
+                    isHost = false,
+                )
             bobReconnected.startIn(this)
             advanceUntilIdle()
 
@@ -73,7 +73,7 @@ class DisconnectReconnectE2ETest : BaseE2ETest() {
             val roundData = alice.gameData.value.roundData
             assertTrue(
                 "Round data must be QuestionRoundData after resume",
-                roundData is RoundData.QuestionRoundData
+                roundData is RoundData.QuestionRoundData,
             )
             assertNotNull((roundData as RoundData.QuestionRoundData).currentAskerId)
 
@@ -92,7 +92,9 @@ class DisconnectReconnectE2ETest : BaseE2ETest() {
             charlie.startIn(this)
             advanceUntilIdle()
 
-            alice.joinGame(); bob.joinGame(); charlie.joinGame()
+            alice.joinGame()
+            bob.joinGame()
+            charlie.joinGame()
             advanceUntilIdle()
             assertEquals(3, alice.gameData.value.players.size)
 

@@ -20,7 +20,7 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(
-    name = "impostle_game_settings"
+    name = "impostle_game_settings",
 )
 
 @Module
@@ -28,27 +28,25 @@ private val Context.settingsDataStore: DataStore<Preferences> by preferencesData
 object AppModule {
     @Provides
     @Singleton
-    fun provideNsdManager(@ApplicationContext context: Context): NsdManager {
-        return context.getSystemService(AppCompatActivity.NSD_SERVICE) as NsdManager
-    }
+    fun provideNsdManager(
+        @ApplicationContext context: Context,
+    ): NsdManager = context.getSystemService(AppCompatActivity.NSD_SERVICE) as NsdManager
 
     @Provides
     @Singleton
-    fun provideWifiHelper(@ApplicationContext context: Context): WifiHelper {
-        return WifiHelper(context)
-    }
+    fun provideWifiHelper(
+        @ApplicationContext context: Context,
+    ): WifiHelper = WifiHelper(context)
 
     @Provides
     @Singleton
-    fun provideSettingsPreferencesDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
-        return context.settingsDataStore
-    }
+    fun provideSettingsPreferencesDataStore(
+        @ApplicationContext context: Context,
+    ): DataStore<Preferences> = context.settingsDataStore
 
     @Provides
     @Singleton
-    fun provideAppLocaleHelper(): AppLocaleHelper {
-        return AppLocaleHelper()
-    }
+    fun provideAppLocaleHelper(): AppLocaleHelper = AppLocaleHelper()
 
     @Provides
     @Singleton
@@ -59,8 +57,6 @@ object AppModule {
     abstract class ControllerModule {
         @Binds
         @Singleton
-        abstract fun bindSessionController(
-            impl: AndroidSessionController
-        ): SessionController
+        abstract fun bindSessionController(impl: AndroidSessionController): SessionController
     }
 }

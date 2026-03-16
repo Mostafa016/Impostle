@@ -13,17 +13,18 @@ import com.example.nsddemo.presentation.util.Routes
 fun GameNavigation(
     navController: NavController,
     gameSession: GameSession,
-    routeMapper: GameRouteMapper
+    routeMapper: GameRouteMapper,
 ) {
     val sessionState by gameSession.sessionState.collectAsStateWithLifecycle(SessionState.Idle)
     val gamePhase by gameSession.gamePhase.collectAsStateWithLifecycle()
 
     LaunchedEffect(sessionState, gamePhase) {
-        val targetRoute = when (sessionState) {
-            is SessionState.Running -> routeMapper.mapToRoute(gamePhase)
-            is SessionState.Disconnected, is SessionState.Error -> Routes.Disconnected.route
-            else -> null
-        }
+        val targetRoute =
+            when (sessionState) {
+                is SessionState.Running -> routeMapper.mapToRoute(gamePhase)
+                is SessionState.Disconnected, is SessionState.Error -> Routes.Disconnected.route
+                else -> null
+            }
 
         val currentRoute = navController.currentDestination?.route
         if (targetRoute == null || currentRoute == targetRoute) {

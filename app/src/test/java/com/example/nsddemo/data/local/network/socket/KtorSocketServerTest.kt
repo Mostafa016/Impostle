@@ -43,7 +43,6 @@ import java.net.InetSocketAddress
 
 @ExperimentalCoroutinesApi
 class KtorSocketServerTest {
-
     private lateinit var server: KtorSocketServer
 
     @MockK
@@ -151,111 +150,115 @@ class KtorSocketServerTest {
     }
 
     @Test
-    fun `GIVEN Wifi IP WHEN startListening THEN binds to port and updates state`() = runTest {
-        coEvery { mockServerSocket.accept() } coAnswers { awaitCancellation() }
+    fun `GIVEN Wifi IP WHEN startListening THEN binds to port and updates state`() =
+        runTest {
+            coEvery { mockServerSocket.accept() } coAnswers { awaitCancellation() }
 
-        server.listeningState.test {
-            assertEquals(ServerListeningState.Idle, awaitItem())
+            server.listeningState.test {
+                assertEquals(ServerListeningState.Idle, awaitItem())
 
-            val job = launch { server.startListening() }
-            advanceUntilIdle()
+                val job = launch { server.startListening() }
+                advanceUntilIdle()
 
-            val state = awaitItem()
-            assertTrue(state is ServerListeningState.Listening)
-            assertEquals(12345, (state as ServerListeningState.Listening).port)
+                val state = awaitItem()
+                assertTrue(state is ServerListeningState.Listening)
+                assertEquals(12345, (state as ServerListeningState.Listening).port)
 
-            coVerify { mockTcpBuilder.bind("192.168.1.100", 0, any()) }
-            job.cancel()
-        }
-    }
-
-    @Test
-    fun `GIVEN listening WHEN client connects THEN emits Connected event`() = runTest {
-        var clientReturned = false
-        coEvery { mockServerSocket.accept() } coAnswers {
-            if (!clientReturned) {
-                clientReturned = true
-                mockClientSocket1
-            } else {
-                awaitCancellation()
+                coVerify { mockTcpBuilder.bind("192.168.1.100", 0, any()) }
+                job.cancel()
             }
         }
 
-        // Simulate Client sending Handshake packet
-        // We act as the client writing to the server's input stream
-        with(KtorSocketUtil) {
-            client1ReadChannel.writePacket("Handshake")
-        }
-
-        server.connectionEvents.test {
-            val job = launch { server.startListening() }
-            advanceUntilIdle()
-
-            val event = awaitItem()
-            assertTrue(event is ConnectionEvent.Connected)
-            assertEquals("Client1_IP", (event as ConnectionEvent.Connected).id)
-
-            job.cancel()
-        }
-    }
-
     @Test
-    fun `GIVEN multiple clients connected WHEN sendToAll called THEN writes to all`() = runTest {
-        val clients = listOf(mockClientSocket1, mockClientSocket2).iterator()
-        coEvery { mockServerSocket.accept() } coAnswers {
-            if (clients.hasNext()) clients.next() else awaitCancellation()
-        }
-
-        // Launch server
-        val job = launch { server.startListening() }
-        advanceUntilIdle()
-
-        // Act
-        val result = server.sendToAll("Broadcast Message")
-
-        // Assert
-        assertTrue(result)
-
-        // Verify Real Data was written
-        // We act as the client reading what the server wrote
-        with(KtorSocketUtil) {
-            val msg1 = client1WriteChannel.readPacket()
-            val msg2 = client2WriteChannel.readPacket()
-            assertEquals("Broadcast Message", msg1)
-            assertEquals("Broadcast Message", msg2)
-        }
-
-        job.cancel()
-    }
-
-    @Test
-    fun `GIVEN client connected WHEN client sends data THEN emits Message event`() = runTest {
-        var clientReturned = false
-        coEvery { mockServerSocket.accept() } coAnswers {
-            if (!clientReturned) {
-                clientReturned = true
-                mockClientSocket1
-            } else {
-                awaitCancellation()
+    fun `GIVEN listening WHEN client connects THEN emits Connected event`() =
+        runTest {
+            var clientReturned = false
+            coEvery { mockServerSocket.accept() } coAnswers {
+                if (!clientReturned) {
+                    clientReturned = true
+                    mockClientSocket1
+                } else {
+                    awaitCancellation()
+                }
             }
-        }
 
-        server.messageEvents.test {
-            val job = launch { server.startListening() }
-            advanceUntilIdle()
-
-            // Simulate Client sending "Hello Server"
+            // Simulate Client sending Handshake packet
+            // We act as the client writing to the server's input stream
             with(KtorSocketUtil) {
-                client1ReadChannel.writePacket("Hello Server")
+                client1ReadChannel.writePacket("Handshake")
             }
+
+            server.connectionEvents.test {
+                val job = launch { server.startListening() }
+                advanceUntilIdle()
+
+                val event = awaitItem()
+                assertTrue(event is ConnectionEvent.Connected)
+                assertEquals("Client1_IP", (event as ConnectionEvent.Connected).id)
+
+                job.cancel()
+            }
+        }
+
+    @Test
+    fun `GIVEN multiple clients connected WHEN sendToAll called THEN writes to all`() =
+        runTest {
+            val clients = listOf(mockClientSocket1, mockClientSocket2).iterator()
+            coEvery { mockServerSocket.accept() } coAnswers {
+                if (clients.hasNext()) clients.next() else awaitCancellation()
+            }
+
+            // Launch server
+            val job = launch { server.startListening() }
             advanceUntilIdle()
 
-            val event = awaitItem()
-            assertTrue(event is MessageEvent.Received)
-            assertEquals("Client1_IP", event.clientId)
-            assertEquals("Hello Server", event.data)
+            // Act
+            val result = server.sendToAll("Broadcast Message")
+
+            // Assert
+            assertTrue(result)
+
+            // Verify Real Data was written
+            // We act as the client reading what the server wrote
+            with(KtorSocketUtil) {
+                val msg1 = client1WriteChannel.readPacket()
+                val msg2 = client2WriteChannel.readPacket()
+                assertEquals("Broadcast Message", msg1)
+                assertEquals("Broadcast Message", msg2)
+            }
 
             job.cancel()
         }
-    }
+
+    @Test
+    fun `GIVEN client connected WHEN client sends data THEN emits Message event`() =
+        runTest {
+            var clientReturned = false
+            coEvery { mockServerSocket.accept() } coAnswers {
+                if (!clientReturned) {
+                    clientReturned = true
+                    mockClientSocket1
+                } else {
+                    awaitCancellation()
+                }
+            }
+
+            server.messageEvents.test {
+                val job = launch { server.startListening() }
+                advanceUntilIdle()
+
+                // Simulate Client sending "Hello Server"
+                with(KtorSocketUtil) {
+                    client1ReadChannel.writePacket("Hello Server")
+                }
+                advanceUntilIdle()
+
+                val event = awaitItem()
+                assertTrue(event is MessageEvent.Received)
+                assertEquals("Client1_IP", event.clientId)
+                assertEquals("Hello Server", event.data)
+
+                job.cancel()
+            }
+        }
 }

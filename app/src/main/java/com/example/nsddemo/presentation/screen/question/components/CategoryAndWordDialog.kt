@@ -23,7 +23,7 @@ import androidx.compose.ui.window.Dialog
 import com.example.nsddemo.R
 import com.example.nsddemo.presentation.components.common.BrutalistButton
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 
 @Composable
 fun CategoryAndWordDialog(
@@ -31,80 +31,82 @@ fun CategoryAndWordDialog(
     word: String?,
     isImposter: Boolean,
     onDismissRequest: () -> Unit,
-    onOkClick: () -> Unit
+    onOkClick: () -> Unit,
 ) {
     Dialog(onDismissRequest = onDismissRequest) {
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .brutalistCard(
-                    backgroundColor = MaterialTheme.colorScheme.surface,
-                    borderColor = MaterialTheme.colorScheme.outline,
-                    shadowOffset = BrutalistDimens.ShadowLarge,
-                    borderWidth = BrutalistDimens.BorderThick
-                )
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .brutalistCard(
+                        backgroundColor = MaterialTheme.colorScheme.surface,
+                        borderColor = MaterialTheme.colorScheme.outline,
+                        shadowOffset = Dimens.ShadowLarge,
+                        borderWidth = Dimens.BorderThick,
+                    ),
         ) {
             // Blue Top Tab
             Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .brutalistCard(
-                        backgroundColor = MaterialTheme.colorScheme.secondary,
-                        borderColor = MaterialTheme.colorScheme.outline,
-                        shadowOffset = 0.dp,
-                        cornerRadius = 8.dp,
-                        borderWidth = 2.dp
-                    )
-                    .padding(horizontal = 24.dp, vertical = 6.dp)
-                    .offset(y = (-2).dp) // Overlap top border slightly
+                modifier =
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .brutalistCard(
+                            backgroundColor = MaterialTheme.colorScheme.secondary,
+                            borderColor = MaterialTheme.colorScheme.outline,
+                            shadowOffset = 0.dp,
+                            cornerRadius = 8.dp,
+                            borderWidth = 2.dp,
+                        ).padding(horizontal = 24.dp, vertical = 6.dp)
+                        .offset(y = (-2).dp), // Overlap top border slightly
             ) {
                 Text(
                     text = "SECRET WORD",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSecondary
+                    color = MaterialTheme.colorScheme.onSecondary,
                 )
             }
 
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp)
-                    .padding(top = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp)
+                        .padding(top = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 // The Inner Card (Orange for Imposter, White for Innocent)
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .brutalistCard(
-                            backgroundColor = if (isImposter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-                            borderColor = MaterialTheme.colorScheme.outline,
-                            shadowOffset = BrutalistDimens.ShadowMedium,
-                            borderWidth = BrutalistDimens.BorderThick
-                        )
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .brutalistCard(
+                                backgroundColor = if (isImposter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                                borderColor = MaterialTheme.colorScheme.outline,
+                                shadowOffset = Dimens.ShadowMedium,
+                                borderWidth = Dimens.BorderThick,
+                            ).padding(24.dp),
+                    contentAlignment = Alignment.Center,
                 ) {
                     if (isImposter) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(
-                                        MaterialTheme.colorScheme.surface,
-                                        RoundedCornerShape(8.dp)
-                                    )
-                                    .border(
-                                        2.dp,
-                                        MaterialTheme.colorScheme.outline,
-                                        RoundedCornerShape(8.dp)
-                                    ),
-                                contentAlignment = Alignment.Center
+                                modifier =
+                                    Modifier
+                                        .size(48.dp)
+                                        .background(
+                                            MaterialTheme.colorScheme.surface,
+                                            RoundedCornerShape(8.dp),
+                                        ).border(
+                                            2.dp,
+                                            MaterialTheme.colorScheme.outline,
+                                            RoundedCornerShape(8.dp),
+                                        ),
+                                contentAlignment = Alignment.Center,
                             ) {
                                 Text(
                                     "?",
                                     style = MaterialTheme.typography.headlineLarge,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = MaterialTheme.colorScheme.onSurface,
                                 )
                             }
                             Spacer(modifier = Modifier.height(16.dp))
@@ -112,7 +114,7 @@ fun CategoryAndWordDialog(
                                 text = stringResource(R.string.you_are_the_imposter).uppercase(),
                                 style = MaterialTheme.typography.headlineMedium,
                                 color = MaterialTheme.colorScheme.onPrimary,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
                             )
                         }
                     } else {
@@ -121,14 +123,14 @@ fun CategoryAndWordDialog(
                                 text = "CATEGORY:\n$category".uppercase(),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = word?.uppercase() ?: "",
                                 style = MaterialTheme.typography.displayMedium,
                                 color = MaterialTheme.colorScheme.onSurface,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
                             )
                         }
                     }
@@ -140,7 +142,7 @@ fun CategoryAndWordDialog(
                     text = "Memorize your role! Don't let others see your screen.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -149,7 +151,7 @@ fun CategoryAndWordDialog(
                     text = "DONE",
                     containerColor = MaterialTheme.colorScheme.outline, // Black button
                     contentColor = MaterialTheme.colorScheme.surface, // White text
-                    onClick = onOkClick
+                    onClick = onOkClick,
                 )
             }
         }

@@ -4,8 +4,8 @@ import com.example.nsddemo.domain.model.GamePhase
 import com.example.nsddemo.presentation.util.Routes
 
 class GameRouteMapper {
-    fun mapToRoute(phase: GamePhase): String? {
-        return when (phase) {
+    fun mapToRoute(phase: GamePhase): String? =
+        when (phase) {
             is GamePhase.Lobby -> Routes.GameSessionGraph.route
             is GamePhase.RoleDistribution -> Routes.RoleReveal.route
             is GamePhase.InRound -> Routes.Question.route
@@ -20,5 +20,4 @@ class GameRouteMapper {
             // we don't force navigation here (handled by EndGameViewModel or MainMenu)
             is GamePhase.Idle -> null
         }
-    }
 }

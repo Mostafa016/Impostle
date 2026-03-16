@@ -39,7 +39,6 @@ import java.util.UUID
 
 @ExperimentalCoroutinesApi
 class DataStoreSettingsRepositoryTest {
-
     @get:Rule
     val tmpFolder: TemporaryFolder = TemporaryFolder.builder().assureDeletion().build()
 
@@ -69,10 +68,11 @@ class DataStoreSettingsRepositoryTest {
         val testFile =
             File(tmpFolder.newFolder(), "test_settings_${UUID.randomUUID()}.preferences_pb")
 
-        testDataStore = PreferenceDataStoreFactory.create(
-            scope = dataStoreScope,
-            produceFile = { testFile }
-        )
+        testDataStore =
+            PreferenceDataStoreFactory.create(
+                scope = dataStoreScope,
+                produceFile = { testFile },
+            )
 
         // Default mock behavior
         every { appLocaleHelper.getCurrentLocale() } returns AppLocales.English
@@ -121,29 +121,31 @@ class DataStoreSettingsRepositoryTest {
     //region --- Writing Updates ---
 
     @Test
-    fun `WHEN setPlayerName called THEN userSettings emits new name`() = runTest(testDispatcher) {
-        repository.userSettings.test {
-            // 1. Initial State
-            assertNull(awaitItem().playerName)
+    fun `WHEN setPlayerName called THEN userSettings emits new name`() =
+        runTest(testDispatcher) {
+            repository.userSettings.test {
+                // 1. Initial State
+                assertNull(awaitItem().playerName)
 
-            // 2. Action
-            repository.setPlayerName("SuperPlayer")
+                // 2. Action
+                repository.setPlayerName("SuperPlayer")
 
-            // 3. Result
-            assertEquals("SuperPlayer", awaitItem().playerName)
+                // 3. Result
+                assertEquals("SuperPlayer", awaitItem().playerName)
+            }
         }
-    }
 
     @Test
-    fun `WHEN setDarkTheme called THEN userSettings emits new theme`() = runTest(testDispatcher) {
-        repository.userSettings.test {
-            assertFalse(awaitItem().isDarkTheme)
+    fun `WHEN setDarkTheme called THEN userSettings emits new theme`() =
+        runTest(testDispatcher) {
+            repository.userSettings.test {
+                assertFalse(awaitItem().isDarkTheme)
 
-            repository.setDarkTheme(true)
+                repository.setDarkTheme(true)
 
-            assertTrue(awaitItem().isDarkTheme)
+                assertTrue(awaitItem().isDarkTheme)
+            }
         }
-    }
 
     @Test
     fun `WHEN setLanguage called THEN updates DataStore AND calls Helper`() =
@@ -170,9 +172,10 @@ class DataStoreSettingsRepositoryTest {
         runTest(testDispatcher) {
             // Mock a broken DataStore
             val brokenDataStore = mockk<DataStore<Preferences>>()
-            every { brokenDataStore.data } returns flow {
-                throw IOException("File corrupted")
-            }
+            every { brokenDataStore.data } returns
+                flow {
+                    throw IOException("File corrupted")
+                }
 
             val brokenRepo = DataStoreSettingsRepository(brokenDataStore, appLocaleHelper)
 
@@ -188,9 +191,10 @@ class DataStoreSettingsRepositoryTest {
     fun `GIVEN DataStore throws Other Exception WHEN collecting THEN crashes`() =
         runTest(testDispatcher) {
             val brokenDataStore = mockk<DataStore<Preferences>>()
-            every { brokenDataStore.data } returns flow {
-                throw RuntimeException("Something unexpected")
-            }
+            every { brokenDataStore.data } returns
+                flow {
+                    throw RuntimeException("Something unexpected")
+                }
 
             val brokenRepo = DataStoreSettingsRepository(brokenDataStore, appLocaleHelper)
 

@@ -8,6 +8,8 @@ interface SettingsRepository {
     val userSettings: Flow<UserSettings>
 
     suspend fun setPlayerName(name: String)
+
     suspend fun setDarkTheme(enabled: Boolean)
+
     suspend fun setLanguage(locale: AppLocales)
 }

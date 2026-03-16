@@ -32,7 +32,7 @@ fun CategoryDisplay(
     chosenCategory: UiCategory?,
     isHost: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val backgroundColor =
         if (isHost) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
@@ -40,56 +40,66 @@ fun CategoryDisplay(
         if (isHost) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
     val shadow = if (isHost) 4.dp else 0.dp
     val iconTint =
-        if (isHost) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(
-            alpha = 0.5f
-        )
+        if (isHost) {
+            MaterialTheme.colorScheme.onPrimary
+        } else {
+            MaterialTheme.colorScheme.onSurface.copy(
+                alpha = 0.5f,
+            )
+        }
     val iconBoxColor =
-        if (isHost) Color.Black.copy(alpha = 0.1f) else MaterialTheme.colorScheme.background.copy(
-            alpha = 0.7f
-        )
+        if (isHost) {
+            Color.Black.copy(alpha = 0.1f)
+        } else {
+            MaterialTheme.colorScheme.background.copy(
+                alpha = 0.7f,
+            )
+        }
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .brutalistCard(
-                backgroundColor = backgroundColor,
-                borderColor = MaterialTheme.colorScheme.outline,
-                shadowOffset = shadow
-            )
-            .clickable(enabled = isHost, onClick = onClick)
-            .padding(16.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .brutalistCard(
+                    backgroundColor = backgroundColor,
+                    borderColor = MaterialTheme.colorScheme.outline,
+                    shadowOffset = shadow,
+                ).clickable(enabled = isHost, onClick = onClick)
+                .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Box(
-                modifier = Modifier
-                    .background(iconBoxColor, RoundedCornerShape(8.dp))
-                    .padding(8.dp)
+                modifier =
+                    Modifier
+                        .background(iconBoxColor, RoundedCornerShape(8.dp))
+                        .padding(8.dp),
             ) {
                 Icon(
-                    imageVector = ImageVector.vectorResource(
-                        chosenCategory?.iconResId ?: R.drawable.sharp_question_mark_24
-                    ),
+                    imageVector =
+                        ImageVector.vectorResource(
+                            chosenCategory?.iconResId ?: R.drawable.sharp_question_mark_24,
+                        ),
                     contentDescription = null,
-                    tint = iconTint
+                    tint = iconTint,
                 )
-
             }
             Column {
                 Text(
                     text = "CATEGORY",
                     style = MaterialTheme.typography.labelSmall,
-                    color = contentColor.copy(alpha = 0.7f)
+                    color = contentColor.copy(alpha = 0.7f),
                 )
                 Text(
-                    text = chosenCategory?.nameResId?.let { stringResource(it) }?.uppercase()
-                        ?: "SELECT...",
+                    text =
+                        chosenCategory?.nameResId?.let { stringResource(it) }?.uppercase()
+                            ?: "SELECT...",
                     style = MaterialTheme.typography.titleLarge,
-                    color = contentColor
+                    color = contentColor,
                 )
             }
         }
@@ -97,7 +107,7 @@ fun CategoryDisplay(
         Icon(
             imageVector = if (isHost) Icons.Default.Edit else Icons.Default.Lock,
             contentDescription = null,
-            tint = iconTint
+            tint = iconTint,
         )
     }
 }

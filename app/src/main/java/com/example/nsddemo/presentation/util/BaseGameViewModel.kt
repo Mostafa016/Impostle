@@ -7,9 +7,8 @@ import com.example.nsddemo.domain.model.GamePhase
 import kotlinx.coroutines.flow.StateFlow
 
 abstract class BaseGameViewModel(
-    protected val gameSession: GameSession
+    protected val gameSession: GameSession,
 ) : ViewModel() {
-
     val gameData: StateFlow<GameData> = gameSession.gameData
     val gamePhase: StateFlow<GamePhase> = gameSession.gamePhase
 

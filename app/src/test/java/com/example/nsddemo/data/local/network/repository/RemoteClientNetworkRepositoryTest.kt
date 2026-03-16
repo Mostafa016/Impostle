@@ -43,7 +43,6 @@ import org.junit.Test
 
 @ExperimentalCoroutinesApi
 class RemoteClientNetworkRepositoryTest {
-
     private lateinit var repository: RemoteClientNetworkRepository
 
     @MockK(relaxed = true)
@@ -86,7 +85,7 @@ class RemoteClientNetworkRepositoryTest {
                 networkDiscovery,
                 networkResolution,
                 socketClient,
-                UnconfinedTestDispatcher()
+                UnconfinedTestDispatcher(),
             )
     }
 
@@ -97,54 +96,56 @@ class RemoteClientNetworkRepositoryTest {
     }
 
     @Test
-    fun `GIVEN Happy Path WHEN connect is called THEN sequence executes successfully`() = runTest {
-        // Arrange
-        val gameCode = "ABCD"
-        val mockService = mockk<NsdServiceInfo>()
-        val host = "192.168.1.1"
-        val port = 8080
+    fun `GIVEN Happy Path WHEN connect is called THEN sequence executes successfully`() =
+        runTest {
+            // Arrange
+            val gameCode = "ABCD"
+            val mockService = mockk<NsdServiceInfo>()
+            val host = "192.168.1.1"
+            val port = 8080
 
-        // Mock startSession to run forever (simulate an active connection)
-        coEvery { socketClient.startSession(host, port) } coAnswers { awaitCancellation() }
-        // FIX: Inject UnconfinedTestDispatcher.
-        // This forces the 'launch' to execute immediately on the current thread.
-        repository = RemoteClientNetworkRepository(
-            networkDiscovery,
-            networkResolution,
-            socketClient,
-            UnconfinedTestDispatcher(testScheduler)
-        )
-        repository.clientState.test {
-            assertEquals(ClientState.Idle, awaitItem())
+            // Mock startSession to run forever (simulate an active connection)
+            coEvery { socketClient.startSession(host, port) } coAnswers { awaitCancellation() }
+            // FIX: Inject UnconfinedTestDispatcher.
+            // This forces the 'launch' to execute immediately on the current thread.
+            repository =
+                RemoteClientNetworkRepository(
+                    networkDiscovery,
+                    networkResolution,
+                    socketClient,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+            repository.clientState.test {
+                assertEquals(ClientState.Idle, awaitItem())
 
-            val job = launch { repository.connect(gameCode) }
+                val job = launch { repository.connect(gameCode) }
 
-            // 1. Discovery Starts
-            discoveryStateFlow.value = NsdDiscoveryState.Discovering(NSDConstants.SERVICE_TYPE)
-            assertEquals(ClientState.Discovering, awaitItem())
+                // 1. Discovery Starts
+                discoveryStateFlow.value = NsdDiscoveryState.Discovering(NSDConstants.SERVICE_TYPE)
+                assertEquals(ClientState.Discovering, awaitItem())
 
-            // 2. Service Found
-            discoveredServiceFlow.emit(NsdDiscoveryEvent.Found(mockService))
+                // 2. Service Found
+                discoveredServiceFlow.emit(NsdDiscoveryEvent.Found(mockService))
 
-            // 3. Resolution Starts
-            assertEquals(ClientState.Resolving, awaitItem())
+                // 3. Resolution Starts
+                assertEquals(ClientState.Resolving, awaitItem())
 
-            // 4. Resolution Success
-            resolutionStateFlow.value = NsdResolutionState.Success(host, port)
-            assertEquals(ClientState.Connecting, awaitItem())
+                // 4. Resolution Success
+                resolutionStateFlow.value = NsdResolutionState.Success(host, port)
+                assertEquals(ClientState.Connecting, awaitItem())
 
-            // 5. Socket Connects
-            socketConnectionEvents.emit(ConnectionEvent.Connected(host))
-            assertEquals(ClientState.Connected, awaitItem())
+                // 5. Socket Connects
+                socketConnectionEvents.emit(ConnectionEvent.Connected(host))
+                assertEquals(ClientState.Connected, awaitItem())
 
-            job.cancel() // Cancel the infinite connection loop
+                job.cancel() // Cancel the infinite connection loop
+            }
+
+            verify { networkDiscovery.startDiscovery(gameCode) }
+            verify { networkResolution.resolveServiceWithGameCode(mockService, gameCode) }
+            verify { networkDiscovery.stopDiscovery() }
+            coVerify { socketClient.startSession(host, port) }
         }
-
-        verify { networkDiscovery.startDiscovery(gameCode) }
-        verify { networkResolution.resolveServiceWithGameCode(mockService, gameCode) }
-        verify { networkDiscovery.stopDiscovery() }
-        coVerify { socketClient.startSession(host, port) }
-    }
 
     @Test
     fun `GIVEN Discovery hangs (Service never found) WHEN connect called THEN emits Timeout Error`() =
@@ -182,108 +183,113 @@ class RemoteClientNetworkRepositoryTest {
         }
 
     @Test
-    fun `GIVEN Discovery startup hangs WHEN connect called THEN emits Timeout Error`() = runTest {
-        repository.clientState.test {
-            assertEquals(ClientState.Idle, awaitItem())
-            val job = launch { repository.connect("ABCD") }
-            runCurrent()
+    fun `GIVEN Discovery startup hangs WHEN connect called THEN emits Timeout Error`() =
+        runTest {
+            repository.clientState.test {
+                assertEquals(ClientState.Idle, awaitItem())
+                val job = launch { repository.connect("ABCD") }
+                runCurrent()
 
-            // We do NOT update discoveryStateFlow. It remains Idle.
+                // We do NOT update discoveryStateFlow. It remains Idle.
 
-            // Fast forward time
-            advanceTimeBy(RemoteClientNetworkRepository.TIMEOUT_MS + 1)
+                // Fast forward time
+                advanceTimeBy(RemoteClientNetworkRepository.TIMEOUT_MS + 1)
 
-            val error = awaitItem()
-            assertTrue(error is ClientState.Error)
+                val error = awaitItem()
+                assertTrue(error is ClientState.Error)
 
-            job.join()
+                job.join()
+            }
         }
-    }
 
     @Test
-    fun `GIVEN Discovery fails immediately WHEN connect called THEN emits Error`() = runTest {
-        repository.clientState.test {
-            assertEquals(ClientState.Idle, awaitItem())
-            val job = launch { repository.connect("ABCD") }
+    fun `GIVEN Discovery fails immediately WHEN connect called THEN emits Error`() =
+        runTest {
+            repository.clientState.test {
+                assertEquals(ClientState.Idle, awaitItem())
+                val job = launch { repository.connect("ABCD") }
 
-            // Simulate immediate failure from OS
-            discoveryStateFlow.value = NsdDiscoveryState.Failed("NSD Busy")
+                // Simulate immediate failure from OS
+                discoveryStateFlow.value = NsdDiscoveryState.Failed("NSD Busy")
 
-            val error = awaitItem()
-            assertTrue(error is ClientState.Error)
-            assertEquals("NSD Busy", (error as ClientState.Error).message)
+                val error = awaitItem()
+                assertTrue(error is ClientState.Error)
+                assertEquals("NSD Busy", (error as ClientState.Error).message)
 
-            job.join()
+                job.join()
+            }
         }
-    }
 
     @Test
-    fun `GIVEN Resolution Fails WHEN connect called THEN emits Error state`() = runTest {
-        repository.clientState.test {
-            assertEquals(ClientState.Idle, awaitItem())
-            val job = launch { repository.connect("ABCD") }
+    fun `GIVEN Resolution Fails WHEN connect called THEN emits Error state`() =
+        runTest {
+            repository.clientState.test {
+                assertEquals(ClientState.Idle, awaitItem())
+                val job = launch { repository.connect("ABCD") }
 
-            // 1. Discovery Success
-            discoveryStateFlow.value = NsdDiscoveryState.Discovering(NSDConstants.SERVICE_TYPE)
-            assertEquals(ClientState.Discovering, awaitItem())
-            val mockService = mockk<NsdServiceInfo>()
-            discoveredServiceFlow.emit(NsdDiscoveryEvent.Found(mockService))
+                // 1. Discovery Success
+                discoveryStateFlow.value = NsdDiscoveryState.Discovering(NSDConstants.SERVICE_TYPE)
+                assertEquals(ClientState.Discovering, awaitItem())
+                val mockService = mockk<NsdServiceInfo>()
+                discoveredServiceFlow.emit(NsdDiscoveryEvent.Found(mockService))
 
-            // 2. Resolution Starts
-            assertEquals(ClientState.Resolving, awaitItem())
+                // 2. Resolution Starts
+                assertEquals(ClientState.Resolving, awaitItem())
 
-            // 3. Resolution Fails
-            resolutionStateFlow.value = NsdResolutionState.Failed("Resolve Failed")
+                // 3. Resolution Fails
+                resolutionStateFlow.value = NsdResolutionState.Failed("Resolve Failed")
 
-            // Assert
-            val error = awaitItem()
-            assertTrue(error is ClientState.Error)
-            assertEquals("Resolve Failed", (error as ClientState.Error).message)
+                // Assert
+                val error = awaitItem()
+                assertTrue(error is ClientState.Error)
+                assertEquals("Resolve Failed", (error as ClientState.Error).message)
+
+                verify { networkDiscovery.stopDiscovery() }
+                job.join()
+            }
+        }
+
+    @Test
+    fun `GIVEN Socket Connection Fails WHEN connect called THEN emits Error state`() =
+        runTest {
+            // Arrange
+            val host = "1.2.3.4"
+            val port = 123
+            coEvery { socketClient.startSession(host, port) } returns Unit
+            // Prepare the error event the repo expects to find
+            socketConnectionEvents.emit(ConnectionEvent.Error(host, "Connection Refused"))
+
+            repository.clientState.test {
+                assertEquals(ClientState.Idle, awaitItem())
+                val job = launch { repository.connect("ABCD") }
+
+                // Fast forward Discovery/Resolution
+                discoveryStateFlow.value = NsdDiscoveryState.Discovering(NSDConstants.SERVICE_TYPE)
+                assertEquals(ClientState.Discovering, awaitItem())
+                discoveredServiceFlow.emit(NsdDiscoveryEvent.Found(mockk()))
+                assertEquals(ClientState.Resolving, awaitItem())
+                resolutionStateFlow.value = NsdResolutionState.Success(host, port)
+                assertEquals(ClientState.Connecting, awaitItem())
+                println("Yo!")
+                // Assert
+                val error = awaitItem()
+                assertTrue(error is ClientState.Error)
+                assertTrue((error as ClientState.Error).message.contains("Connection Refused"))
+
+                job.cancel()
+            }
+        }
+
+    @Test
+    fun `WHEN disconnect is called THEN resources are cleaned up`() =
+        runTest {
+            repository.disconnect()
 
             verify { networkDiscovery.stopDiscovery() }
-            job.join()
+            coVerify { socketClient.disconnect() }
+
+            repository.clientState.test {
+                assertEquals(ClientState.Idle, awaitItem())
+            }
         }
-    }
-
-    @Test
-    fun `GIVEN Socket Connection Fails WHEN connect called THEN emits Error state`() = runTest {
-        // Arrange
-        val host = "1.2.3.4"
-        val port = 123
-        coEvery { socketClient.startSession(host, port) } returns Unit
-        // Prepare the error event the repo expects to find
-        socketConnectionEvents.emit(ConnectionEvent.Error(host, "Connection Refused"))
-
-        repository.clientState.test {
-            assertEquals(ClientState.Idle, awaitItem())
-            val job = launch { repository.connect("ABCD") }
-
-            // Fast forward Discovery/Resolution
-            discoveryStateFlow.value = NsdDiscoveryState.Discovering(NSDConstants.SERVICE_TYPE)
-            assertEquals(ClientState.Discovering, awaitItem())
-            discoveredServiceFlow.emit(NsdDiscoveryEvent.Found(mockk()))
-            assertEquals(ClientState.Resolving, awaitItem())
-            resolutionStateFlow.value = NsdResolutionState.Success(host, port)
-            assertEquals(ClientState.Connecting, awaitItem())
-            println("Yo!")
-            // Assert
-            val error = awaitItem()
-            assertTrue(error is ClientState.Error)
-            assertTrue((error as ClientState.Error).message.contains("Connection Refused"))
-
-            job.cancel()
-        }
-    }
-
-    @Test
-    fun `WHEN disconnect is called THEN resources are cleaned up`() = runTest {
-        repository.disconnect()
-
-        verify { networkDiscovery.stopDiscovery() }
-        coVerify { socketClient.disconnect() }
-
-        repository.clientState.test {
-            assertEquals(ClientState.Idle, awaitItem())
-        }
-    }
 }

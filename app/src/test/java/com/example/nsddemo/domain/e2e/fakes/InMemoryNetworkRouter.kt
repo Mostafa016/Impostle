@@ -17,7 +17,6 @@ import com.example.nsddemo.domain.model.ServerMessage
  * (single-threaded by default), so no explicit synchronisation is needed.
  */
 class InMemoryNetworkRouter {
-
     // gameCode → server repo
     private val servers = mutableMapOf<String, FakeServerNetworkRepository>()
 
@@ -26,7 +25,10 @@ class InMemoryNetworkRouter {
 
     // ─── Server registration ────────────────────────────────────────────────
 
-    fun registerServer(gameCode: String, repo: FakeServerNetworkRepository) {
+    fun registerServer(
+        gameCode: String,
+        repo: FakeServerNetworkRepository,
+    ) {
         servers[gameCode] = repo
         clients.getOrPut(gameCode) { mutableMapOf() }
     }
@@ -38,34 +40,52 @@ class InMemoryNetworkRouter {
 
     // ─── Client registration ────────────────────────────────────────────────
 
-    fun registerClient(gameCode: String, clientId: String, repo: FakeClientNetworkRepository) {
+    fun registerClient(
+        gameCode: String,
+        clientId: String,
+        repo: FakeClientNetworkRepository,
+    ) {
         clients.getOrPut(gameCode) { mutableMapOf() }[clientId] = repo
         // Notify the server that a new TCP connection arrived
-        servers[gameCode]?._connectionEvents?.tryEmit(
-            PlayerConnectionEvent.PlayerConnected(clientId, clientId)
+        servers[gameCode]?._playerConnectionEvents?.tryEmit(
+            PlayerConnectionEvent.PlayerConnected(clientId, clientId),
         )
     }
 
-    fun unregisterClient(gameCode: String, clientId: String) {
+    fun unregisterClient(
+        gameCode: String,
+        clientId: String,
+    ) {
         clients[gameCode]?.remove(clientId)
     }
 
     // ─── Message Routing ────────────────────────────────────────────────────
 
     /** Called by [FakeClientNetworkRepository.sendToServer]. Routes Client → Server. */
-    fun routeToServer(gameCode: String, clientId: String, message: ClientMessage): Boolean {
+    fun routeToServer(
+        gameCode: String,
+        clientId: String,
+        message: ClientMessage,
+    ): Boolean {
         val server = servers[gameCode] ?: return false
         server._incomingMessages.tryEmit(clientId to message)
         return true
     }
 
     /** Called by [FakeServerNetworkRepository.sendToPlayer]. Routes Server → single client. */
-    suspend fun deliverToClient(gameCode: String, clientId: String, message: ServerMessage) {
+    suspend fun deliverToClient(
+        gameCode: String,
+        clientId: String,
+        message: ServerMessage,
+    ) {
         clients[gameCode]?.get(clientId)?._incomingMessages?.emit("server" to message)
     }
 
     /** Called by [FakeServerNetworkRepository.sendToAllPlayers]. Routes Server → all clients. */
-    suspend fun broadcastToClients(gameCode: String, message: ServerMessage) {
+    suspend fun broadcastToClients(
+        gameCode: String,
+        message: ServerMessage,
+    ) {
         clients[gameCode]?.values?.forEach { clientRepo ->
             clientRepo._incomingMessages.emit("server" to message)
         }
@@ -80,10 +100,13 @@ class InMemoryNetworkRouter {
      *  2. Sets the **client's** [ClientState] to [ClientState.Disconnected].
      *  3. Removes the client from the routing table so future broadcasts skip it.
      */
-    fun dropConnection(gameCode: String, clientId: String) {
+    fun dropConnection(
+        gameCode: String,
+        clientId: String,
+    ) {
         // 1. Notify server
-        servers[gameCode]?._connectionEvents?.tryEmit(
-            PlayerConnectionEvent.PlayerDisconnected(clientId)
+        servers[gameCode]?._playerConnectionEvents?.tryEmit(
+            PlayerConnectionEvent.PlayerDisconnected(clientId),
         )
         // 2. Notify client
         clients[gameCode]?.get(clientId)?._clientState?.value = ClientState.Disconnected
@@ -96,7 +119,10 @@ class InMemoryNetworkRouter {
      * Only clears the client side — the server side disconnect event has already been emitted
      * by [FakeServerNetworkRepository.disconnectPlayer] before calling this.
      */
-    fun dropClientSide(gameCode: String, clientId: String) {
+    fun dropClientSide(
+        gameCode: String,
+        clientId: String,
+    ) {
         clients[gameCode]?.get(clientId)?._clientState?.value = ClientState.Disconnected
         clients[gameCode]?.remove(clientId)
     }

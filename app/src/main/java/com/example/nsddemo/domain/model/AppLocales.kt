@@ -1,8 +1,11 @@
 package com.example.nsddemo.domain.model
 
-enum class AppLocales(val countryCode: String) {
+enum class AppLocales(
+    val countryCode: String,
+) {
     English("en"),
-    Arabic("ar");
+    Arabic("ar"),
+    ;
 
     companion object {
         fun fromCountryCode(countryCode: String): AppLocales =

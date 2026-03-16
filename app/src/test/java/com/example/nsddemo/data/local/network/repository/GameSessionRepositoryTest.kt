@@ -19,7 +19,6 @@ import org.junit.Test
 
 @ExperimentalCoroutinesApi
 class GameSessionRepositoryTest {
-
     // SUT (System Under Test)
     private lateinit var repository: GameSessionRepositoryImpl
 
@@ -51,7 +50,11 @@ class GameSessionRepositoryTest {
         repository.updateGameData { it.copy(players = mapOf(player.id to player)) }
 
         assertEquals(1, repository.gameData.value.players.size)
-        assertEquals("Alice", repository.gameData.value.players["p1"]?.name)
+        assertEquals(
+            "Alice",
+            repository.gameData.value.players["p1"]
+                ?.name,
+        )
         assertEquals("host-1", repository.gameData.value.hostId) // Previous data persists
     }
 
@@ -64,31 +67,34 @@ class GameSessionRepositoryTest {
             // Initialize with QuestionRoundData so we have an index to increment
             repository.updateGameData {
                 it.copy(
-                    roundData = RoundData.QuestionRoundData(
-                        roundPairs = emptyList(),
-                        currentPairIndex = 0
-                    )
+                    roundData =
+                        RoundData.QuestionRoundData(
+                            roundPairs = emptyList(),
+                            currentPairIndex = 0,
+                        ),
                 )
             }
 
             // Act
             // Switch to Dispatchers.Default to ensure we are using a REAL thread pool.
             withContext(Dispatchers.Default) {
-                val jobs = List(numberOfUpdates) {
-                    launch {
-                        repository.updateGameData { oldData ->
-                            // This lambda runs inside the spin-lock/mutex.
-                            // We cast safely here because we know the state is QuestionRoundData
-                            val currentRound = oldData.roundData as RoundData.QuestionRoundData
+                val jobs =
+                    List(numberOfUpdates) {
+                        launch {
+                            repository.updateGameData { oldData ->
+                                // This lambda runs inside the spin-lock/mutex.
+                                // We cast safely here because we know the state is QuestionRoundData
+                                val currentRound = oldData.roundData as RoundData.QuestionRoundData
 
-                            oldData.copy(
-                                roundData = currentRound.copy(
-                                    currentPairIndex = currentRound.currentPairIndex + 1
+                                oldData.copy(
+                                    roundData =
+                                        currentRound.copy(
+                                            currentPairIndex = currentRound.currentPairIndex + 1,
+                                        ),
                                 )
-                            )
+                            }
                         }
                     }
-                }
                 jobs.joinAll()
             }
 
@@ -99,7 +105,7 @@ class GameSessionRepositoryTest {
             assertEquals(
                 "Expected $numberOfUpdates incremental updates",
                 numberOfUpdates,
-                finalRoundData.currentPairIndex
+                finalRoundData.currentPairIndex,
             )
         }
 
@@ -123,7 +129,7 @@ class GameSessionRepositoryTest {
         assertEquals(
             "State should stay Idle after failed transition",
             GamePhase.Idle,
-            repository.gameState.value
+            repository.gameState.value,
         )
     }
 
@@ -148,7 +154,7 @@ class GameSessionRepositoryTest {
                 localPlayerId = "123",
                 gameCode = "ABCD",
                 // Set round data to something other than Idle
-                roundData = RoundData.QuestionRoundData(emptyList(), 5)
+                roundData = RoundData.QuestionRoundData(emptyList(), 5),
             )
         }
 
@@ -161,7 +167,7 @@ class GameSessionRepositoryTest {
         assertEquals("Local Player ID should be empty", "", repository.gameData.value.localPlayerId)
         assertTrue(
             "RoundData should be reset to Idle",
-            repository.gameData.value.roundData is RoundData.Idle
+            repository.gameData.value.roundData is RoundData.Idle,
         )
     }
 }

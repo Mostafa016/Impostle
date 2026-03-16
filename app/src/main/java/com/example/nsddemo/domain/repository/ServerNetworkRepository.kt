@@ -14,9 +14,17 @@ interface ServerNetworkRepository {
     val outGoingMessages: Flow<Pair<String, ServerMessage>> // clientId, message
 
     suspend fun start(gameCode: String)
-    suspend fun sendToPlayer(playerId: String, message: ServerMessage)
+
+    suspend fun sendToPlayer(
+        playerId: String,
+        message: ServerMessage,
+    )
+
     suspend fun sendToAllPlayers(message: ServerMessage)
+
     fun disconnectPlayer(playerId: String)
+
     fun cancelAdvertising()
+
     suspend fun stop()
 }

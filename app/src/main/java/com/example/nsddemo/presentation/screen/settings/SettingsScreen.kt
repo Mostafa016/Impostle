@@ -35,7 +35,7 @@ import com.example.nsddemo.presentation.screen.settings.components.BrutalistTogg
 import com.example.nsddemo.presentation.screen.settings.components.SettingColumn
 import com.example.nsddemo.presentation.screen.settings.components.SettingRow
 import com.example.nsddemo.presentation.theme.AppTheme
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 import com.example.nsddemo.presentation.util.NavigationUtil.popBackStackAndNavigateTo
 import com.example.nsddemo.presentation.util.NoFeedbackIndication
 import com.example.nsddemo.presentation.util.UiEvent
@@ -48,7 +48,7 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
-    navController: NavHostController
+    navController: NavHostController,
 ) {
     val isDarkTheme by viewModel.darkThemeSetting.collectAsState()
     val language by viewModel.languageSetting.collectAsState()
@@ -65,7 +65,7 @@ fun SettingsScreen(
                     }
                 }
 
-                else -> { /* Handle other one-off events */
+                else -> { // Handle other one-off events
                 }
             }
         }
@@ -79,7 +79,7 @@ fun SettingsScreen(
         onLanguageDropdownExpandChange = viewModel::onLanguageDropDownExpandedChange,
         onLanguageChange = viewModel::onLanguageChange,
         onDropdownDismiss = viewModel::onLanguageDropDownDismiss,
-        onSaveChangesClick = viewModel::onSaveChangesClick
+        onSaveChangesClick = viewModel::onSaveChangesClick,
     )
 }
 
@@ -99,51 +99,53 @@ fun SettingsContent(
     onSaveChangesClick: () -> Unit,
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .brutalistGridBackground(
-                backgroundColor = MaterialTheme.colorScheme.background,
-                gridLineColor = MaterialTheme.colorScheme.surfaceVariant
-            )
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .brutalistGridBackground(
+                    backgroundColor = MaterialTheme.colorScheme.background,
+                    gridLineColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .systemBarsPadding()
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .systemBarsPadding(),
         ) {
             // --- TOP BANNER ---
             MarqueeBanner(
                 text = "SETTINGS /// CONFIGURATION /// SYSTEM PREFERENCES /// AUDIO & VISUAL /// ",
                 backgroundColor = MaterialTheme.colorScheme.secondary,
-                contentColor = MaterialTheme.colorScheme.onSecondary
+                contentColor = MaterialTheme.colorScheme.onSecondary,
             )
 
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = BrutalistDimens.SpacingLarge)
-                    .padding(top = BrutalistDimens.SpacingLarge),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = Dimens.SpacingLarge)
+                        .padding(top = Dimens.SpacingLarge),
                 verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 // --- MAIN SETTINGS CARD ---
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .brutalistCard(
-                            backgroundColor = MaterialTheme.colorScheme.surface,
-                            borderColor = MaterialTheme.colorScheme.outline,
-                            shadowOffset = BrutalistDimens.ShadowMedium,
-                            borderWidth = BrutalistDimens.BorderThick
-                        )
-                        .padding(BrutalistDimens.SpacingLarge),
-                    verticalArrangement = Arrangement.spacedBy(BrutalistDimens.SpacingXLarge)
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .brutalistCard(
+                                backgroundColor = MaterialTheme.colorScheme.surface,
+                                borderColor = MaterialTheme.colorScheme.outline,
+                                shadowOffset = Dimens.ShadowMedium,
+                                borderWidth = Dimens.BorderThick,
+                            ).padding(Dimens.SpacingLarge),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.SpacingXLarge),
                 ) {
-
                     // 1. Language Setting
                     SettingColumn(
                         label = stringResource(R.string.language),
-                        iconResId = R.drawable.sharp_language_24
+                        iconResId = R.drawable.sharp_language_24,
                     ) {
                         BrutalistDropdown(
                             currentValue = stringResource(currentLanguage.languageStringResId),
@@ -151,18 +153,18 @@ fun SettingsContent(
                             onExpandChange = onLanguageDropdownExpandChange,
                             onDismissRequest = onDropdownDismiss,
                             options = GameLocales.entries,
-                            onOptionSelected = onLanguageChange
+                            onOptionSelected = onLanguageChange,
                         )
                     }
 
                     // 2. Dark Mode Setting
                     SettingRow(
                         label = stringResource(R.string.dark_theme),
-                        iconResId = if (isDarkTheme) R.drawable.sharp_dark_mode_24 else R.drawable.sharp_light_mode_24
+                        iconResId = if (isDarkTheme) R.drawable.sharp_dark_mode_24 else R.drawable.sharp_light_mode_24,
                     ) {
                         BrutalistToggle(
                             checked = isDarkTheme,
-                            onCheckedChange = onThemeChange
+                            onCheckedChange = onThemeChange,
                         )
                     }
 
@@ -172,7 +174,7 @@ fun SettingsContent(
                         icon = ImageVector.vectorResource(R.drawable.sharp_save_24),
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
-                        onClick = onSaveChangesClick
+                        onClick = onSaveChangesClick,
                     )
                 }
             }
@@ -181,7 +183,7 @@ fun SettingsContent(
         // --- DECORATION ---
         CornerBrackets(
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
-            modifier = Modifier.systemBarsPadding()
+            modifier = Modifier.systemBarsPadding(),
         )
     }
 }
@@ -204,7 +206,7 @@ private fun SettingsPreviewLight() {
                     onLanguageDropdownExpandChange = {},
                     onLanguageChange = {},
                     onDropdownDismiss = {},
-                    onSaveChangesClick = {}
+                    onSaveChangesClick = {},
                 )
             }
         }
@@ -225,7 +227,7 @@ private fun SettingsPreviewDark() {
                     onLanguageDropdownExpandChange = {},
                     onLanguageChange = {},
                     onDropdownDismiss = {},
-                    onSaveChangesClick = {}
+                    onSaveChangesClick = {},
                 )
             }
         }

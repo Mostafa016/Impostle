@@ -45,7 +45,6 @@ import org.junit.Test
 
 @ExperimentalCoroutinesApi
 class GameServerTest {
-
     // SUT
     private lateinit var gameServer: GameServer
 
@@ -107,120 +106,126 @@ class GameServerTest {
     //region --- Startup Logic ---
 
     @Test
-    fun `GIVEN Server Starts WHEN Repo becomes Running THEN Server State matches`() = runTest {
-        gameServer.serverState.test {
-            assertEquals(ServerState.Idle, awaitItem())
+    fun `GIVEN Server Starts WHEN Repo becomes Running THEN Server State matches`() =
+        runTest {
+            gameServer.serverState.test {
+                assertEquals(ServerState.Idle, awaitItem())
 
+                val job = launch { gameServer.start("CODE", "123") }
+                runCurrent()
+
+                repoStateFlow.value = ServerState.Running(1234, "CODE")
+
+                val state = awaitItem()
+                assertTrue(state is ServerState.Running)
+
+                job.cancel()
+            }
+        }
+
+    @Test
+    fun `GIVEN Server Starts WHEN Repo stays Idle (Timeout) THEN repo stops`() =
+        runTest {
+            // 1. Launch the start function (it suspends)
             val job = launch { gameServer.start("CODE", "123") }
-            runCurrent()
 
-            repoStateFlow.value = ServerState.Running(1234, "CODE")
+            // 2. Advance time PAST the timeout (10,000 + 1)
+            advanceTimeBy(GameServer.TIMEOUT_MS + 10_000L)
 
-            val state = awaitItem()
-            assertTrue(state is ServerState.Running)
+            // 3. Verify stop was called
+            coVerify(exactly = 1) { repo.stop() }
 
             job.cancel()
         }
-    }
-
-    @Test
-    fun `GIVEN Server Starts WHEN Repo stays Idle (Timeout) THEN repo stops`() = runTest {
-        // 1. Launch the start function (it suspends)
-        val job = launch { gameServer.start("CODE", "123") }
-
-        // 2. Advance time PAST the timeout (10,000 + 1)
-        advanceTimeBy(GameServer.TIMEOUT_MS + 10_000L)
-
-        // 3. Verify stop was called
-        coVerify(exactly = 1) { repo.stop() }
-
-        job.cancel()
-    }
 
     //endregion
 
     //region --- Message Routing Logic ---
 
     @Test
-    fun `GIVEN RegisterPlayer Message WHEN Received THEN Routes to SessionManager`() = runTest {
-        val playerId = "p1"
-        val msg = ClientMessage.RegisterPlayer("Alice", playerId)
+    fun `GIVEN RegisterPlayer Message WHEN Received THEN Routes to SessionManager`() =
+        runTest {
+            val playerId = "p1"
+            val msg = ClientMessage.RegisterPlayer("Alice", playerId)
 
-        coEvery { sessionManager.registerPlayer(any(), any(), msg) } returns
+            coEvery { sessionManager.registerPlayer(any(), any(), msg) } returns
                 GameStateTransition.Valid(GameData())
 
-        val job = launch { gameServer.start("CODE", "123") }
-        repoStateFlow.value = ServerState.Running(1234, "CODE")
-        runCurrent()
+            val job = launch { gameServer.start("CODE", "123") }
+            repoStateFlow.value = ServerState.Running(1234, "CODE")
+            runCurrent()
 
-        incomingMessagesFlow.emit(playerId to msg)
-        advanceUntilIdle()
+            incomingMessagesFlow.emit(playerId to msg)
+            advanceUntilIdle()
 
-        coVerify(exactly = 1) { sessionManager.registerPlayer(any(), any(), msg) }
-        coVerify(exactly = 0) { strategy.handleAction(any(), any(), any(), any()) }
+            coVerify(exactly = 1) { sessionManager.registerPlayer(any(), any(), msg) }
+            coVerify(exactly = 0) { strategy.handleAction(any(), any(), any(), any()) }
 
-        job.cancel()
-    }
-
-    @Test
-    fun `GIVEN Gameplay Message WHEN Received THEN Routes to Strategy`() = runTest {
-        val playerId = "p1"
-        val msg = ClientMessage.SubmitVote("p2")
-
-        coEvery { strategy.handleAction(any(), any(), msg, playerId) } returns
-                GameStateTransition.Valid(GameData())
-
-        val job = launch { gameServer.start("CODE", "123") }
-        repoStateFlow.value = ServerState.Running(1234, "CODE")
-        runCurrent()
-
-        incomingMessagesFlow.emit(playerId to msg)
-        advanceUntilIdle()
-
-        coVerify(exactly = 1) { strategy.handleAction(any(), any(), msg, playerId) }
-        coVerify(exactly = 0) { sessionManager.registerPlayer(any(), any(), any()) }
-
-        job.cancel()
-    }
-
-    @Test
-    fun `GIVEN PlayerDisconnected Event WHEN Received THEN Routes to SessionManager`() = runTest {
-        val playerId = "p1"
-        val event = PlayerConnectionEvent.PlayerDisconnected(playerId)
-        val expectedSystemEvent = SystemEvent.PlayerDisconnected(playerId)
-
-        coEvery { sessionManager.handleSystemEvent(any(), any(), expectedSystemEvent) } returns
-                GameStateTransition.Valid(GameData())
-
-        val job = launch { gameServer.start("CODE", "123") }
-        repoStateFlow.value = ServerState.Running(1234, "CODE")
-        runCurrent()
-
-        connectionEventsFlow.emit(event)
-        advanceUntilIdle()
-
-        coVerify(exactly = 1) {
-            sessionManager.handleSystemEvent(any(), any(), expectedSystemEvent)
+            job.cancel()
         }
 
-        job.cancel()
-    }
+    @Test
+    fun `GIVEN Gameplay Message WHEN Received THEN Routes to Strategy`() =
+        runTest {
+            val playerId = "p1"
+            val msg = ClientMessage.SubmitVote("p2")
+
+            coEvery { strategy.handleAction(any(), any(), msg, playerId) } returns
+                GameStateTransition.Valid(GameData())
+
+            val job = launch { gameServer.start("CODE", "123") }
+            repoStateFlow.value = ServerState.Running(1234, "CODE")
+            runCurrent()
+
+            incomingMessagesFlow.emit(playerId to msg)
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { strategy.handleAction(any(), any(), msg, playerId) }
+            coVerify(exactly = 0) { sessionManager.registerPlayer(any(), any(), any()) }
+
+            job.cancel()
+        }
 
     @Test
-    fun `GIVEN PlayerConnected Event WHEN Received THEN Ignored`() = runTest {
-        val event = PlayerConnectionEvent.PlayerConnected("p1", "Alice")
+    fun `GIVEN PlayerDisconnected Event WHEN Received THEN Routes to SessionManager`() =
+        runTest {
+            val playerId = "p1"
+            val event = PlayerConnectionEvent.PlayerDisconnected(playerId)
+            val expectedSystemEvent = SystemEvent.PlayerDisconnected(playerId)
 
-        val job = launch { gameServer.start("CODE", "123") }
-        runCurrent()
+            coEvery { sessionManager.handleSystemEvent(any(), any(), expectedSystemEvent) } returns
+                GameStateTransition.Valid(GameData())
 
-        connectionEventsFlow.emit(event)
-        advanceUntilIdle()
+            val job = launch { gameServer.start("CODE", "123") }
+            repoStateFlow.value = ServerState.Running(1234, "CODE")
+            runCurrent()
 
-        coVerify(exactly = 0) { sessionManager.handleSystemEvent(any(), any(), any()) }
-        coVerify(exactly = 0) { strategy.handleAction(any(), any(), any(), any()) }
+            connectionEventsFlow.emit(event)
+            advanceUntilIdle()
 
-        job.cancel()
-    }
+            coVerify(exactly = 1) {
+                sessionManager.handleSystemEvent(any(), any(), expectedSystemEvent)
+            }
+
+            job.cancel()
+        }
+
+    @Test
+    fun `GIVEN PlayerConnected Event WHEN Received THEN Ignored`() =
+        runTest {
+            val event = PlayerConnectionEvent.PlayerConnected("p1", "Alice")
+
+            val job = launch { gameServer.start("CODE", "123") }
+            runCurrent()
+
+            connectionEventsFlow.emit(event)
+            advanceUntilIdle()
+
+            coVerify(exactly = 0) { sessionManager.handleSystemEvent(any(), any(), any()) }
+            coVerify(exactly = 0) { strategy.handleAction(any(), any(), any(), any()) }
+
+            job.cancel()
+        }
 
     //endregion
 
@@ -235,11 +240,11 @@ class GameServerTest {
 
             // Mock Strategy returning New Game Code and New Phase
             coEvery { strategy.handleAction(any(), any(), msg, playerId) } returns
-                    GameStateTransition.Valid(
-                        newGameData = GameData(gameCode = "UPDATED"),
-                        newPhase = GamePhase.GameResults,
-                        envelopes = listOf(Envelope.Broadcast(broadcastMsg))
-                    )
+                GameStateTransition.Valid(
+                    newGameData = GameData(gameCode = "UPDATED"),
+                    newPhase = GamePhase.GameResults,
+                    envelopes = listOf(Envelope.Broadcast(broadcastMsg)),
+                )
 
             val job = launch { gameServer.start("CODE", "123") }
             repoStateFlow.value = ServerState.Running(1234, "CODE")
@@ -258,7 +263,7 @@ class GameServerTest {
                     any(),
                     any(),
                     nextMsg,
-                    playerId
+                    playerId,
                 )
             } returns GameStateTransition.Valid(GameData())
 
@@ -270,7 +275,7 @@ class GameServerTest {
                     withArg { assertEquals("UPDATED", it.gameCode) }, // Data was updated
                     withArg { assertEquals(GamePhase.GameResults, it) }, // Phase was updated
                     nextMsg,
-                    playerId
+                    playerId,
                 )
             }
 
@@ -288,8 +293,8 @@ class GameServerTest {
             coEvery { sessionManager.registerPlayer(any(), any(), msg) } returns
                     GameStateTransition.Invalid(
                         reason = "Full",
-                        envelopes = listOf(Envelope.Unicast("p1", errorMsg))
-                    )
+                        envelopes = listOf(Envelope.Unicast("p1", errorMsg)),
+                )
 
             val job = launch { gameServer.start("CODE", "123") }
             repoStateFlow.value = ServerState.Running(1234, "CODE")
@@ -312,7 +317,7 @@ class GameServerTest {
                     any(),
                     any(),
                     checkMsg,
-                    playerId
+                    playerId,
                 )
             } returns GameStateTransition.Valid(GameData())
 
@@ -324,7 +329,7 @@ class GameServerTest {
                     withArg { assertEquals("CODE", it.gameCode) }, // Still default, not changed
                     withArg { assertEquals(GamePhase.Lobby, it) }, // Still Lobby
                     checkMsg,
-                    playerId
+                    playerId,
                 )
             }
 
@@ -332,83 +337,92 @@ class GameServerTest {
         }
 
     @Test
-    fun `GIVEN Transition with Multiple Envelopes WHEN Handled THEN Sends All`() = runTest {
-        val playerId = "p1"
-        val msg = ClientMessage.SubmitVote("p2")
-        val broadcastMsg = ServerMessage.VoteResult(emptyMap(), "imp", emptyMap())
-        val unicastMsg = ServerMessage.PlayerVoted("p1", "p2")
+    fun `GIVEN Transition with Multiple Envelopes WHEN Handled THEN Sends All`() =
+        runTest {
+            val playerId = "p1"
+            val msg = ClientMessage.SubmitVote("p2")
+            val broadcastMsg = ServerMessage.VoteResult(emptyMap(), "imp", emptyMap())
+            val unicastMsg = ServerMessage.PlayerVoted("p1", "p2")
 
-        coEvery { strategy.handleAction(any(), any(), msg, playerId) } returns
+            coEvery { strategy.handleAction(any(), any(), msg, playerId) } returns
                 GameStateTransition.Valid(
                     newGameData = GameData(),
-                    envelopes = listOf(
-                        Envelope.Broadcast(broadcastMsg),
-                        Envelope.Unicast(playerId, unicastMsg)
-                    )
+                    envelopes =
+                        listOf(
+                            Envelope.Broadcast(broadcastMsg),
+                            Envelope.Unicast(playerId, unicastMsg),
+                        ),
                 )
 
-        val job = launch { gameServer.start("CODE", "123") }
-        repoStateFlow.value = ServerState.Running(1234, "CODE")
-        runCurrent()
+            val job = launch { gameServer.start("CODE", "123") }
+            repoStateFlow.value = ServerState.Running(1234, "CODE")
+            runCurrent()
 
-        incomingMessagesFlow.emit(playerId to msg)
-        advanceUntilIdle()
+            incomingMessagesFlow.emit(playerId to msg)
+            advanceUntilIdle()
 
-        coVerify(exactly = 1) { repo.sendToAllPlayers(broadcastMsg) }
-        coVerify(exactly = 1) { repo.sendToPlayer(playerId, unicastMsg) }
+            coVerify(exactly = 1) { repo.sendToAllPlayers(broadcastMsg) }
+            coVerify(exactly = 1) { repo.sendToPlayer(playerId, unicastMsg) }
 
-        job.cancel()
-    }
-
-    @Test
-    fun `GIVEN Transition with No Phase Change WHEN Handled THEN Phase Persists`() = runTest {
-        val playerId = "p1"
-        val msg = ClientMessage.SubmitVote("p2")
-
-        // Return Valid transition but newPhase is null
-        coEvery { strategy.handleAction(any(), any(), msg, playerId) } returns
-                GameStateTransition.Valid(
-                    newGameData = GameData(),
-                    newPhase = null // Explicitly null
-                )
-
-        val job = launch { gameServer.start("CODE", "123") }
-        repoStateFlow.value = ServerState.Running(1234, "CODE")
-        runCurrent()
-
-        incomingMessagesFlow.emit(playerId to msg)
-        advanceUntilIdle()
-
-        // Trigger next event to check state
-        val checkMsg = ClientMessage.EndTurn
-        coEvery {
-            strategy.handleAction(
-                any(),
-                any(),
-                checkMsg,
-                playerId
-            )
-        } returns GameStateTransition.Valid(GameData())
-
-        incomingMessagesFlow.emit(playerId to checkMsg)
-        advanceUntilIdle()
-
-        coVerify {
-            strategy.handleAction(
-                any(),
-                withArg { assertEquals(GamePhase.Lobby, it) }, // Should still be Lobby (Default)
-                checkMsg,
-                playerId
-            )
+            job.cancel()
         }
 
-        job.cancel()
-    }
+    @Test
+    fun `GIVEN Transition with No Phase Change WHEN Handled THEN Phase Persists`() =
+        runTest {
+            val playerId = "p1"
+            val msg = ClientMessage.SubmitVote("p2")
+
+            // Return Valid transition but newPhase is null
+            coEvery { strategy.handleAction(any(), any(), msg, playerId) } returns
+                GameStateTransition.Valid(
+                    newGameData = GameData(),
+                    newPhase = null, // Explicitly null
+                )
+
+            val job = launch { gameServer.start("CODE", "123") }
+            repoStateFlow.value = ServerState.Running(1234, "CODE")
+            runCurrent()
+
+            incomingMessagesFlow.emit(playerId to msg)
+            advanceUntilIdle()
+
+            // Trigger next event to check state
+            val checkMsg = ClientMessage.EndTurn
+            coEvery {
+                strategy.handleAction(
+                    any(),
+                    any(),
+                    checkMsg,
+                    playerId,
+                )
+            } returns GameStateTransition.Valid(GameData())
+
+            incomingMessagesFlow.emit(playerId to checkMsg)
+            advanceUntilIdle()
+
+            coVerify {
+                strategy.handleAction(
+                    any(),
+                    withArg {
+                        assertEquals(
+                            GamePhase.Lobby,
+                            it,
+                        )
+                    }, // Should still be Lobby (Default)
+                    checkMsg,
+                    playerId,
+                )
+            }
+
+            job.cancel()
+        }
     //endregion
 
     @Test
-    fun `GIVEN Stop Called THEN Repo Stops`() = runTest {
-        gameServer.stop()
-        coVerify(exactly = 1) { repo.stop() }
-    }
+    fun `GIVEN Stop Called THEN Repo Stops`() =
+        runTest {
+            gameServer.stop()
+            coVerify(exactly = 1) { repo.stop() }
+        }
 }

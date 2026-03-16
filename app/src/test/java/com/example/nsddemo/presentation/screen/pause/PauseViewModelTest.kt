@@ -24,11 +24,10 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PauseViewModelTest {
-
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private lateinit var viewModel: PausedViewModel
+    private lateinit var viewModel: PauseViewModel
     private lateinit var mockGameSession: GameSession
     private lateinit var mockActiveClient: GameClient
 
@@ -44,40 +43,44 @@ class PauseViewModelTest {
         every { mockGameSession.gamePhase } returns gamePhaseFlow
         every { mockGameSession.activeClient } returns mockActiveClient
 
-        viewModel = PausedViewModel(mockGameSession, UnconfinedTestDispatcher())
+        viewModel = PauseViewModel(mockGameSession, UnconfinedTestDispatcher())
     }
 
     @Test
-    fun `GIVEN game data WHEN players disconnect THEN filters disconnected players`() = runTest {
-        gameDataFlow.value = GameData(
-            players = mapOf(
-                "p1" to Player("Alice", "red", "p1", isConnected = true),
-                "p2" to Player("Bob", "blue", "p2", isConnected = false)
-            )
-        )
-        viewModel.state.test {
-            val updatedState = awaitItem()
-            assertEquals(1, updatedState.disconnectedPlayers.size)
-            assertEquals("Bob", updatedState.disconnectedPlayers.first().name)
-            expectNoEvents()
+    fun `GIVEN game data WHEN players disconnect THEN filters disconnected players`() =
+        runTest {
+            gameDataFlow.value =
+                GameData(
+                    players =
+                        mapOf(
+                            "p1" to Player("Alice", "red", "p1", isConnected = true),
+                            "p2" to Player("Bob", "blue", "p2", isConnected = false),
+                        ),
+                )
+            viewModel.state.test {
+                val updatedState = awaitItem()
+                assertEquals(1, updatedState.disconnectedPlayers.size)
+                assertEquals("Bob", updatedState.disconnectedPlayers.first().name)
+                expectNoEvents()
+            }
         }
-    }
 
     @Test
-    fun `GIVEN End Game event WHEN triggered THEN disables button and calls client`() = runTest {
-        assertTrue(viewModel.state.value.isEndGameButtonEnabled)
+    fun `GIVEN End Game event WHEN triggered THEN disables button and calls client`() =
+        runTest {
+            assertTrue(viewModel.state.value.isEndGameButtonEnabled)
 
-        viewModel.onEvent(PauseEvent.EndGame)
-        advanceUntilIdle()
+            viewModel.onEvent(PauseEvent.EndGame)
+            advanceUntilIdle()
 
-        viewModel.state.test {
-            assertFalse(awaitItem().isEndGameButtonEnabled)
+            viewModel.state.test {
+                assertFalse(awaitItem().isEndGameButtonEnabled)
+                coVerify(exactly = 1) { mockActiveClient.endGame() }
+            }
+
+            // Triggering again shouldn't fire a second network call
+            viewModel.onEvent(PauseEvent.EndGame)
+            advanceUntilIdle()
             coVerify(exactly = 1) { mockActiveClient.endGame() }
         }
-
-        // Triggering again shouldn't fire a second network call
-        viewModel.onEvent(PauseEvent.EndGame)
-        advanceUntilIdle()
-        coVerify(exactly = 1) { mockActiveClient.endGame() }
-    }
 }

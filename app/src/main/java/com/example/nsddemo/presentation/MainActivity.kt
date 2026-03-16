@@ -31,25 +31,25 @@ import androidx.navigation.compose.rememberNavController
 import com.example.nsddemo.domain.engine.GameSession
 import com.example.nsddemo.presentation.navigation.GameNavigation
 import com.example.nsddemo.presentation.navigation.GameRouteMapper
-import com.example.nsddemo.presentation.screen.choose_category.ChooseCategoryScreen
-import com.example.nsddemo.presentation.screen.create_game.CreateGameLoadingScreen
+import com.example.nsddemo.presentation.screen.choosecategory.ChooseCategoryScreen
+import com.example.nsddemo.presentation.screen.creategame.CreateGameLoadingScreen
 import com.example.nsddemo.presentation.screen.disconnected.DisconnectedScreen
-import com.example.nsddemo.presentation.screen.end_game.EndGameScreen
-import com.example.nsddemo.presentation.screen.imposter_guess.ImposterGuessScreen
-import com.example.nsddemo.presentation.screen.join_game.JoinGameLoadingScreen
-import com.example.nsddemo.presentation.screen.join_game.JoinGameScreen
-import com.example.nsddemo.presentation.screen.join_game.JoinGameViewModel
+import com.example.nsddemo.presentation.screen.endgame.EndGameScreen
+import com.example.nsddemo.presentation.screen.imposterguess.ImposterGuessScreen
+import com.example.nsddemo.presentation.screen.joingame.JoinGameLoadingScreen
+import com.example.nsddemo.presentation.screen.joingame.JoinGameScreen
+import com.example.nsddemo.presentation.screen.joingame.JoinGameViewModel
 import com.example.nsddemo.presentation.screen.lobby.LobbyScreen
-import com.example.nsddemo.presentation.screen.main_menu.MainMenuScreen
+import com.example.nsddemo.presentation.screen.mainmenu.MainMenuScreen
 import com.example.nsddemo.presentation.screen.pause.PauseScreen
 import com.example.nsddemo.presentation.screen.question.QuestionScreen
-import com.example.nsddemo.presentation.screen.replay_round_choice.ChooseExtraQuestionsScreen
-import com.example.nsddemo.presentation.screen.role_reveal.RoleRevealScreen
+import com.example.nsddemo.presentation.screen.replayroundchoice.ChooseExtraQuestionsScreen
+import com.example.nsddemo.presentation.screen.rolereveal.RoleRevealScreen
 import com.example.nsddemo.presentation.screen.score.ScoreScreen
 import com.example.nsddemo.presentation.screen.settings.SettingsScreen
 import com.example.nsddemo.presentation.screen.settings.SettingsViewModel
 import com.example.nsddemo.presentation.screen.voting.VotingScreen
-import com.example.nsddemo.presentation.screen.voting_results.VotingResultsScreen
+import com.example.nsddemo.presentation.screen.votingresults.VotingResultsScreen
 import com.example.nsddemo.presentation.theme.AppTheme
 import com.example.nsddemo.presentation.util.NoFeedbackIndication
 import com.example.nsddemo.presentation.util.Routes
@@ -81,7 +81,8 @@ class MainActivity : AppCompatActivity() {
             val useDarkTheme by settingsViewModel.darkThemeSetting.collectAsState()
             val locale by settingsViewModel.languageSetting.collectAsState()
             AppTheme(
-                useDarkTheme = useDarkTheme, locale = locale
+                useDarkTheme = useDarkTheme,
+                locale = locale,
             ) {
                 CompositionLocalProvider(LocalIndication provides NoFeedbackIndication()) {
                     val snackBarHostState = remember { SnackbarHostState() }
@@ -90,49 +91,52 @@ class MainActivity : AppCompatActivity() {
                     GameNavigation(
                         navController = navController,
                         gameSession = gameSession,
-                        routeMapper = routeMapper
+                        routeMapper = routeMapper,
                     )
                     Scaffold(
                         Modifier
                             .fillMaxSize()
                             .background(MaterialTheme.colorScheme.background),
                         snackbarHost = { SnackbarHost(snackBarHostState) },
-                        contentWindowInsets = ScaffoldDefaults.contentWindowInsets
+                        contentWindowInsets = ScaffoldDefaults.contentWindowInsets,
                     ) {
                         NavHost(
                             navController = navController,
                             startDestination = Routes.MainMenu.route,
-                            route = Routes.RootGraph.route
+                            route = Routes.RootGraph.route,
                         ) {
                             composable(Routes.MainMenu.route) {
                                 MainMenuScreen(
-                                    navController = navController
+                                    navController = navController,
                                 )
                             }
                             composable(Routes.Settings.route) {
                                 SettingsScreen(
                                     viewModel = settingsViewModel,
-                                    navController = navController
+                                    navController = navController,
                                 )
                             }
                             navigation(
                                 startDestination = Routes.JoinGame.route,
-                                route = Routes.JoinGameGraph.route
+                                route = Routes.JoinGameGraph.route,
                             ) {
                                 composable(Routes.JoinGame.route) { backStackEntry ->
-                                    val parentEntry = remember(backStackEntry) {
-                                        navController.getBackStackEntry(Routes.JoinGameGraph.route)
-                                    }
+                                    val parentEntry =
+                                        remember(backStackEntry) {
+                                            navController.getBackStackEntry(Routes.JoinGameGraph.route)
+                                        }
                                     val joinViewModel =
                                         hiltViewModel<JoinGameViewModel>(parentEntry)
                                     JoinGameScreen(
-                                        viewModel = joinViewModel, navController = navController
+                                        viewModel = joinViewModel,
+                                        navController = navController,
                                     )
                                 }
                                 composable(Routes.JoinGameLoading.route) { backStackEntry ->
-                                    val parentEntry = remember(backStackEntry) {
-                                        navController.getBackStackEntry(Routes.JoinGameGraph.route)
-                                    }
+                                    val parentEntry =
+                                        remember(backStackEntry) {
+                                            navController.getBackStackEntry(Routes.JoinGameGraph.route)
+                                        }
                                     val joinViewModel =
                                         hiltViewModel<JoinGameViewModel>(parentEntry)
                                     JoinGameLoadingScreen(
@@ -144,7 +148,8 @@ class MainActivity : AppCompatActivity() {
                                                     message = message,
                                                 )
                                             }
-                                        })
+                                        },
+                                    )
                                 }
                             }
                             composable(Routes.CreateGameLoading.route) {
@@ -153,13 +158,12 @@ class MainActivity : AppCompatActivity() {
                             composable(Routes.Paused.route) {
                                 PauseScreen()
                             }
-                            composable(Routes.Disconnected.route)
-                            {
+                            composable(Routes.Disconnected.route) {
                                 DisconnectedScreen(navController = navController)
                             }
                             navigation(
                                 startDestination = Routes.Lobby.route,
-                                route = Routes.GameSessionGraph.route
+                                route = Routes.GameSessionGraph.route,
                             ) {
                                 composable(Routes.Lobby.route) {
                                     LobbyScreen(navController = navController)
@@ -198,7 +202,7 @@ class MainActivity : AppCompatActivity() {
                                 }
                                 composable(Routes.EndGame.route) {
                                     EndGameScreen(
-                                        navController = navController
+                                        navController = navController,
                                     )
                                 }
                             }

@@ -33,30 +33,32 @@ import com.example.nsddemo.presentation.components.modifier.brutalistBorderBotto
 @Composable
 fun PauseBanner(modifier: Modifier = Modifier) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.primary)
-            .brutalistBorderBottom(MaterialTheme.colorScheme.outline, 2.dp)
-            .padding(vertical = 12.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.primary)
+                .brutalistBorderBottom(MaterialTheme.colorScheme.outline, 2.dp)
+                .padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         val transition = rememberInfiniteTransition(label = "pulse")
         val alpha by transition.animateFloat(
             initialValue = 0.4f,
             targetValue = 1f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(800, easing = LinearEasing),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "pulse_alpha"
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(800, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+            label = "pulse_alpha",
         )
 
         Icon(
             imageVector = ImageVector.vectorResource(R.drawable.sharp_pause_circle_24),
             contentDescription = null,
             tint = Color.Black.copy(alpha = alpha),
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(20.dp),
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
@@ -64,14 +66,14 @@ fun PauseBanner(modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.titleMedium,
             color = Color.Black,
             letterSpacing = 2.sp,
-            fontWeight = FontWeight.Black
+            fontWeight = FontWeight.Black,
         )
         Spacer(modifier = Modifier.width(8.dp))
         Icon(
             imageVector = ImageVector.vectorResource(R.drawable.sharp_pause_circle_24),
             contentDescription = null,
             tint = Color.Black.copy(alpha = alpha),
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(20.dp),
         )
     }
 }

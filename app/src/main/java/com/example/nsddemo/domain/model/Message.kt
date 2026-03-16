@@ -10,19 +10,25 @@ sealed class Message
 sealed class ServerMessage : Message() {
     //region Session Management
     @Serializable
-    data class PlayerDisconnected(val playerId: String) :
-        ServerMessage()
+    data class PlayerDisconnected(
+        val playerId: String,
+    ) : ServerMessage()
 
     @Serializable
-    data class PlayerReconnected(val player: Player) :
-        ServerMessage()
+    data class PlayerReconnected(
+        val player: Player,
+    ) : ServerMessage()
 
     @Serializable
-    data class GameResumed(val phaseAfterPause: GamePhase) : ServerMessage()
+    data class GameResumed(
+        val phaseAfterPause: GamePhase,
+    ) : ServerMessage()
 
     @Serializable
-    data class ReconnectionFullStateSync(val data: GameData, val phase: GamePhase) :
-        ServerMessage()
+    data class ReconnectionFullStateSync(
+        val data: GameData,
+        val phase: GamePhase,
+    ) : ServerMessage()
 
     @Serializable
     data object GameFull : ServerMessage()
@@ -39,23 +45,30 @@ sealed class ServerMessage : Message() {
     //endregion
 
     @Serializable
-    data class RegisterHost(val hostId: String) : ServerMessage()
+    data class RegisterHost(
+        val hostId: String,
+    ) : ServerMessage()
 
     @Serializable
-    data class PlayerList(val players: List<Player>) :
-        ServerMessage()
+    data class PlayerList(
+        val players: List<Player>,
+    ) : ServerMessage()
 
     @Serializable
-    data class CategorySelected(val category: GameCategory) :
-        ServerMessage()
+    data class CategorySelected(
+        val category: GameCategory,
+    ) : ServerMessage()
 
     @Serializable
-    data class RoleAssigned(val category: GameCategory, val word: String) :
-        ServerMessage()
+    data class RoleAssigned(
+        val category: GameCategory,
+        val word: String,
+    ) : ServerMessage()
 
     @Serializable
-    data class PlayerReady(val readyPlayerIds: List<String>) :
-        ServerMessage()
+    data class PlayerReady(
+        val readyPlayerIds: List<String>,
+    ) : ServerMessage()
 
     @Serializable
     data class Question(
@@ -67,28 +80,39 @@ sealed class ServerMessage : Message() {
     data object RoundEnd : ServerMessage()
 
     @Serializable
-    data class ReplayRound(val incrementRoundNumber: Boolean = true) : ServerMessage()
+    data class ReplayRound(
+        val incrementRoundNumber: Boolean = true,
+    ) : ServerMessage()
 
     @Serializable
     data object StartVote : ServerMessage()
 
     @Serializable
-    data class StartImposterGuess(val wordOptions: List<String>) : ServerMessage()
+    data class StartImposterGuess(
+        val wordOptions: List<String>,
+    ) : ServerMessage()
 
     @Serializable
-    data class PlayerVoted(val playerId: String, val votedPlayerId: String) : ServerMessage()
+    data class PlayerVoted(
+        val playerId: String,
+        val votedPlayerId: String,
+    ) : ServerMessage()
 
     @Serializable
-    data class VotesAfterLeaver(val votes: Map<String, String>) : ServerMessage()
+    data class VotesAfterLeaver(
+        val votes: Map<String, String>,
+    ) : ServerMessage()
 
     @Serializable
-    data class ScoresAfterLeaver(val scores: Map<String, Int>) : ServerMessage()
+    data class ScoresAfterLeaver(
+        val scores: Map<String, Int>,
+    ) : ServerMessage()
 
     @Serializable
     data class VoteResult(
         val voteResult: Map<String, String>,
         val imposterId: String,
-        val playerScores: Map<String, Int>
+        val playerScores: Map<String, Int>,
     ) : ServerMessage()
 
     @Serializable
@@ -105,16 +129,21 @@ sealed class ServerMessage : Message() {
 @Serializable
 sealed class ClientMessage : Message() {
     @Serializable
-    data class RegisterPlayer(val playerName: String, val playerId: String) :
-        ClientMessage()
+    data class RegisterPlayer(
+        val playerName: String,
+        val playerId: String,
+    ) : ClientMessage()
 
     //region Host-as-a-client messages
     @Serializable
-    data class RequestSelectCategory(val category: GameCategory) :
-        ClientMessage()
+    data class RequestSelectCategory(
+        val category: GameCategory,
+    ) : ClientMessage()
 
     @Serializable
-    data class RequestKickPlayer(val playerId: String) : ClientMessage()
+    data class RequestKickPlayer(
+        val playerId: String,
+    ) : ClientMessage()
 
     @Serializable
     data object RequestStartGame : ClientMessage()
@@ -136,10 +165,14 @@ sealed class ClientMessage : Message() {
     //endregion
 
     @Serializable
-    data class SubmitVote(val votedPlayerID: String) : ClientMessage()
+    data class SubmitVote(
+        val votedPlayerID: String,
+    ) : ClientMessage()
 
     @Serializable
-    data class SubmitImposterGuess(val guessedWord: String) : ClientMessage()
+    data class SubmitImposterGuess(
+        val guessedWord: String,
+    ) : ClientMessage()
 
     //region Host-as-a-client messages
     @Serializable
@@ -155,8 +188,8 @@ sealed class ClientMessage : Message() {
 }
 
 // Configure Json
-val NetworkJson = Json {
-    prettyPrint = true
+val NetworkJson =
+    Json {
+        prettyPrint = true
 //    ignoreUnknownKeys = true // Useful if client/server versions mismatch slightly
-
-}
+    }

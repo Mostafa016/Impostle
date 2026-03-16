@@ -30,38 +30,45 @@ fun BrutalistLoaderVisual(modifier: Modifier = Modifier) {
     val scale by infiniteTransition.animateFloat(
         initialValue = 0.8f,
         targetValue = 1.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse"
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(1000, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "pulse",
     )
 
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "spin"
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(3000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "spin",
     )
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Box(
-            modifier = Modifier
-                .size(140.dp)
-                .scale(scale)
-                .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f), CircleShape)
+            modifier =
+                Modifier
+                    .size(140.dp)
+                    .scale(scale)
+                    .background(
+                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f),
+                        CircleShape,
+                    ),
         )
 
         Icon(
             imageVector = ImageVector.vectorResource(R.drawable.sharp_visibility_24),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier
-                .size(80.dp)
-                .rotate(rotation)
+            modifier =
+                Modifier
+                    .size(80.dp)
+                    .rotate(rotation),
         )
     }
 }

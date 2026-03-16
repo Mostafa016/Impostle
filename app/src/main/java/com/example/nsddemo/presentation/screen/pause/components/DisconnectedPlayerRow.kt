@@ -26,45 +26,48 @@ import androidx.compose.ui.unit.sp
 import com.example.nsddemo.R
 import com.example.nsddemo.domain.model.Player
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 
 @Composable
 fun DisconnectedPlayerRow(
     player: Player,
     isHost: Boolean,
     onKick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .brutalistCard(
-                backgroundColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f),
-                borderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f),
-                shadowOffset = 0.dp,
-                cornerRadius = BrutalistDimens.CornerMedium,
-                borderWidth = 2.dp
-            )
-            .padding(12.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .brutalistCard(
+                    backgroundColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f),
+                    borderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f),
+                    shadowOffset = 0.dp,
+                    cornerRadius = Dimens.CornerMedium,
+                    borderWidth = 2.dp,
+                ).padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(MaterialTheme.colorScheme.errorContainer, RoundedCornerShape(6.dp))
-                    .border(2.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(6.dp)),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(48.dp)
+                        .background(
+                            MaterialTheme.colorScheme.errorContainer,
+                            RoundedCornerShape(6.dp),
+                        ).border(2.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(6.dp)),
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = ImageVector.vectorResource(R.drawable.sharp_wifi_off_24),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
             }
 
@@ -74,36 +77,36 @@ fun DisconnectedPlayerRow(
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = "RECONNECTING...",
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                     color = MaterialTheme.colorScheme.error,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             }
         }
 
         if (isHost) {
             Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .brutalistCard(
-                        backgroundColor = MaterialTheme.colorScheme.surface,
-                        borderColor = MaterialTheme.colorScheme.outline,
-                        shadowOffset = BrutalistDimens.ShadowSmall,
-                        cornerRadius = BrutalistDimens.CornerSmall,
-                        borderWidth = BrutalistDimens.BorderThin
-                    )
-                    .clickable { onKick() },
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(40.dp)
+                        .brutalistCard(
+                            backgroundColor = MaterialTheme.colorScheme.surface,
+                            borderColor = MaterialTheme.colorScheme.outline,
+                            shadowOffset = Dimens.ShadowSmall,
+                            cornerRadius = Dimens.CornerSmall,
+                            borderWidth = Dimens.BorderThin,
+                        ).clickable { onKick() },
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = ImageVector.vectorResource(R.drawable.sharp_person_remove_24),
                     contentDescription = "Kick",
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
                 )
             }
         }

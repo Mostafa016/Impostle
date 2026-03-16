@@ -24,22 +24,23 @@ fun BrutalistSectionHeader(
     modifier: Modifier = Modifier,
     backgroundColor: Color = MaterialTheme.colorScheme.background,
     contentColor: Color = MaterialTheme.colorScheme.onBackground,
-    trailingContent: @Composable (() -> Unit)? = null
+    trailingContent: @Composable (() -> Unit)? = null,
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(backgroundColor)
-            .brutalistBorderBottom(MaterialTheme.colorScheme.outline, 2.dp)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(backgroundColor)
+                .brutalistBorderBottom(MaterialTheme.colorScheme.outline, 2.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = text.uppercase(),
             style = MaterialTheme.typography.titleMedium,
             color = contentColor,
-            letterSpacing = 2.sp
+            letterSpacing = 2.sp,
         )
         trailingContent?.invoke()
     }

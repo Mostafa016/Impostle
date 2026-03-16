@@ -1,6 +1,8 @@
 package com.example.nsddemo.domain.model
 
-enum class NewPlayerColors(val hexCode: String) {
+enum class NewPlayerColors(
+    val hexCode: String,
+) {
     Red("FFD71E22"),
     Blue("FF1D3CE9"),
     DarkGreen("FF023020"),
@@ -17,13 +19,12 @@ enum class NewPlayerColors(val hexCode: String) {
     Navy("FF0B1C2D"),
     Gold("FFFFC107"),
     Gray("FF8E8E93"),
-    Fallback("FF000000");
+    Fallback("FF000000"),
+    ;
 
     override fun toString(): String = hexCode
 
     companion object {
-        fun fromHex(hex: String): NewPlayerColors {
-            return entries.find { it.hexCode.equals(hex, ignoreCase = true) } ?: Fallback
-        }
+        fun fromHex(hex: String): NewPlayerColors = entries.find { it.hexCode.equals(hex, ignoreCase = true) } ?: Fallback
     }
 }

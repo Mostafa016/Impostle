@@ -45,7 +45,6 @@ import org.junit.Test
 
 @ExperimentalCoroutinesApi
 class GameClientTest {
-
     // ... SUT and Dependencies ...
     private lateinit var gameClient: GameClient
 
@@ -122,224 +121,239 @@ class GameClientTest {
     // ==========================================
 
     @Test
-    fun `GIVEN Start Called WHEN Connected within Timeout THEN Listening Starts`() = runTest {
-        // Arrange
-        val job = launch { gameClient.start("CODE", "123") }
+    fun `GIVEN Start Called WHEN Connected within Timeout THEN Listening Starts`() =
+        runTest {
+            // Arrange
+            val job = launch { gameClient.start("CODE", "123") }
 
-        // Act: Simulate successful connection
-        clientStateFlow.value = ClientState.Connected
-        advanceUntilIdle()
+            // Act: Simulate successful connection
+            clientStateFlow.value = ClientState.Connected
+            advanceUntilIdle()
 
-        // Assert
-        coVerify { networkRepo.connect("CODE") }
-        // Verify stop was NOT called
-        coVerify(exactly = 0) { sessionRepo.reset() }
+            // Assert
+            coVerify { networkRepo.connect("CODE") }
+            // Verify stop was NOT called
+            coVerify(exactly = 0) { sessionRepo.reset() }
 
-        job.cancel()
-    }
+            job.cancel()
+        }
 
     @Test
-    fun `GIVEN Start Called WHEN Timeout Reached THEN Stop is Called`() = runTest {
-        // Arrange
-        val job = launch { gameClient.start("CODE", "123") }
+    fun `GIVEN Start Called WHEN Timeout Reached THEN Stop is Called`() =
+        runTest {
+            // Arrange
+            val job = launch { gameClient.start("CODE", "123") }
 
-        // Act: Advance time past timeout without changing state
-        advanceTimeBy(GameClient.TIMEOUT_MS + 1)
+            // Act: Advance time past timeout without changing state
+            advanceTimeBy(GameClient.TIMEOUT_MS + 1)
 
-        // Assert
-        coVerify { networkRepo.disconnect() }
-        coVerify { sessionRepo.reset() }
+            // Assert
+            coVerify { networkRepo.disconnect() }
+            coVerify { sessionRepo.reset() }
 
-        job.cancel()
-    }
+            job.cancel()
+        }
 
     // ==========================================
     // 2. INCOMING MESSAGE HANDLING
     // ==========================================
 
     @Test
-    fun `GIVEN Server Message WHEN Received THEN Updates Data via Reducer`() = runTest {
-        // Arrange
-        val msg = ServerMessage.PlayerList(emptyList())
-        val dummyData = GameData()
+    fun `GIVEN Server Message WHEN Received THEN Updates Data via Reducer`() =
+        runTest {
+            // Arrange
+            val msg = ServerMessage.PlayerList(emptyList())
+            val dummyData = GameData()
 
-        // Mock Reducer Logic
-        // IMPORTANT: Move mocks BEFORE the action that triggers them
-        every { ClientStateReducer.reduce(any(), msg) } returns dummyData
+            // Mock Reducer Logic
+            // IMPORTANT: Move mocks BEFORE the action that triggers them
+            every { ClientStateReducer.reduce(any(), msg) } returns dummyData
 
-        // Start listening
-        val job = launch { gameClient.start("CODE", "123") }
+            // Start listening
+            val job = launch { gameClient.start("CODE", "123") }
 
-        // Ensure the start coroutine gets to the connection check
-        runCurrent()
+            // Ensure the start coroutine gets to the connection check
+            runCurrent()
 
-        // Simulate Connection so start() proceeds
-        clientStateFlow.value = ClientState.Connected
-        runCurrent()
+            // Simulate Connection so start() proceeds
+            clientStateFlow.value = ClientState.Connected
+            runCurrent()
 
-        // Act
-        incomingMessagesFlow.emit("server" to msg)
-        advanceUntilIdle()
+            // Act
+            incomingMessagesFlow.emit("server" to msg)
+            advanceUntilIdle()
 
-        // Assert
-        coVerify { sessionRepo.updateGameData(any()) }
-        verify { ClientStateReducer.reduce(any(), msg) }
+            // Assert
+            coVerify { sessionRepo.updateGameData(any()) }
+            verify { ClientStateReducer.reduce(any(), msg) }
 
-        job.cancel()
-    }
-
-    @Test
-    fun `GIVEN Server Message WHEN Transition Exists THEN Updates Phase via Registry`() = runTest {
-        // Arrange
-        val msg = ServerMessage.StartVote
-        val expectedPhase = GamePhase.GameVoting
-
-        val job = launch { gameClient.start("CODE", "123") }
-        runCurrent()
-        clientStateFlow.value = ClientState.Connected
-
-        // Mock Registry
-        every { GameFlowRegistry.getTransitionFor(msg) } returns expectedPhase
-        // Mock Reducer to do nothing
-        every { ClientStateReducer.reduce(any(), any()) } returns GameData()
-
-        // Act
-        incomingMessagesFlow.emit("server" to msg)
-        advanceUntilIdle()
-
-        // Assert
-        coVerify { sessionRepo.updateGamePhase(expectedPhase) }
-
-        job.cancel()
-    }
+            job.cancel()
+        }
 
     @Test
-    fun `GIVEN Server Message WHEN No Transition THEN Does Not Update Phase`() = runTest {
-        val msg = ServerMessage.PlayerList(emptyList()) // Data only message
+    fun `GIVEN Server Message WHEN Transition Exists THEN Updates Phase via Registry`() =
+        runTest {
+            // Arrange
+            val msg = ServerMessage.StartVote
+            val expectedPhase = GamePhase.GameVoting
 
-        val job = launch { gameClient.start("CODE", "123") }
-        clientStateFlow.value = ClientState.Connected
+            val job = launch { gameClient.start("CODE", "123") }
+            runCurrent()
+            clientStateFlow.value = ClientState.Connected
 
-        every { GameFlowRegistry.getTransitionFor(msg) } returns null
-        every { ClientStateReducer.reduce(any(), any()) } returns GameData()
+            // Mock Registry
+            every { GameFlowRegistry.getTransitionFor(msg) } returns expectedPhase
+            // Mock Reducer to do nothing
+            every { ClientStateReducer.reduce(any(), any()) } returns GameData()
 
-        // Act
-        incomingMessagesFlow.emit("server" to msg)
-        advanceUntilIdle()
+            // Act
+            incomingMessagesFlow.emit("server" to msg)
+            advanceUntilIdle()
 
-        // Assert
-        coVerify(exactly = 0) { sessionRepo.updateGamePhase(any()) }
+            // Assert
+            coVerify { sessionRepo.updateGamePhase(expectedPhase) }
 
-        job.cancel()
-    }
+            job.cancel()
+        }
+
+    @Test
+    fun `GIVEN Server Message WHEN No Transition THEN Does Not Update Phase`() =
+        runTest {
+            val msg = ServerMessage.PlayerList(emptyList()) // Data only message
+
+            val job = launch { gameClient.start("CODE", "123") }
+            clientStateFlow.value = ClientState.Connected
+
+            every { GameFlowRegistry.getTransitionFor(msg) } returns null
+            every { ClientStateReducer.reduce(any(), any()) } returns GameData()
+
+            // Act
+            incomingMessagesFlow.emit("server" to msg)
+            advanceUntilIdle()
+
+            // Assert
+            coVerify(exactly = 0) { sessionRepo.updateGamePhase(any()) }
+
+            job.cancel()
+        }
 
     // ==========================================
     // 3. EVENT EMISSION
     // ==========================================
 
     @Test
-    fun `GIVEN GameFull Message WHEN Received THEN Emits LobbyFull Event`() = runTest {
-        val msg = ServerMessage.GameFull
-        every { GameFlowRegistry.getTransitionFor(msg) } returns null
-        every { ClientStateReducer.reduce(any(), any()) } returns GameData()
+    fun `GIVEN GameFull Message WHEN Received THEN Emits LobbyFull Event`() =
+        runTest {
+            val msg = ServerMessage.GameFull
+            every { GameFlowRegistry.getTransitionFor(msg) } returns null
+            every { ClientStateReducer.reduce(any(), any()) } returns GameData()
 
-        val job = launch { gameClient.start("CODE", "123") }
-        runCurrent()
+            val job = launch { gameClient.start("CODE", "123") }
+            runCurrent()
 
-        clientStateFlow.value = ClientState.Connected
+            clientStateFlow.value = ClientState.Connected
 
-        gameClient.clientEvent.test {
-            // Act
-            incomingMessagesFlow.emit("server" to msg)
+            gameClient.clientEvent.test {
+                // Act
+                incomingMessagesFlow.emit("server" to msg)
 
-            // Assert
-            assertEquals(ClientEvent.LobbyFull, awaitItem())
+                // Assert
+                assertEquals(ClientEvent.LobbyFull, awaitItem())
+            }
+            job.cancel()
         }
-        job.cancel()
-    }
 
     @Test
-    fun `GIVEN PlayerDisconnected Message WHEN Received THEN Emits PlayerLeft Event`() = runTest {
-        val playerId = "p1"
-        val msg = ServerMessage.PlayerDisconnected(playerId)
+    fun `GIVEN PlayerDisconnected Message WHEN Received THEN Emits PlayerLeft Event`() =
+        runTest {
+            val playerId = "p1"
+            val msg = ServerMessage.PlayerDisconnected(playerId)
 
-        every { GameFlowRegistry.getTransitionFor(msg) } returns null
-        every { ClientStateReducer.reduce(any(), any()) } returns GameData()
+            every { GameFlowRegistry.getTransitionFor(msg) } returns null
+            every { ClientStateReducer.reduce(any(), any()) } returns GameData()
 
-        val job = launch { gameClient.start("CODE", "123") }
-        runCurrent()
+            val job = launch { gameClient.start("CODE", "123") }
+            runCurrent()
 
-        clientStateFlow.value = ClientState.Connected
+            clientStateFlow.value = ClientState.Connected
 
-        gameClient.clientEvent.test {
-            // Act
-            incomingMessagesFlow.emit("server" to msg)
+            gameClient.clientEvent.test {
+                // Act
+                incomingMessagesFlow.emit("server" to msg)
 
-            // Assert
-            val event = awaitItem()
-            assertTrue(event is ClientEvent.PlayerLeft)
-            assertEquals(playerId, (event as ClientEvent.PlayerLeft).playerId)
+                // Assert
+                val event = awaitItem()
+                assertTrue(event is ClientEvent.PlayerLeft)
+                assertEquals(playerId, (event as ClientEvent.PlayerLeft).playerId)
+            }
+            job.cancel()
         }
-        job.cancel()
-    }
 
     // ==========================================
     // 4. OUTGOING ACTIONS (Pass-throughs)
     // ==========================================
 
     @Test
-    fun `GIVEN startGame called WHEN invoked THEN Sends RequestStartGame`() = runTest {
-        // Act
-        gameClient.startGame()
+    fun `GIVEN startGame called WHEN invoked THEN Sends RequestStartGame`() =
+        runTest {
+            // Act
+            gameClient.startGame()
 
-        // Assert
-        coVerify { networkRepo.sendToServer(ClientMessage.RequestStartGame) }
-    }
+            // Assert
+            coVerify { networkRepo.sendToServer(ClientMessage.RequestStartGame) }
+        }
 
     @Test
-    fun `GIVEN registerPlayer called WHEN invoked THEN Sends RegisterPlayer`() = runTest {
-        val name = "Alice"
-        val id = "123"
+    fun `GIVEN registerPlayer called WHEN invoked THEN Sends RegisterPlayer`() =
+        runTest {
+            val name = "Alice"
+            val id = "123"
 
-        // Act
-        gameClient.registerPlayer(name, id)
+            // Act
+            gameClient.registerPlayer(name, id)
 
-        // Assert
-        coVerify {
-            networkRepo.sendToServer(match {
-                it is ClientMessage.RegisterPlayer && it.playerName == name && it.playerId == id
-            })
+            // Assert
+            coVerify {
+                networkRepo.sendToServer(
+                    match {
+                        it is ClientMessage.RegisterPlayer && it.playerName == name && it.playerId == id
+                    },
+                )
+            }
         }
-    }
 
     @Test
-    fun `GIVEN selectCategory called WHEN invoked THEN Sends RequestSelectCategory`() = runTest {
-        val cat = GameCategory.ANIMALS
+    fun `GIVEN selectCategory called WHEN invoked THEN Sends RequestSelectCategory`() =
+        runTest {
+            val cat = GameCategory.ANIMALS
 
-        // Act
-        gameClient.selectCategory(cat)
+            // Act
+            gameClient.selectCategory(cat)
 
-        // Assert
-        coVerify {
-            networkRepo.sendToServer(match {
-                it is ClientMessage.RequestSelectCategory && it.category == cat
-            })
+            // Assert
+            coVerify {
+                networkRepo.sendToServer(
+                    match {
+                        it is ClientMessage.RequestSelectCategory && it.category == cat
+                    },
+                )
+            }
         }
-    }
 
     // ==========================================
     // 5. SHUTDOWN
     // ==========================================
 
     @Test
-    fun `GIVEN Stop Called WHEN invoked THEN Resets Session and Disconnects`() = runTest {
-        // Act
-        gameClient.stop()
+    fun `GIVEN Stop Called WHEN invoked THEN Resets Session and Disconnects`() =
+        runTest {
+            // Act
+            gameClient.stop()
 
-        // Assert
-        coVerifyOrder {
-            sessionRepo.reset()
-            networkRepo.disconnect()
+            // Assert
+            coVerifyOrder {
+                sessionRepo.reset()
+                networkRepo.disconnect()
+            }
         }
-    }
 }

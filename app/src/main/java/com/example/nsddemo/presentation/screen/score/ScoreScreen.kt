@@ -1,5 +1,6 @@
 package com.example.nsddemo.presentation.screen.score
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,7 +47,7 @@ import com.example.nsddemo.presentation.components.modifier.brutalistGridBackgro
 import com.example.nsddemo.presentation.screen.score.components.ImposterHeaderCard
 import com.example.nsddemo.presentation.screen.score.components.ScoreRow
 import com.example.nsddemo.presentation.theme.AppTheme
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 import com.example.nsddemo.presentation.util.NoFeedbackIndication
 import com.example.nsddemo.presentation.util.UiEvent
 import com.example.nsddemo.presentation.util.toComposeColor
@@ -56,10 +57,11 @@ import kotlinx.coroutines.flow.collectLatest
 // 1. STATEFUL ROOT
 // ============================================================================
 
+@SuppressLint("LocalContextGetResourceValueCall")
 @Composable
 fun ScoreScreen(
     viewModel: ScoreViewModel = hiltViewModel(),
-    showSnackBar: (String) -> Unit
+    showSnackBar: (String) -> Unit,
 ) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsState()
@@ -87,7 +89,7 @@ fun ScoreScreen(
         isEndGameEnabled = state.isEndGameButtonEnabled,
         isReplayEnabled = state.isReplayGameButtonEnabled,
         onEndGameClick = { viewModel.onEvent(ScoreEvent.EndGame) },
-        onReplayClick = { viewModel.onEvent(ScoreEvent.ReplayGame) }
+        onReplayClick = { viewModel.onEvent(ScoreEvent.ReplayGame) },
     )
 }
 
@@ -105,61 +107,64 @@ fun ScoreContent(
     isEndGameEnabled: Boolean,
     isReplayEnabled: Boolean,
     onEndGameClick: () -> Unit,
-    onReplayClick: () -> Unit
+    onReplayClick: () -> Unit,
 ) {
     val gridColor = MaterialTheme.colorScheme.surfaceVariant
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .brutalistGridBackground(
-                backgroundColor = MaterialTheme.colorScheme.background,
-                gridLineColor = gridColor
-            )
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .brutalistGridBackground(
+                    backgroundColor = MaterialTheme.colorScheme.background,
+                    gridLineColor = gridColor,
+                ),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .displayCutoutPadding()
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .displayCutoutPadding(),
         ) {
             // --- TOP BANNER ---
             MarqueeBanner(
                 text = "GAME OVER /// FINAL RESULTS /// GAME OVER /// FINAL RESULTS /// ",
                 backgroundColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.Black
+                contentColor = Color.Black,
             )
 
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .systemBarsPadding()
-                    .padding(horizontal = BrutalistDimens.SpacingLarge)
-                    .padding(
-                        top = BrutalistDimens.SpacingLarge,
-                        bottom = BrutalistDimens.SpacingMedium
-                    ),
-                horizontalAlignment = Alignment.CenterHorizontally
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .systemBarsPadding()
+                        .padding(horizontal = Dimens.SpacingLarge)
+                        .padding(
+                            top = Dimens.SpacingLarge,
+                            bottom = Dimens.SpacingMedium,
+                        ),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-
                 // --- HERO: IMPOSTER REVEAL ---
                 ImposterHeaderCard(
                     imposterName = if (isUserImposter) stringResource(R.string.you) else imposter.name,
-                    imposterColor = NewPlayerColors.fromHex(imposter.color).toComposeColor()
+                    imposterColor = NewPlayerColors.fromHex(imposter.color).toComposeColor(),
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // --- SCORES LIST ---
                 Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .brutalistCard(
-                            backgroundColor = MaterialTheme.colorScheme.surface,
-                            borderColor = MaterialTheme.colorScheme.outline,
-                            shadowOffset = BrutalistDimens.ShadowMedium,
-                            borderWidth = BrutalistDimens.BorderThick
-                        )
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .brutalistCard(
+                                backgroundColor = MaterialTheme.colorScheme.surface,
+                                borderColor = MaterialTheme.colorScheme.outline,
+                                shadowOffset = Dimens.ShadowMedium,
+                                borderWidth = Dimens.BorderThick,
+                            ),
                 ) {
                     // Header
                     BrutalistSectionHeader(
@@ -169,16 +174,16 @@ fun ScoreContent(
                                 imageVector = ImageVector.vectorResource(R.drawable.sharp_leaderboard_24),
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(24.dp),
                             )
-                        }
+                        },
                     )
 
                     // List
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         itemsIndexed(scores) { index, (player, score) ->
                             ScoreRow(
@@ -186,7 +191,7 @@ fun ScoreContent(
                                 score = score,
                                 rank = index + 1,
                                 isImposter = player.id == imposter.id,
-                                isCurrentPlayer = player.id == currentPlayer.id
+                                isCurrentPlayer = player.id == currentPlayer.id,
                             )
                         }
                     }
@@ -198,7 +203,7 @@ fun ScoreContent(
                 if (isHost) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         BrutalistButton(
                             text = stringResource(R.string.play_again).uppercase(),
@@ -206,7 +211,7 @@ fun ScoreContent(
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary,
                             enabled = isReplayEnabled,
-                            onClick = onReplayClick
+                            onClick = onReplayClick,
                         )
 
                         BrutalistButton(
@@ -214,21 +219,20 @@ fun ScoreContent(
                             containerColor = MaterialTheme.colorScheme.surface,
                             contentColor = MaterialTheme.colorScheme.onSurface,
                             enabled = isEndGameEnabled,
-                            onClick = onEndGameClick
+                            onClick = onEndGameClick,
                         )
                     }
                 } else {
                     BrutalistButton(
                         text = "WAITING FOR HOST...",
                         enabled = false,
-                        onClick = {}
+                        onClick = {},
                     )
                 }
             }
         }
     }
 }
-
 
 // ============================================================================
 // 5. PREVIEWS
@@ -241,40 +245,42 @@ private fun PreviewScoreLight() {
         Surface {
             CompositionLocalProvider(LocalIndication provides NoFeedbackIndication()) {
                 ScoreContent(
-                    imposter = Player(
-                        id = "p1",
-                        name = "RoboPlayer",
-                        color = NewPlayerColors.Orange.hexCode
-                    ),
-                    isUserImposter = false,
-                    scores = listOf(
+                    imposter =
                         Player(
                             id = "p1",
                             name = "RoboPlayer",
-                            color = NewPlayerColors.Orange.hexCode
-                        ) to 1500,
-                        Player(
-                            id = "p3",
-                            name = "You",
-                            color = NewPlayerColors.Blue.hexCode
-                        ) to 1200,
-                        Player(
-                            id = "p2",
-                            name = "HappyGil",
-                            color = NewPlayerColors.Purple.hexCode
-                        ) to 950,
-                        Player(
-                            id = "p4",
-                            name = "DogLover99",
-                            color = NewPlayerColors.DarkGreen.hexCode
-                        ) to 800
-                    ),
+                            color = NewPlayerColors.Orange.hexCode,
+                        ),
+                    isUserImposter = false,
+                    scores =
+                        listOf(
+                            Player(
+                                id = "p1",
+                                name = "RoboPlayer",
+                                color = NewPlayerColors.Orange.hexCode,
+                            ) to 1500,
+                            Player(
+                                id = "p3",
+                                name = "You",
+                                color = NewPlayerColors.Blue.hexCode,
+                            ) to 1200,
+                            Player(
+                                id = "p2",
+                                name = "HappyGil",
+                                color = NewPlayerColors.Purple.hexCode,
+                            ) to 950,
+                            Player(
+                                id = "p4",
+                                name = "DogLover99",
+                                color = NewPlayerColors.DarkGreen.hexCode,
+                            ) to 800,
+                        ),
                     isHost = true,
                     currentPlayer = Player("p3", "You", NewPlayerColors.Blue.hexCode),
                     isEndGameEnabled = true,
                     isReplayEnabled = true,
                     onEndGameClick = {},
-                    onReplayClick = {}
+                    onReplayClick = {},
                 )
             }
         }
@@ -292,40 +298,42 @@ private fun PreviewScoreLight2() {
         Surface {
             CompositionLocalProvider(LocalIndication provides NoFeedbackIndication()) {
                 ScoreContent(
-                    imposter = Player(
-                        id = "p1",
-                        name = "RoboPlayer",
-                        color = NewPlayerColors.Orange.hexCode
-                    ),
-                    isUserImposter = false,
-                    scores = listOf(
+                    imposter =
                         Player(
                             id = "p1",
                             name = "RoboPlayer",
-                            color = NewPlayerColors.Orange.hexCode
-                        ) to 1500,
-                        Player(
-                            id = "p3",
-                            name = "You",
-                            color = NewPlayerColors.Blue.hexCode
-                        ) to 1200,
-                        Player(
-                            id = "p2",
-                            name = "HappyGil",
-                            color = NewPlayerColors.Purple.hexCode
-                        ) to 950,
-                        Player(
-                            id = "p4",
-                            name = "DogLover99",
-                            color = NewPlayerColors.DarkGreen.hexCode
-                        ) to 800
-                    ),
+                            color = NewPlayerColors.Orange.hexCode,
+                        ),
+                    isUserImposter = false,
+                    scores =
+                        listOf(
+                            Player(
+                                id = "p1",
+                                name = "RoboPlayer",
+                                color = NewPlayerColors.Orange.hexCode,
+                            ) to 1500,
+                            Player(
+                                id = "p3",
+                                name = "You",
+                                color = NewPlayerColors.Blue.hexCode,
+                            ) to 1200,
+                            Player(
+                                id = "p2",
+                                name = "HappyGil",
+                                color = NewPlayerColors.Purple.hexCode,
+                            ) to 950,
+                            Player(
+                                id = "p4",
+                                name = "DogLover99",
+                                color = NewPlayerColors.DarkGreen.hexCode,
+                            ) to 800,
+                        ),
                     isHost = true,
                     currentPlayer = Player("p3", "You", NewPlayerColors.Blue.hexCode),
                     isEndGameEnabled = true,
                     isReplayEnabled = true,
                     onEndGameClick = {},
-                    onReplayClick = {}
+                    onReplayClick = {},
                 )
             }
         }
@@ -339,40 +347,42 @@ private fun PreviewScoreDark() {
         Surface {
             CompositionLocalProvider(LocalIndication provides NoFeedbackIndication()) {
                 ScoreContent(
-                    imposter = Player(
-                        id = "p1",
-                        name = "RoboPlayer",
-                        color = NewPlayerColors.Lime.hexCode
-                    ),
-                    isUserImposter = false,
-                    scores = listOf(
+                    imposter =
                         Player(
                             id = "p1",
                             name = "RoboPlayer",
-                            color = NewPlayerColors.Lime.hexCode
-                        ) to 1500,
-                        Player(
-                            id = "p3",
-                            name = "You",
-                            color = NewPlayerColors.Blue.hexCode
-                        ) to 1200,
-                        Player(
-                            id = "p2",
-                            name = "HappyGil",
-                            color = NewPlayerColors.Purple.hexCode
-                        ) to 950,
-                        Player(
-                            id = "p4",
-                            name = "DogLover99",
-                            color = NewPlayerColors.DarkGreen.hexCode
-                        ) to 800
-                    ),
+                            color = NewPlayerColors.Lime.hexCode,
+                        ),
+                    isUserImposter = false,
+                    scores =
+                        listOf(
+                            Player(
+                                id = "p1",
+                                name = "RoboPlayer",
+                                color = NewPlayerColors.Lime.hexCode,
+                            ) to 1500,
+                            Player(
+                                id = "p3",
+                                name = "You",
+                                color = NewPlayerColors.Blue.hexCode,
+                            ) to 1200,
+                            Player(
+                                id = "p2",
+                                name = "HappyGil",
+                                color = NewPlayerColors.Purple.hexCode,
+                            ) to 950,
+                            Player(
+                                id = "p4",
+                                name = "DogLover99",
+                                color = NewPlayerColors.DarkGreen.hexCode,
+                            ) to 800,
+                        ),
                     isHost = true,
                     currentPlayer = Player("p3", "You", NewPlayerColors.Blue.hexCode),
                     isEndGameEnabled = true,
                     isReplayEnabled = true,
                     onEndGameClick = {},
-                    onReplayClick = {}
+                    onReplayClick = {},
                 )
             }
         }

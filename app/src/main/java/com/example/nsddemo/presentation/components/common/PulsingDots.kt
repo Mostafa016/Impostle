@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun PulsingDots(
     color: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val transition = rememberInfiniteTransition(label = "dots")
 
@@ -33,26 +33,28 @@ fun PulsingDots(
         val alpha by transition.animateFloat(
             initialValue = 0.2f,
             targetValue = 1f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 600, easing = LinearEasing),
-                repeatMode = RepeatMode.Reverse,
-                initialStartOffset = StartOffset(offsetMillis)
-            ),
-            label = "dot_alpha"
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(durationMillis = 600, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse,
+                    initialStartOffset = StartOffset(offsetMillis),
+                ),
+            label = "dot_alpha",
         )
 
         Box(
-            modifier = Modifier
-                .size(12.dp)
-                .alpha(alpha)
-                .background(color, CircleShape)
+            modifier =
+                Modifier
+                    .size(12.dp)
+                    .alpha(alpha)
+                    .background(color, CircleShape),
         )
     }
 
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         AnimateDot(0)
         AnimateDot(200)

@@ -52,7 +52,7 @@ import com.example.nsddemo.presentation.components.modifier.brutalistGridBackgro
 import com.example.nsddemo.presentation.screen.lobby.components.CategoryDisplay
 import com.example.nsddemo.presentation.screen.lobby.components.LobbyClientStatus
 import com.example.nsddemo.presentation.theme.AppTheme
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 import com.example.nsddemo.presentation.util.NavigationUtil.popBackStackAndNavigateTo
 import com.example.nsddemo.presentation.util.NoFeedbackIndication
 import com.example.nsddemo.presentation.util.Routes
@@ -77,11 +77,11 @@ fun LobbyScreen(
                 is UiEvent.NavigateTo -> {
                     navController.popBackStackAndNavigateTo(
                         event.destination,
-                        popUpToRoute = Routes.GameSessionGraph.route
+                        popUpToRoute = Routes.GameSessionGraph.route,
                     )
                 }
 
-                else -> { /* Do nothing */
+                else -> { // Do nothing
                 }
             }
         }
@@ -98,7 +98,7 @@ fun LobbyScreen(
         isStartRoundButtonEnabled = state.isStartRoundButtonEnabled,
         onChooseCategoryClick = { viewModel.onEvent(LobbyEvent.ChooseCategoryButtonClick) },
         onStartRound = { viewModel.onEvent(LobbyEvent.StartRound) },
-        onPlayerKick = { viewModel.onEvent(LobbyEvent.KickPlayer(it)) }
+        onPlayerKick = { viewModel.onEvent(LobbyEvent.KickPlayer(it)) },
     )
 }
 
@@ -116,49 +116,53 @@ fun LobbyContent(
     isStartRoundButtonEnabled: Boolean,
     onChooseCategoryClick: () -> Unit,
     onStartRound: () -> Unit,
-    onPlayerKick: (String) -> Unit
+    onPlayerKick: (String) -> Unit,
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .brutalistGridBackground(
-                backgroundColor = MaterialTheme.colorScheme.background,
-                gridLineColor = MaterialTheme.colorScheme.surfaceVariant
-            )
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .brutalistGridBackground(
+                    backgroundColor = MaterialTheme.colorScheme.background,
+                    gridLineColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .displayCutoutPadding()
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .displayCutoutPadding(),
         ) {
             // 1. Dynamic Banner
             val bannerText = if (isHost) "HOST CONTROLS ///..." else "CONNECTED ///..."
             MarqueeBanner(text = bannerText)
 
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = BrutalistDimens.SpacingLarge)
-                    .padding(
-                        top = BrutalistDimens.SpacingLarge,
-                        bottom = BrutalistDimens.SpacingMedium
-                    ),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = Dimens.SpacingLarge)
+                        .padding(
+                            top = Dimens.SpacingLarge,
+                            bottom = Dimens.SpacingMedium,
+                        ),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(BrutalistDimens.SpacingMedium)
+                verticalArrangement = Arrangement.spacedBy(Dimens.SpacingMedium),
             ) {
                 // --- ROOM CODE HERO CARD ---
                 HeroRoomCodeCard(gameCode)
 
                 // --- PLAYER LIST CARD ---
                 Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .brutalistCard(
-                            backgroundColor = MaterialTheme.colorScheme.surface,
-                            borderColor = MaterialTheme.colorScheme.outline,
-                            shadowOffset = BrutalistDimens.ShadowMedium
-                        )
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .brutalistCard(
+                                backgroundColor = MaterialTheme.colorScheme.surface,
+                                borderColor = MaterialTheme.colorScheme.outline,
+                                shadowOffset = Dimens.ShadowMedium,
+                            ),
                 ) {
                     Column(modifier = Modifier.fillMaxSize()) {
                         // Header
@@ -166,67 +170,71 @@ fun LobbyContent(
                             text = "PLAYERS JOINED",
                             trailingContent = {
                                 Text(
-                                    modifier = Modifier
-                                        .background(
-                                            MaterialTheme.colorScheme.surface,
-                                            RoundedCornerShape(4.dp)
-                                        )
-                                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                                    modifier =
+                                        Modifier
+                                            .background(
+                                                MaterialTheme.colorScheme.surface,
+                                                RoundedCornerShape(4.dp),
+                                            ).padding(horizontal = 8.dp, vertical = 2.dp),
                                     text = "${players.size}/${PlayerCountLimits.MAX_PLAYERS}",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )
-                            }
+                            },
                         )
-                        val playersSorted = remember(players) {
-                            if (players.isEmpty()) {
-                                emptyList()
-                            } else {
-                                val localPlayer =
-                                    (players.find { sortedList -> sortedList.id == localPlayerId }!!)
-                                listOf(localPlayer) + (players - localPlayer)
+                        val playersSorted =
+                            remember(players) {
+                                if (players.isEmpty()) {
+                                    emptyList()
+                                } else {
+                                    val localPlayer =
+                                        (players.find { sortedList -> sortedList.id == localPlayerId }!!)
+                                    listOf(localPlayer) + (players - localPlayer)
+                                }
                             }
-                        }
                         // List
                         LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .animateContentSize(),
-                            contentPadding = PaddingValues(BrutalistDimens.SpacingMedium),
-                            verticalArrangement = Arrangement.spacedBy(BrutalistDimens.SpacingSmall)
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .animateContentSize(),
+                            contentPadding = PaddingValues(Dimens.SpacingMedium),
+                            verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSmall),
                         ) {
                             items(playersSorted) { player ->
                                 BrutalistPlayerRow(
                                     playerName = player.name,
-                                    avatarColor = NewPlayerColors.fromHex(player.color)
-                                        .toComposeColor(),
+                                    avatarColor =
+                                        NewPlayerColors
+                                            .fromHex(player.color)
+                                            .toComposeColor(),
                                     isLocalPlayer = player.id == localPlayerId,
                                     trailingContent = {
                                         if (isHost && player.id != localPlayerId) {
                                             Box(
-                                                modifier = Modifier
-                                                    .size(32.dp)
-                                                    .clickable { onPlayerKick(player.id) }
-                                                    .background(
-                                                        MaterialTheme.colorScheme.errorContainer,
-                                                        RoundedCornerShape(4.dp)
-                                                    )
-                                                    .border(
-                                                        1.dp,
-                                                        MaterialTheme.colorScheme.error,
-                                                        RoundedCornerShape(4.dp)
-                                                    ),
-                                                contentAlignment = Alignment.Center
+                                                modifier =
+                                                    Modifier
+                                                        .size(32.dp)
+                                                        .clickable { onPlayerKick(player.id) }
+                                                        .background(
+                                                            MaterialTheme.colorScheme.errorContainer,
+                                                            RoundedCornerShape(4.dp),
+                                                        ).border(
+                                                            1.dp,
+                                                            MaterialTheme.colorScheme.error,
+                                                            RoundedCornerShape(4.dp),
+                                                        ),
+                                                contentAlignment = Alignment.Center,
                                             ) {
                                                 Icon(
                                                     imageVector = Icons.Default.Close,
                                                     contentDescription = "Kick",
                                                     tint = MaterialTheme.colorScheme.error,
-                                                    modifier = Modifier.size(20.dp)
+                                                    modifier = Modifier.size(20.dp),
                                                 )
                                             }
                                         }
-                                    }
+                                    },
                                 )
                             }
                         }
@@ -237,7 +245,7 @@ fun LobbyContent(
                 CategoryDisplay(
                     chosenCategory = chosenCategory,
                     isHost = isHost,
-                    onClick = onChooseCategoryClick
+                    onClick = onChooseCategoryClick,
                 )
 
                 // --- HOST ACTIONS OR CLIENT WAITING ---
@@ -248,7 +256,7 @@ fun LobbyContent(
                         containerColor = MaterialTheme.colorScheme.secondary,
                         contentColor = MaterialTheme.colorScheme.onSecondary,
                         enabled = isStartRoundButtonEnabled,
-                        onClick = onStartRound
+                        onClick = onStartRound,
                     )
                 } else {
                     LobbyClientStatus()
@@ -269,23 +277,24 @@ private fun LobbyPreviewHost() {
         Surface {
             CompositionLocalProvider(LocalIndication provides NoFeedbackIndication()) {
                 LobbyContent(
-                    players = listOf(
-                        Player(
-                            id = "p1",
-                            name = "Example User",
-                            color = NewPlayerColors.Blue.hexCode
+                    players =
+                        listOf(
+                            Player(
+                                id = "p1",
+                                name = "Example User",
+                                color = NewPlayerColors.Blue.hexCode,
+                            ),
+                            Player(
+                                id = "p2",
+                                name = "Me",
+                                color = NewPlayerColors.Red.hexCode,
+                            ),
+                            Player(
+                                id = "p3",
+                                name = "RoboPlayer",
+                                color = NewPlayerColors.DarkGreen.hexCode,
+                            ),
                         ),
-                        Player(
-                            id = "p2",
-                            name = "Me",
-                            color = NewPlayerColors.Red.hexCode
-                        ),
-                        Player(
-                            id = "p3",
-                            name = "RoboPlayer",
-                            color = NewPlayerColors.DarkGreen.hexCode
-                        )
-                    ),
                     gameCode = "B7X2",
                     isHost = true,
                     chosenCategory = null,
@@ -293,7 +302,7 @@ private fun LobbyPreviewHost() {
                     isStartRoundButtonEnabled = true,
                     onChooseCategoryClick = {},
                     onStartRound = {},
-                    onPlayerKick = {}
+                    onPlayerKick = {},
                 )
             }
         }
@@ -307,23 +316,24 @@ private fun LobbyPreviewClient() {
         Surface {
             CompositionLocalProvider(LocalIndication provides NoFeedbackIndication()) {
                 LobbyContent(
-                    players = listOf(
-                        Player(
-                            id = "p1",
-                            name = "Host Player",
-                            color = NewPlayerColors.Blue.hexCode
+                    players =
+                        listOf(
+                            Player(
+                                id = "p1",
+                                name = "Host Player",
+                                color = NewPlayerColors.Blue.hexCode,
+                            ),
+                            Player(
+                                id = "p2",
+                                name = "Me",
+                                color = NewPlayerColors.Red.hexCode,
+                            ),
+                            Player(
+                                id = "p3",
+                                name = "AnotherUser",
+                                color = NewPlayerColors.DarkGreen.hexCode,
+                            ),
                         ),
-                        Player(
-                            id = "p2",
-                            name = "Me",
-                            color = NewPlayerColors.Red.hexCode
-                        ),
-                        Player(
-                            id = "p3",
-                            name = "AnotherUser",
-                            color = NewPlayerColors.DarkGreen.hexCode
-                        )
-                    ),
                     gameCode = "B7X2",
                     isHost = false,
                     chosenCategory = UiCategory.Animals,
@@ -331,11 +341,9 @@ private fun LobbyPreviewClient() {
                     isStartRoundButtonEnabled = false,
                     onChooseCategoryClick = {},
                     onStartRound = {},
-                    onPlayerKick = {}
+                    onPlayerKick = {},
                 )
             }
         }
     }
 }
-
-

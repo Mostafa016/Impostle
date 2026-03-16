@@ -15,7 +15,6 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest {
-
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
@@ -29,33 +28,35 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `WHEN theme changed THEN updates repository and state flow`() = runTest {
-        viewModel.darkThemeSetting.test {
-            // Initial (default from fake is false)
-            assertFalse(awaitItem())
+    fun `WHEN theme changed THEN updates repository and state flow`() =
+        runTest {
+            viewModel.darkThemeSetting.test {
+                // Initial (default from fake is false)
+                assertFalse(awaitItem())
 
-            viewModel.onThemeChange(true)
-            advanceUntilIdle()
+                viewModel.onThemeChange(true)
+                advanceUntilIdle()
 
-            assertTrue(awaitItem())
+                assertTrue(awaitItem())
+            }
         }
-    }
 
     @Test
-    fun `WHEN language changed THEN updates repository and closes dropdown`() = runTest {
-        viewModel.languageSetting.test {
-            // Initial is English
-            assertEquals(GameLocales.English, awaitItem())
+    fun `WHEN language changed THEN updates repository and closes dropdown`() =
+        runTest {
+            viewModel.languageSetting.test {
+                // Initial is English
+                assertEquals(GameLocales.English, awaitItem())
 
-            // Act
-            viewModel.onLanguageChange(GameLocales.Arabic)
-            advanceUntilIdle()
+                // Act
+                viewModel.onLanguageChange(GameLocales.Arabic)
+                advanceUntilIdle()
 
-            // Assert
-            assertEquals(GameLocales.Arabic, awaitItem())
-            assertFalse(viewModel.languageSettingDropdownExpanded.value)
+                // Assert
+                assertEquals(GameLocales.Arabic, awaitItem())
+                assertFalse(viewModel.languageSettingDropdownExpanded.value)
+            }
         }
-    }
 
     @Test
     fun `WHEN dropdown events triggered THEN updates dropdown state`() {

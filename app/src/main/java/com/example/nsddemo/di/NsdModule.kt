@@ -15,17 +15,11 @@ import dagger.hilt.components.SingletonComponent
 @InstallIn(SingletonComponent::class)
 abstract class NsdModule {
     @Binds
-    abstract fun bindNetworkDiscovery(
-        nsdNetworkDiscovery: NsdNetworkDiscovery
-    ): NetworkDiscovery
+    abstract fun bindNetworkDiscovery(nsdNetworkDiscovery: NsdNetworkDiscovery): NetworkDiscovery
 
     @Binds
-    abstract fun bindNetworkRegistration(
-        nsdNetworkRegistration: NsdNetworkRegistration
-    ): NetworkRegistration
+    abstract fun bindNetworkRegistration(nsdNetworkRegistration: NsdNetworkRegistration): NetworkRegistration
 
     @Binds
-    abstract fun bindNetworkResolution(
-        nsdNetworkResolution: NsdNetworkResolution
-    ): NetworkResolution
+    abstract fun bindNetworkResolution(nsdNetworkResolution: NsdNetworkResolution): NetworkResolution
 }

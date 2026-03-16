@@ -32,7 +32,6 @@ import org.junit.Test
  */
 @ExperimentalCoroutinesApi
 class StressTestsE2ETest {
-
     private lateinit var router: InMemoryNetworkRouter
     private lateinit var alice: HeadlessPlayer // host
 
@@ -73,20 +72,23 @@ class StressTestsE2ETest {
             advanceUntilIdle()
 
             // 32 players max. We have 1 (Host). Let's spawn 35 to guarantee we hit the limit.
-            val extraClients = (1..35).map { i ->
-                HeadlessPlayer("bot_$i", "Bot $i", GAME_CODE, router, isHost = false)
-            }
+            val extraClients =
+                (1..35).map { i ->
+                    HeadlessPlayer("bot_$i", "Bot $i", GAME_CODE, router, isHost = false)
+                }
 
             // Start all listening coroutines immediately
-            val startJobs = extraClients.map { bot ->
-                launch { bot.startIn(this@runTest) }
-            }
+            val startJobs =
+                extraClients.map { bot ->
+                    launch { bot.startIn(this@runTest) }
+                }
             startJobs.joinAll()
 
             // Thundering herd: all send RegisterPlayer in the exact same virtual tick
-            val joinJobs = extraClients.map { bot ->
-                launch { bot.joinGame() }
-            }
+            val joinJobs =
+                extraClients.map { bot ->
+                    launch { bot.joinGame() }
+                }
             joinJobs.joinAll()
             advanceUntilIdle() // Process all incoming messages
 
@@ -96,7 +98,7 @@ class StressTestsE2ETest {
             assertEquals(
                 "Player count must be strictly capped at max (${PlayerCountLimits.MAX_PLAYERS})",
                 PlayerCountLimits.MAX_PLAYERS,
-                finalData.players.size
+                finalData.players.size,
             )
 
             // Cleanup
@@ -141,12 +143,13 @@ class StressTestsE2ETest {
             advanceUntilIdle()
             assertEquals(GamePhase.GameVoting, alice.gamePhase.value)
 
-            val voteJobs = players.map { voter ->
-                launch {
-                    // Everyone votes for Bot 1 (guaranteed to not be Alice, simplifying)
-                    voter.submitVote(if (voter.playerId == players[1].playerId) players[2].playerId else players[1].playerId)
+            val voteJobs =
+                players.map { voter ->
+                    launch {
+                        // Everyone votes for Bot 1 (guaranteed to not be Alice, simplifying)
+                        voter.submitVote(if (voter.playerId == players[1].playerId) players[2].playerId else players[1].playerId)
+                    }
                 }
-            }
             voteJobs.joinAll()
             advanceUntilIdle()
 
@@ -192,7 +195,10 @@ class StressTestsE2ETest {
 
                 // Assert properly paused
                 assertEquals(GamePhase.Paused, alice.gamePhase.value)
-                assertFalse(alice.gameData.value.players[latestBob.playerId]!!.isConnected)
+                assertFalse(
+                    alice.gameData.value.players[latestBob.playerId]!!
+                        .isConnected,
+                )
 
                 // Instantiate new client (same ID) to simulate reconnect
                 latestBob = HeadlessPlayer("bob", "Bob", GAME_CODE, router, false)
@@ -201,13 +207,19 @@ class StressTestsE2ETest {
 
                 // Assert properly resumed
                 assertEquals(GamePhase.InRound, alice.gamePhase.value)
-                assertEquals(true, alice.gameData.value.players[latestBob.playerId]?.isConnected)
+                assertEquals(
+                    true,
+                    alice.gameData.value.players[latestBob.playerId]
+                        ?.isConnected,
+                )
             }
 
             // Assert roster size remains exactly 3 — no "ghost players" were appended
             assertEquals(3, alice.gameData.value.players.size)
 
-            alice.stop(); charlie.stop(); bob.stop()
+            alice.stop()
+            charlie.stop()
+            bob.stop()
         }
 
     // ─── Scenario 4: Sequential Replay Bombing ──────────────────────────────────
@@ -250,12 +262,13 @@ class StressTestsE2ETest {
             val imposterId = players.first { it.gameData.value.word == null }.playerId
             val imposterPlayer = players.find { it.playerId == imposterId }!!
 
-            val wordGuessChoices = imposterPlayer.gameData.value.wordOptions.random()
+            val wordGuessChoices =
+                imposterPlayer.gameData.value.wordOptions
+                    .random()
             imposterPlayer.submitImposterGuess(wordGuessChoices)
             advanceUntilIdle()
 
             assertEquals(GamePhase.GameResults, alice.gamePhase.value)
-
 
             alice.continueToGameChoice()
             advanceUntilIdle()
@@ -283,6 +296,8 @@ class StressTestsE2ETest {
             advanceUntilIdle()
             assertEquals(GamePhase.RoleDistribution, alice.gamePhase.value)
 
-            alice.stop(); bob.stop(); charlie.stop()
+            alice.stop()
+            bob.stop()
+            charlie.stop()
         }
 }

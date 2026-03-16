@@ -21,46 +21,47 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ScoreViewModelTest {
-
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun `GIVEN phase changes to Lobby WHEN observed THEN emits snackbar`() = runTest {
-        val mockGameSession = mockk<GameSession>(relaxed = true)
-        val gamePhaseFlow = MutableStateFlow<GamePhase>(GamePhase.GameReplayChoice)
+    fun `GIVEN phase changes to Lobby WHEN observed THEN emits snackbar`() =
+        runTest {
+            val mockGameSession = mockk<GameSession>(relaxed = true)
+            val gamePhaseFlow = MutableStateFlow<GamePhase>(GamePhase.GameReplayChoice)
 
-        every { mockGameSession.gameData } returns MutableStateFlow(GameData())
-        every { mockGameSession.gamePhase } returns gamePhaseFlow
+            every { mockGameSession.gameData } returns MutableStateFlow(GameData())
+            every { mockGameSession.gamePhase } returns gamePhaseFlow
 
-        val viewModel = ScoreViewModel(mockGameSession)
+            val viewModel = ScoreViewModel(mockGameSession)
 
-        viewModel.eventFlow.test {
-            // Act: Server resets game
-            gamePhaseFlow.value = GamePhase.Lobby
-            advanceUntilIdle()
+            viewModel.eventFlow.test {
+                // Act: Server resets game
+                gamePhaseFlow.value = GamePhase.Lobby
+                advanceUntilIdle()
 
-            val event = awaitItem() as UiEvent.ShowSnackBar
-            assertEquals(R.string.continuing_playing, event.messageResId)
+                val event = awaitItem() as UiEvent.ShowSnackBar
+                assertEquals(R.string.continuing_playing, event.messageResId)
+            }
         }
-    }
 
     @Test
-    fun `WHEN host buttons clicked THEN client sends requests`() = runTest {
-        val mockGameSession = mockk<GameSession>(relaxed = true)
-        val mockActiveClient = mockk<GameClient>(relaxed = true)
-        every { mockGameSession.gameData } returns MutableStateFlow(GameData())
-        every { mockGameSession.gamePhase } returns MutableStateFlow(GamePhase.GameReplayChoice)
-        every { mockGameSession.activeClient } returns mockActiveClient
+    fun `WHEN host buttons clicked THEN client sends requests`() =
+        runTest {
+            val mockGameSession = mockk<GameSession>(relaxed = true)
+            val mockActiveClient = mockk<GameClient>(relaxed = true)
+            every { mockGameSession.gameData } returns MutableStateFlow(GameData())
+            every { mockGameSession.gamePhase } returns MutableStateFlow(GamePhase.GameReplayChoice)
+            every { mockGameSession.activeClient } returns mockActiveClient
 
-        val viewModel = ScoreViewModel(mockGameSession)
+            val viewModel = ScoreViewModel(mockGameSession)
 
-        viewModel.onEvent(ScoreEvent.ReplayGame)
-        advanceUntilIdle()
-        coVerify(exactly = 1) { mockActiveClient.replayGame() }
+            viewModel.onEvent(ScoreEvent.ReplayGame)
+            advanceUntilIdle()
+            coVerify(exactly = 1) { mockActiveClient.replayGame() }
 
-        viewModel.onEvent(ScoreEvent.EndGame)
-        advanceUntilIdle()
-        coVerify(exactly = 1) { mockActiveClient.endGame() }
-    }
+            viewModel.onEvent(ScoreEvent.EndGame)
+            advanceUntilIdle()
+            coVerify(exactly = 1) { mockActiveClient.endGame() }
+        }
 }

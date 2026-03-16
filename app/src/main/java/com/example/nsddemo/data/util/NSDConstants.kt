@@ -6,8 +6,8 @@ object NSDConstants {
     const val BASE_SERVICE_NAME = "Impostle"
     const val SERVICE_TYPE = "_impostle._tcp."
 
-    fun nsdErrorCodeToString(errorCode: Int): String {
-        return when (errorCode) {
+    fun nsdErrorCodeToString(errorCode: Int): String =
+        when (errorCode) {
             NsdManager.FAILURE_ALREADY_ACTIVE -> "Operation already active."
             NsdManager.FAILURE_INTERNAL_ERROR -> "Internal error occurred."
             NsdManager.FAILURE_MAX_LIMIT -> "Maximum outstanding requests from the applications have reached."
@@ -15,5 +15,4 @@ object NSDConstants {
             NsdManager.FAILURE_OPERATION_NOT_RUNNING -> "The stop operation failed because it is not running."
             else -> "An unknown error occurred."
         }
-    }
 }

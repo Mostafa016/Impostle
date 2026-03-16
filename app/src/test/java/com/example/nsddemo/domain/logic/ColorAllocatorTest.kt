@@ -8,11 +8,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ColorAllocatorTest {
-
     // Helper to create a dummy player with a specific color
-    private fun createPlayer(colorHex: String) = Player(
-        id = "id", name = "name", color = colorHex, isConnected = true
-    )
+    private fun createPlayer(colorHex: String) =
+        Player(
+            id = "id",
+            name = "name",
+            color = colorHex,
+            isConnected = true,
+        )
 
     @Test
     fun `GIVEN empty list WHEN assignColor THEN returns valid color`() {
@@ -20,12 +23,12 @@ class ColorAllocatorTest {
 
         assertTrue(
             "Result should be a valid hex code",
-            result in NewPlayerColors.entries
+            result in NewPlayerColors.entries,
         )
         assertNotEquals(
             "Should not return Fallback color when empty",
             NewPlayerColors.Fallback,
-            result
+            result,
         )
     }
 
@@ -33,10 +36,11 @@ class ColorAllocatorTest {
     fun `GIVEN partially used palette WHEN assignColor THEN returns unused color`() {
         // Arrange: Use up all colors except one (e.g., Red)
         val targetColor = NewPlayerColors.Red
-        val usedColors = NewPlayerColors.entries
-            .filter { it != targetColor && it != NewPlayerColors.Fallback }
-            .map { it.hexCode }
-            .toSet()
+        val usedColors =
+            NewPlayerColors.entries
+                .filter { it != targetColor && it != NewPlayerColors.Fallback }
+                .map { it.hexCode }
+                .toSet()
 
         // Act
         val result = ColorAllocator.assignColor(usedColors)
@@ -45,17 +49,18 @@ class ColorAllocatorTest {
         assertEquals(
             "Should pick the only remaining color",
             targetColor,
-            result
+            result,
         )
     }
 
     @Test
     fun `GIVEN full palette WHEN assignColor THEN returns any valid color (Reuse)`() {
         // Arrange: Use every single valid color
-        val allColorsUsed = NewPlayerColors.entries
-            .filter { it != NewPlayerColors.Fallback }
-            .map { it.hexCode }
-            .toSet()
+        val allColorsUsed =
+            NewPlayerColors.entries
+                .filter { it != NewPlayerColors.Fallback }
+                .map { it.hexCode }
+                .toSet()
 
         // Act
         val result = ColorAllocator.assignColor(allColorsUsed)
@@ -63,12 +68,12 @@ class ColorAllocatorTest {
         // Assert
         assertTrue(
             "Should return a valid color even if full",
-            result in NewPlayerColors.entries
+            result in NewPlayerColors.entries,
         )
         assertNotEquals(
             "Should still avoid Fallback if possible",
             NewPlayerColors.Fallback,
-            result
+            result,
         )
     }
 
@@ -83,7 +88,7 @@ class ColorAllocatorTest {
         // Assert
         assertTrue(
             "Should return a standard palette color",
-            result in NewPlayerColors.entries && result != NewPlayerColors.Fallback
+            result in NewPlayerColors.entries && result != NewPlayerColors.Fallback,
         )
     }
 }

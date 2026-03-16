@@ -6,5 +6,8 @@ import kotlinx.coroutines.flow.StateFlow
 interface NetworkResolution {
     val resolutionState: StateFlow<NsdResolutionState>
 
-    fun resolveServiceWithGameCode(serviceInfo: NsdServiceInfo, gameCode: String)
+    fun resolveServiceWithGameCode(
+        serviceInfo: NsdServiceInfo,
+        gameCode: String,
+    )
 }

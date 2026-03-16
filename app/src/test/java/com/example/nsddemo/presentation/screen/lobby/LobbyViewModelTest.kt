@@ -26,7 +26,6 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LobbyViewModelTest {
-
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
@@ -51,62 +50,70 @@ class LobbyViewModelTest {
     }
 
     @Test
-    fun `GIVEN 1 player OR no category WHEN state updates THEN start button disabled`() = runTest {
-        // Arrange: 1 Player, No Category
-        viewModel.state.test {
-            assertFalse(awaitItem().isStartRoundButtonEnabled) // Initial state
+    fun `GIVEN 1 player OR no category WHEN state updates THEN start button disabled`() =
+        runTest {
+            // Arrange: 1 Player, No Category
+            viewModel.state.test {
+                assertFalse(awaitItem().isStartRoundButtonEnabled) // Initial state
 
-            gameDataFlow.value = gameDataFlow.value.copy(
-                players = mapOf("local" to Player("Alice", "red", "local"))
-            )
-            assertFalse(awaitItem().isStartRoundButtonEnabled)
+                gameDataFlow.value =
+                    gameDataFlow.value.copy(
+                        players = mapOf("local" to Player("Alice", "red", "local")),
+                    )
+                assertFalse(awaitItem().isStartRoundButtonEnabled)
 
-            // Arrange: 2 Players, No Category
-            gameDataFlow.value = gameDataFlow.value.copy(
-                players = mapOf(
-                    "local" to Player("Alice", "red", "local"),
-                    "p2" to Player("Bob", "blue", "p2")
+                // Arrange: 2 Players, No Category
+                gameDataFlow.value =
+                    gameDataFlow.value.copy(
+                        players =
+                            mapOf(
+                                "local" to Player("Alice", "red", "local"),
+                                "p2" to Player("Bob", "blue", "p2"),
+                            ),
+                    )
+                assertFalse(awaitItem().isStartRoundButtonEnabled)
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `GIVEN 2 players AND category WHEN state updates THEN start button enabled`() =
+        runTest {
+            gameDataFlow.value =
+                gameDataFlow.value.copy(
+                    players =
+                        mapOf(
+                            "local" to Player("Alice", "red", "local"),
+                            "p2" to Player("Bob", "blue", "p2"),
+                        ),
+                    category = GameCategory.ANIMALS,
                 )
-            )
-            assertFalse(awaitItem().isStartRoundButtonEnabled)
-            expectNoEvents()
+            advanceUntilIdle()
+            viewModel.state.test {
+                val newState = awaitItem()
+                assertTrue(newState.isStartRoundButtonEnabled)
+                assertEquals(GameCategory.ANIMALS, newState.chosenCategory)
+            }
         }
-    }
 
     @Test
-    fun `GIVEN 2 players AND category WHEN state updates THEN start button enabled`() = runTest {
-        gameDataFlow.value = gameDataFlow.value.copy(
-            players = mapOf(
-                "local" to Player("Alice", "red", "local"),
-                "p2" to Player("Bob", "blue", "p2")
-            ),
-            category = GameCategory.ANIMALS
-        )
-        advanceUntilIdle()
-        viewModel.state.test {
-            val newState = awaitItem()
-            assertTrue(newState.isStartRoundButtonEnabled)
-            assertEquals(GameCategory.ANIMALS, newState.chosenCategory)
+    fun `GIVEN UI events WHEN triggered THEN delegates to client or navigation`() =
+        runTest {
+            viewModel.eventFlow.test {
+                // Act: Navigate to category
+                viewModel.onEvent(LobbyEvent.ChooseCategoryButtonClick)
+                val navEvent = awaitItem() as UiEvent.NavigateTo
+                assertEquals(Routes.ChooseCategory.route, navEvent.destination)
+
+                // Act: Start Round
+                viewModel.onEvent(LobbyEvent.StartRound)
+                advanceUntilIdle()
+                coVerify { mockActiveClient.startGame() }
+
+                // Act: Kick Player
+                viewModel.onEvent(LobbyEvent.KickPlayer("p2"))
+                advanceUntilIdle()
+                coVerify { mockActiveClient.kickPlayer("p2") }
+            }
         }
-    }
-
-    @Test
-    fun `GIVEN UI events WHEN triggered THEN delegates to client or navigation`() = runTest {
-        viewModel.eventFlow.test {
-            // Act: Navigate to category
-            viewModel.onEvent(LobbyEvent.ChooseCategoryButtonClick)
-            val navEvent = awaitItem() as UiEvent.NavigateTo
-            assertEquals(Routes.ChooseCategory.route, navEvent.destination)
-
-            // Act: Start Round
-            viewModel.onEvent(LobbyEvent.StartRound)
-            advanceUntilIdle()
-            coVerify { mockActiveClient.startGame() }
-
-            // Act: Kick Player
-            viewModel.onEvent(LobbyEvent.KickPlayer("p2"))
-            advanceUntilIdle()
-            coVerify { mockActiveClient.kickPlayer("p2") }
-        }
-    }
 }

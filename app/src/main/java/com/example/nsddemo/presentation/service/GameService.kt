@@ -25,14 +25,14 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class GameService : LifecycleService() {
-
     @Inject
     lateinit var gameSession: GameSession
 
     private var sessionJob: Job? = null
-    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
-        Log.e(TAG, "GameService: CRITICAL SERVER CRASH: ${throwable.message}", throwable)
-    }
+    private val exceptionHandler =
+        CoroutineExceptionHandler { _, throwable ->
+            Log.e(TAG, "GameService: CRITICAL SERVER CRASH: ${throwable.message}", throwable)
+        }
 
     override fun onBind(intent: Intent): IBinder? {
         super.onBind(intent)
@@ -44,7 +44,11 @@ class GameService : LifecycleService() {
         createNotificationChannel()
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
         super.onStartCommand(intent, flags, startId)
 
         when (intent?.action) {
@@ -65,23 +69,28 @@ class GameService : LifecycleService() {
         return START_NOT_STICKY
     }
 
-    private fun startForegroundSession(isHost: Boolean, gameCode: String, playerId: String) {
+    private fun startForegroundSession(
+        isHost: Boolean,
+        gameCode: String,
+        playerId: String,
+    ) {
         startForeground(NOTIFICATION_ID, buildNotification(gameCode))
 
         sessionJob?.cancel()
 
-        sessionJob = lifecycleScope.launch(Dispatchers.IO + exceptionHandler) {
-            launch {
-                gameSession.sessionState.collect {
-                    Log.d(TAG, "GameService: SessionState = $it")
+        sessionJob =
+            lifecycleScope.launch(Dispatchers.IO + exceptionHandler) {
+                launch {
+                    gameSession.sessionState.collect {
+                        Log.d(TAG, "GameService: SessionState = $it")
+                    }
+                }
+                if (isHost) {
+                    gameSession.startHostSession(gameCode, playerId)
+                } else {
+                    gameSession.startJoinSession(gameCode, playerId)
                 }
             }
-            if (isHost) {
-                gameSession.startHostSession(gameCode, playerId)
-            } else {
-                gameSession.startJoinSession(gameCode, playerId)
-            }
-        }
     }
 
     private fun stopSession() {
@@ -94,40 +103,57 @@ class GameService : LifecycleService() {
 
     // --- Notification Helpers ---
     private fun buildNotification(gameCode: String): Notification {
-        val openAppIntent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            openAppIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
+        val openAppIntent =
+            Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
+        val pendingIntent =
+            PendingIntent.getActivity(
+                this,
+                0,
+                openAppIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
 
         // Add a "Stop" action directly to notification
-        val stopIntent = Intent(this, GameService::class.java).apply {
-            action = ACTION_STOP
-        }
-        val stopPendingIntent = PendingIntent.getService(
-            this, 1, stopIntent, PendingIntent.FLAG_IMMUTABLE
-        )
+        val stopIntent =
+            Intent(this, GameService::class.java).apply {
+                action = ACTION_STOP
+            }
+        val stopPendingIntent =
+            PendingIntent.getService(
+                this,
+                1,
+                stopIntent,
+                PendingIntent.FLAG_IMMUTABLE,
+            )
 
-        return NotificationCompat.Builder(this, CHANNEL_ID).setContentTitle("Impostle Game Active")
-            .setContentText("Game Code: $gameCode").setSmallIcon(R.mipmap.ic_launcher)
+        return NotificationCompat
+            .Builder(this, CHANNEL_ID)
+            .setContentTitle("Impostle Game Active")
+            .setContentText("Game Code: $gameCode")
+            .setSmallIcon(R.mipmap.ic_launcher)
             .setPriority(NotificationCompat.PRIORITY_LOW) // For Android 7.1 and below
-            .setContentIntent(pendingIntent).addAction(
-                android.R.drawable.ic_menu_close_clear_cancel, "Exit Game", stopPendingIntent
+            .setContentIntent(pendingIntent)
+            .addAction(
+                android.R.drawable.ic_menu_close_clear_cancel,
+                "Exit Game",
+                stopPendingIntent,
             ).setOngoing(true)
-            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE).build()
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .build()
     }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID, "Active Game Session", NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "Notifications for your current game progress"
-            }
+            val channel =
+                NotificationChannel(
+                    CHANNEL_ID,
+                    "Active Game Session",
+                    NotificationManager.IMPORTANCE_LOW,
+                ).apply {
+                    description = "Notifications for your current game progress"
+                }
 
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)

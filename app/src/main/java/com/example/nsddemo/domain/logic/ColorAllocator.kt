@@ -4,9 +4,10 @@ import com.example.nsddemo.domain.model.NewPlayerColors
 
 object ColorAllocator {
     fun assignColor(usedColors: Set<String>): NewPlayerColors {
-        val usedColorsEnumValue = usedColors
-            .map { NewPlayerColors.fromHex(it) }
-            .toSet()
+        val usedColorsEnumValue =
+            usedColors
+                .map { NewPlayerColors.fromHex(it) }
+                .toSet()
 
         val available =
             NewPlayerColors.entries.toSet() - (usedColorsEnumValue + setOf(NewPlayerColors.Fallback))

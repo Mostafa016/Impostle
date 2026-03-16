@@ -15,11 +15,10 @@ import androidx.compose.ui.node.DrawModifierNode
  * effectively disabling all click animations and feedback while preserving functionality.
  */
 class NoFeedbackIndication : IndicationNodeFactory {
-    override fun create(interactionSource: InteractionSource): DelegatableNode {
-        return NoFeedbackIndicationNode(interactionSource)
-    }
+    override fun create(interactionSource: InteractionSource): DelegatableNode = NoFeedbackIndicationNode(interactionSource)
 
     override fun hashCode(): Int = -1
+
     override fun equals(other: Any?): Boolean = other is NoFeedbackIndication
 }
 
@@ -31,8 +30,9 @@ class NoFeedbackIndication : IndicationNodeFactory {
  * this node simply passes through the content drawing without any modifications.
  */
 private class NoFeedbackIndicationNode(
-    private val interactionSource: InteractionSource
-) : Modifier.Node(), DrawModifierNode {
+    private val interactionSource: InteractionSource,
+) : Modifier.Node(),
+    DrawModifierNode {
     override fun ContentDrawScope.draw() {
         // Simply draw the content without any indication effects
         // This is the key: we don't add any visual layers or effects

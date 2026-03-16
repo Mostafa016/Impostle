@@ -9,18 +9,12 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 
-
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class SocketModule {
+    @Binds
+    abstract fun bindSocketServer(ktorSocketServer: KtorSocketServer): SocketServer
 
     @Binds
-    abstract fun bindSocketServer(
-        ktorSocketServer: KtorSocketServer
-    ): SocketServer
-
-    @Binds
-    abstract fun bindSocketClient(
-        ktorSocketClient: KtorSocketClient
-    ): SocketClient
+    abstract fun bindSocketClient(ktorSocketClient: KtorSocketClient): SocketClient
 }

@@ -43,7 +43,6 @@ import org.junit.Test
 
 @ExperimentalCoroutinesApi
 class HostServerNetworkRepositoryTest {
-
     private lateinit var repository: HostServerNetworkRepository
 
     @MockK(relaxed = true)
@@ -101,50 +100,52 @@ class HostServerNetworkRepositoryTest {
 
     //region --- Startup & Connection Logic ---
     @Test
-    fun `GIVEN Happy Path WHEN start called THEN Socket binds and NSD registers`() = runTest {
-        repository.serverState.test {
-            assertEquals(ServerState.Idle, awaitItem())
+    fun `GIVEN Happy Path WHEN start called THEN Socket binds and NSD registers`() =
+        runTest {
+            repository.serverState.test {
+                assertEquals(ServerState.Idle, awaitItem())
 
-            val job = launch { repository.start("GAME123") }
-            runCurrent()
+                val job = launch { repository.start("GAME123") }
+                runCurrent()
 
-            // 1. Socket starts listening
-            coVerify { socketServer.startListening() }
+                // 1. Socket starts listening
+                coVerify { socketServer.startListening() }
 
-            serverListeningStateFlow.value = ServerListeningState.Listening(12345)
-            runCurrent()
+                serverListeningStateFlow.value = ServerListeningState.Listening(12345)
+                runCurrent()
 
-            // 2. NSD Registration triggered
-            verify { networkRegistration.registerService("GAME123", 12345) }
-            registrationStateFlow.value = NsdRegistrationState.Registered("Impostle_GAME123")
+                // 2. NSD Registration triggered
+                verify { networkRegistration.registerService("GAME123", 12345) }
+                registrationStateFlow.value = NsdRegistrationState.Registered("Impostle_GAME123")
 
-            advanceUntilIdle()
+                advanceUntilIdle()
 
-            // 3. Final State
-            val state = awaitItem()
-            assertTrue(state is ServerState.Running)
-            assertEquals(12345, (state as ServerState.Running).port)
+                // 3. Final State
+                val state = awaitItem()
+                assertTrue(state is ServerState.Running)
+                assertEquals(12345, (state as ServerState.Running).port)
 
-            job.cancel()
+                job.cancel()
+            }
         }
-    }
 
     @Test
-    fun `GIVEN Socket fails to bind WHEN start called THEN emits Error state`() = runTest {
-        repository.serverState.test {
-            assertEquals(ServerState.Idle, awaitItem())
-            val job = launch { repository.start("GAME") }
+    fun `GIVEN Socket fails to bind WHEN start called THEN emits Error state`() =
+        runTest {
+            repository.serverState.test {
+                assertEquals(ServerState.Idle, awaitItem())
+                val job = launch { repository.start("GAME") }
 
-            // Simulate Socket Error
-            serverListeningStateFlow.value = ServerListeningState.Error("Address in use")
+                // Simulate Socket Error
+                serverListeningStateFlow.value = ServerListeningState.Error("Address in use")
 
-            val state = awaitItem()
-            assertTrue(state is ServerState.Error)
-            assertEquals("Address in use", (state as ServerState.Error).message)
+                val state = awaitItem()
+                assertTrue(state is ServerState.Error)
+                assertEquals("Address in use", (state as ServerState.Error).message)
 
-            job.cancel()
+                job.cancel()
+            }
         }
-    }
 
     //endregion
 
@@ -199,7 +200,7 @@ class HostServerNetworkRepositoryTest {
                 assertTrue(disconnectEvent is PlayerConnectionEvent.PlayerDisconnected)
                 assertEquals(
                     playerId,
-                    (disconnectEvent as PlayerConnectionEvent.PlayerDisconnected).id
+                    (disconnectEvent as PlayerConnectionEvent.PlayerDisconnected).id,
                 )
             }
         }
@@ -218,22 +219,26 @@ class HostServerNetworkRepositoryTest {
         }
 
     @Test
-    fun `GIVEN Malformed JSON WHEN received THEN message is dropped`() = runTest {
-        repository.incomingMessages.test {
-            // Send garbage
-            socketMessageEvents.emit(MessageEvent.Received("123", "{ Garbage }"))
+    fun `GIVEN Malformed JSON WHEN received THEN message is dropped`() =
+        runTest {
+            repository.incomingMessages.test {
+                // Send garbage
+                socketMessageEvents.emit(MessageEvent.Received("123", "{ Garbage }"))
 
-            // Send valid to ensure stream is still alive
-            val validMsg = ClientMessage.RegisterPlayer("A", "B")
-            socketMessageEvents.emit(
-                MessageEvent.Received("123", NetworkJson.encodeToString<ClientMessage>(validMsg))
-            )
+                // Send valid to ensure stream is still alive
+                val validMsg = ClientMessage.RegisterPlayer("A", "B")
+                socketMessageEvents.emit(
+                    MessageEvent.Received(
+                        "123",
+                        NetworkJson.encodeToString<ClientMessage>(validMsg),
+                    ),
+                )
 
-            // We should only receive the valid one
-            val result = awaitItem()
-            assertEquals("B", result.first)
+                // We should only receive the valid one
+                val result = awaitItem()
+                assertEquals("B", result.first)
+            }
         }
-    }
 
     //endregion
 
@@ -251,7 +256,7 @@ class HostServerNetworkRepositoryTest {
                 // Note: The loopback ID "LOCAL_HOST_CLIENT_ID" is used for transport,
                 // but the repo maps it to the ID inside the message.
                 loopbackDataSource.clientToServer.emit(
-                    LoopbackDataSource.LOCAL_HOST_CLIENT_ID to localMsg
+                    LoopbackDataSource.LOCAL_HOST_CLIENT_ID to localMsg,
                 )
 
                 // Assert
@@ -297,7 +302,6 @@ class HostServerNetworkRepositoryTest {
 
             // Listen to Loopback
             loopbackDataSource.serverToClient.test {
-
                 // Act
                 repository.sendToAllPlayers(broadcastMsg)
 
@@ -306,15 +310,18 @@ class HostServerNetworkRepositoryTest {
                 assertEquals(
                     "Loopback should receive Pair(LOCAL_HOST_ID, Message)",
                     LoopbackDataSource.LOCAL_HOST_CLIENT_ID to broadcastMsg,
-                    localItem
+                    localItem,
                 )
 
                 // Assert 2: Remote Socket received JSON
                 coVerify(exactly = 1) {
-                    socketServer.sendToAll(withArg { jsonString ->
-                        val expectedJson = NetworkJson.encodeToString<ServerMessage>(broadcastMsg)
-                        assertEquals(expectedJson, jsonString)
-                    })
+                    socketServer.sendToAll(
+                        withArg { jsonString ->
+                            val expectedJson =
+                                NetworkJson.encodeToString<ServerMessage>(broadcastMsg)
+                            assertEquals(expectedJson, jsonString)
+                        },
+                    )
                 }
             }
         }

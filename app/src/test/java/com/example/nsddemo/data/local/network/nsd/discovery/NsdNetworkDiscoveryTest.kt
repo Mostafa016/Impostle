@@ -23,7 +23,6 @@ import org.junit.Test
 
 @ExperimentalCoroutinesApi
 class NsdNetworkDiscoveryTest {
-
     private lateinit var nsdManagerMock: NsdManager
     private lateinit var nsdNetworkDiscovery: NsdNetworkDiscovery
     private lateinit var discoveryListenerSlot: CapturingSlot<NsdManager.DiscoveryListener>
@@ -43,7 +42,7 @@ class NsdNetworkDiscoveryTest {
             nsdManagerMock.discoverServices(
                 any<String>(),
                 any(),
-                capture(discoveryListenerSlot)
+                capture(discoveryListenerSlot),
             )
         } just runs
 
@@ -56,143 +55,150 @@ class NsdNetworkDiscoveryTest {
     }
 
     @Test
-    fun `GIVEN Idle WHEN startDiscovery is called THEN state becomes Discovering`() = runTest {
-        nsdNetworkDiscovery.discoveryProcessState.test {
-            assertEquals(NsdDiscoveryState.Idle, awaitItem())
+    fun `GIVEN Idle WHEN startDiscovery is called THEN state becomes Discovering`() =
+        runTest {
+            nsdNetworkDiscovery.discoveryProcessState.test {
+                assertEquals(NsdDiscoveryState.Idle, awaitItem())
 
-            // Act
-            nsdNetworkDiscovery.startDiscovery("ABCD")
+                // Act
+                nsdNetworkDiscovery.startDiscovery("ABCD")
 
-            // Simulate OS callback
+                // Simulate OS callback
+                discoveryListenerSlot.captured.onDiscoveryStarted(NSDConstants.SERVICE_TYPE)
+
+                // Assert
+                val state = awaitItem()
+                assertTrue(state is NsdDiscoveryState.Discovering)
+                assertEquals(
+                    NSDConstants.SERVICE_TYPE,
+                    (state as NsdDiscoveryState.Discovering).serviceType,
+                )
+            }
+        }
+
+    @Test
+    fun `GIVEN Discovering WHEN matching service found THEN emits Found event`() =
+        runTest {
+            // Arrange
+            val targetCode = "ABCD"
+            nsdNetworkDiscovery.startDiscovery(targetCode)
+            // Simulate start
             discoveryListenerSlot.captured.onDiscoveryStarted(NSDConstants.SERVICE_TYPE)
 
-            // Assert
-            val state = awaitItem()
-            assertTrue(state is NsdDiscoveryState.Discovering)
-            assertEquals(
-                NSDConstants.SERVICE_TYPE,
-                (state as NsdDiscoveryState.Discovering).serviceType
-            )
+            nsdNetworkDiscovery.discoveredServiceEvent.test {
+                // Act: Simulate finding a valid service
+                val validService = mockk<NsdServiceInfo>()
+                every { validService.serviceType } returns NSDConstants.SERVICE_TYPE
+                every { validService.serviceName } returns "${NSDConstants.BASE_SERVICE_NAME}_$targetCode"
+
+                discoveryListenerSlot.captured.onServiceFound(validService)
+
+                // Assert
+                val event = awaitItem()
+                assertTrue(event is NsdDiscoveryEvent.Found)
+                assertEquals(validService, event.serviceInfo)
+            }
         }
-    }
 
     @Test
-    fun `GIVEN Discovering WHEN matching service found THEN emits Found event`() = runTest {
-        // Arrange
-        val targetCode = "ABCD"
-        nsdNetworkDiscovery.startDiscovery(targetCode)
-        // Simulate start
-        discoveryListenerSlot.captured.onDiscoveryStarted(NSDConstants.SERVICE_TYPE)
+    fun `GIVEN Discovering WHEN wrong game code found THEN ignores event`() =
+        runTest {
+            // Arrange
+            val targetCode = "ABCD"
+            nsdNetworkDiscovery.startDiscovery(targetCode)
+            discoveryListenerSlot.captured.onDiscoveryStarted(NSDConstants.SERVICE_TYPE)
 
-        nsdNetworkDiscovery.discoveredServiceEvent.test {
-            // Act: Simulate finding a valid service
-            val validService = mockk<NsdServiceInfo>()
-            every { validService.serviceType } returns NSDConstants.SERVICE_TYPE
-            every { validService.serviceName } returns "${NSDConstants.BASE_SERVICE_NAME}_$targetCode"
+            nsdNetworkDiscovery.discoveredServiceEvent.test {
+                // Act: Simulate finding a service for a DIFFERENT game
+                val wrongCodeService = mockk<NsdServiceInfo>()
+                every { wrongCodeService.serviceType } returns NSDConstants.SERVICE_TYPE
+                every { wrongCodeService.serviceName } returns "${NSDConstants.BASE_SERVICE_NAME}_XYZ9"
 
-            discoveryListenerSlot.captured.onServiceFound(validService)
+                discoveryListenerSlot.captured.onServiceFound(wrongCodeService)
 
-            // Assert
-            val event = awaitItem()
-            assertTrue(event is NsdDiscoveryEvent.Found)
-            assertEquals(validService, event.serviceInfo)
+                // Assert: No events should be emitted
+                expectNoEvents()
+            }
         }
-    }
 
     @Test
-    fun `GIVEN Discovering WHEN wrong game code found THEN ignores event`() = runTest {
-        // Arrange
-        val targetCode = "ABCD"
-        nsdNetworkDiscovery.startDiscovery(targetCode)
-        discoveryListenerSlot.captured.onDiscoveryStarted(NSDConstants.SERVICE_TYPE)
-
-        nsdNetworkDiscovery.discoveredServiceEvent.test {
-            // Act: Simulate finding a service for a DIFFERENT game
-            val wrongCodeService = mockk<NsdServiceInfo>()
-            every { wrongCodeService.serviceType } returns NSDConstants.SERVICE_TYPE
-            every { wrongCodeService.serviceName } returns "${NSDConstants.BASE_SERVICE_NAME}_XYZ9"
-
-            discoveryListenerSlot.captured.onServiceFound(wrongCodeService)
-
-            // Assert: No events should be emitted
-            expectNoEvents()
-        }
-    }
-
-    @Test
-    fun `GIVEN Discovering WHEN malformed service name found THEN ignores event`() = runTest {
-        // Arrange
-        nsdNetworkDiscovery.startDiscovery("ABCD")
-        discoveryListenerSlot.captured.onDiscoveryStarted(NSDConstants.SERVICE_TYPE)
-
-        nsdNetworkDiscovery.discoveredServiceEvent.test {
-            // Act: Service name has no underscore (e.g. "ImpostleGame")
-            val malformedService = mockk<NsdServiceInfo>()
-            every { malformedService.serviceType } returns NSDConstants.SERVICE_TYPE
-            every { malformedService.serviceName } returns "JustRandomString"
-
-            discoveryListenerSlot.captured.onServiceFound(malformedService)
-
-            // Assert
-            expectNoEvents()
-        }
-    }
-
-    @Test
-    fun `GIVEN Discovering WHEN wrong service type found THEN ignores event`() = runTest {
-        // Arrange
-        nsdNetworkDiscovery.startDiscovery("ABCD")
-        discoveryListenerSlot.captured.onDiscoveryStarted(NSDConstants.SERVICE_TYPE)
-
-        nsdNetworkDiscovery.discoveredServiceEvent.test {
-            // Act: Wrong protocol (e.g., _http._tcp)
-            val wrongTypeService = mockk<NsdServiceInfo>()
-            every { wrongTypeService.serviceType } returns "_printer._tcp."
-            every { wrongTypeService.serviceName } returns "${NSDConstants.BASE_SERVICE_NAME}_ABCD"
-
-            discoveryListenerSlot.captured.onServiceFound(wrongTypeService)
-
-            // Assert
-            expectNoEvents()
-        }
-    }
-
-    @Test
-    fun `GIVEN Service Found WHEN service lost THEN emits Lost event`() = runTest {
-        // Arrange
-        val gameCode = "ABCD"
-        nsdNetworkDiscovery.startDiscovery(gameCode)
-
-        nsdNetworkDiscovery.discoveredServiceEvent.test {
-            // Act
-            val lostService = mockk<NsdServiceInfo>()
-            every { lostService.serviceName } returns "${NSDConstants.BASE_SERVICE_NAME}_${gameCode}"
-            every { lostService.serviceType } returns NSDConstants.SERVICE_TYPE
-
-            discoveryListenerSlot.captured.onServiceLost(lostService)
-
-            // Assert
-            val event = awaitItem()
-            assertTrue(event is NsdDiscoveryEvent.Lost)
-            assertEquals(lostService, event.serviceInfo)
-        }
-    }
-
-    @Test
-    fun `GIVEN Discovering WHEN start fails THEN state becomes Failed`() = runTest {
-        nsdNetworkDiscovery.discoveryProcessState.test {
-            assertEquals(NsdDiscoveryState.Idle, awaitItem())
-
+    fun `GIVEN Discovering WHEN malformed service name found THEN ignores event`() =
+        runTest {
+            // Arrange
             nsdNetworkDiscovery.startDiscovery("ABCD")
+            discoveryListenerSlot.captured.onDiscoveryStarted(NSDConstants.SERVICE_TYPE)
 
-            val errorCode = NsdManager.FAILURE_INTERNAL_ERROR
-            discoveryListenerSlot.captured.onStartDiscoveryFailed(
-                NSDConstants.SERVICE_TYPE,
-                errorCode
-            )
+            nsdNetworkDiscovery.discoveredServiceEvent.test {
+                // Act: Service name has no underscore (e.g. "ImpostleGame")
+                val malformedService = mockk<NsdServiceInfo>()
+                every { malformedService.serviceType } returns NSDConstants.SERVICE_TYPE
+                every { malformedService.serviceName } returns "JustRandomString"
 
-            val state = awaitItem()
-            assertTrue(state is NsdDiscoveryState.Failed)
+                discoveryListenerSlot.captured.onServiceFound(malformedService)
+
+                // Assert
+                expectNoEvents()
+            }
         }
-    }
+
+    @Test
+    fun `GIVEN Discovering WHEN wrong service type found THEN ignores event`() =
+        runTest {
+            // Arrange
+            nsdNetworkDiscovery.startDiscovery("ABCD")
+            discoveryListenerSlot.captured.onDiscoveryStarted(NSDConstants.SERVICE_TYPE)
+
+            nsdNetworkDiscovery.discoveredServiceEvent.test {
+                // Act: Wrong protocol (e.g., _http._tcp)
+                val wrongTypeService = mockk<NsdServiceInfo>()
+                every { wrongTypeService.serviceType } returns "_printer._tcp."
+                every { wrongTypeService.serviceName } returns "${NSDConstants.BASE_SERVICE_NAME}_ABCD"
+
+                discoveryListenerSlot.captured.onServiceFound(wrongTypeService)
+
+                // Assert
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `GIVEN Service Found WHEN service lost THEN emits Lost event`() =
+        runTest {
+            // Arrange
+            val gameCode = "ABCD"
+            nsdNetworkDiscovery.startDiscovery(gameCode)
+
+            nsdNetworkDiscovery.discoveredServiceEvent.test {
+                // Act
+                val lostService = mockk<NsdServiceInfo>()
+                every { lostService.serviceName } returns "${NSDConstants.BASE_SERVICE_NAME}_$gameCode"
+                every { lostService.serviceType } returns NSDConstants.SERVICE_TYPE
+
+                discoveryListenerSlot.captured.onServiceLost(lostService)
+
+                // Assert
+                val event = awaitItem()
+                assertTrue(event is NsdDiscoveryEvent.Lost)
+                assertEquals(lostService, event.serviceInfo)
+            }
+        }
+
+    @Test
+    fun `GIVEN Discovering WHEN start fails THEN state becomes Failed`() =
+        runTest {
+            nsdNetworkDiscovery.discoveryProcessState.test {
+                assertEquals(NsdDiscoveryState.Idle, awaitItem())
+
+                nsdNetworkDiscovery.startDiscovery("ABCD")
+
+                val errorCode = NsdManager.FAILURE_INTERNAL_ERROR
+                discoveryListenerSlot.captured.onStartDiscoveryFailed(
+                    NSDConstants.SERVICE_TYPE,
+                    errorCode,
+                )
+
+                val state = awaitItem()
+                assertTrue(state is NsdDiscoveryState.Failed)
+            }
+        }
 }

@@ -20,61 +20,65 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class SettingsViewModel @Inject constructor(
-    private val settingsRepository: SettingsRepository
-) : ViewModel() {
-    private val _eventFlow = MutableSharedFlow<UiEvent>()
-    val eventFlow = _eventFlow.asSharedFlow()
+class SettingsViewModel
+    @Inject
+    constructor(
+        private val settingsRepository: SettingsRepository,
+    ) : ViewModel() {
+        private val _eventFlow = MutableSharedFlow<UiEvent>()
+        val eventFlow = _eventFlow.asSharedFlow()
 
-    val languageSetting = settingsRepository.userSettings
-        .map { GameLocales.toLocale(it.languageCode) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GameLocales.English)
+        val languageSetting =
+            settingsRepository.userSettings
+                .map { GameLocales.toLocale(it.languageCode) }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), GameLocales.English)
 
-    val darkThemeSetting = settingsRepository.userSettings
-        .map { it.isDarkTheme }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+        val darkThemeSetting =
+            settingsRepository.userSettings
+                .map { it.isDarkTheme }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
-    private val _languageSettingDropdownExpanded = MutableStateFlow(false)
-    val languageSettingDropdownExpanded = _languageSettingDropdownExpanded.asStateFlow()
+        private val _languageSettingDropdownExpanded = MutableStateFlow(false)
+        val languageSettingDropdownExpanded = _languageSettingDropdownExpanded.asStateFlow()
 
-    fun onLanguageChange(locale: GameLocales) {
-        _languageSettingDropdownExpanded.value = false
-        viewModelScope.launch {
-            // Map UI GameLocales back to Domain AppLocales
-            val appLocale = AppLocales.fromCountryCode(locale.countryCode)
-            settingsRepository.setLanguage(appLocale)
+        fun onLanguageChange(locale: GameLocales) {
+            _languageSettingDropdownExpanded.value = false
+            viewModelScope.launch {
+                // Map UI GameLocales back to Domain AppLocales
+                val appLocale = AppLocales.fromCountryCode(locale.countryCode)
+                settingsRepository.setLanguage(appLocale)
+            }
         }
-    }
 
-    fun onLanguageDropDownExpandedChange(isExpanded: Boolean) {
-        _languageSettingDropdownExpanded.value = isExpanded
-    }
-
-    fun onLanguageDropDownDismiss() {
-        _languageSettingDropdownExpanded.value = false
-    }
-
-    fun onThemeChange(isDarkTheme: Boolean) {
-        Log.d(TAG, "onThemeChange: $isDarkTheme")
-        viewModelScope.launch {
-            settingsRepository.setDarkTheme(isDarkTheme)
+        fun onLanguageDropDownExpandedChange(isExpanded: Boolean) {
+            _languageSettingDropdownExpanded.value = isExpanded
         }
-    }
 
-    fun onSaveChangesClick() {
-        navigateTo(Routes.MainMenu.route)
-    }
+        fun onLanguageDropDownDismiss() {
+            _languageSettingDropdownExpanded.value = false
+        }
 
-    private fun navigateTo(
+        fun onThemeChange(isDarkTheme: Boolean) {
+            Log.d(TAG, "onThemeChange: $isDarkTheme")
+            viewModelScope.launch {
+                settingsRepository.setDarkTheme(isDarkTheme)
+            }
+        }
+
+        fun onSaveChangesClick() {
+            navigateTo(Routes.MainMenu.route)
+        }
+
+        private fun navigateTo(
         destination: String,
-        popPrevious: Boolean = true
-    ) {
-        viewModelScope.launch {
-            _eventFlow.emit(
+        popPrevious: Boolean = true,
+        ) {
+            viewModelScope.launch {
+                _eventFlow.emit(
                 UiEvent.NavigateTo(
                     destination = destination,
-                    popPrevious = popPrevious
-                )
+                    popPrevious = popPrevious,
+                ),
             )
         }
     }

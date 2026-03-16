@@ -14,26 +14,25 @@ import androidx.compose.ui.unit.sp
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
 
 @Composable
-fun LobbyClientStatus(
-    modifier: Modifier = Modifier
-) {
+fun LobbyClientStatus(modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(80.dp)
-            .brutalistCard(
-                backgroundColor = MaterialTheme.colorScheme.surface,
-                borderColor = MaterialTheme.colorScheme.outline,
-                shadowOffset = 0.dp
-            ),
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(80.dp)
+                .brutalistCard(
+                    backgroundColor = MaterialTheme.colorScheme.surface,
+                    borderColor = MaterialTheme.colorScheme.outline,
+                    shadowOffset = 0.dp,
+                ),
+        contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = "WAITING FOR HOST...",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                letterSpacing = 2.sp
+                letterSpacing = 2.sp,
             )
         }
     }

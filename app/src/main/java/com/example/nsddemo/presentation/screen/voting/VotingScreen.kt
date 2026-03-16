@@ -46,7 +46,7 @@ import com.example.nsddemo.presentation.components.modifier.brutalistCard
 import com.example.nsddemo.presentation.components.modifier.brutalistGridBackground
 import com.example.nsddemo.presentation.screen.voting.components.VoteSelectionRow
 import com.example.nsddemo.presentation.theme.AppTheme
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 import com.example.nsddemo.presentation.util.NoFeedbackIndication
 
 // ============================================================================
@@ -54,9 +54,7 @@ import com.example.nsddemo.presentation.util.NoFeedbackIndication
 // ============================================================================
 
 @Composable
-fun VotingScreen(
-    viewModel: VotingViewModel = hiltViewModel(),
-) {
+fun VotingScreen(viewModel: VotingViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
 
     VotingContent(
@@ -64,7 +62,7 @@ fun VotingScreen(
         votedPlayer = state.votedPlayer,
         isVoteConfirmed = state.isVoteConfirmed,
         onVoteForPlayer = { viewModel.onEvent(VotingEvent.VoteForPlayer(it)) },
-        onConfirmVote = { viewModel.onEvent(VotingEvent.VoteConfirmed) }
+        onConfirmVote = { viewModel.onEvent(VotingEvent.VoteConfirmed) },
     )
 }
 
@@ -78,53 +76,56 @@ fun VotingContent(
     votedPlayer: Player?,
     isVoteConfirmed: Boolean,
     onVoteForPlayer: (Player) -> Unit,
-    onConfirmVote: () -> Unit
+    onConfirmVote: () -> Unit,
 ) {
     val gridColor = MaterialTheme.colorScheme.surfaceVariant
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .brutalistGridBackground(
-                backgroundColor = MaterialTheme.colorScheme.background,
-                gridLineColor = gridColor
-            )
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .brutalistGridBackground(
+                    backgroundColor = MaterialTheme.colorScheme.background,
+                    gridLineColor = gridColor,
+                ),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .displayCutoutPadding()
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .displayCutoutPadding(),
         ) {
             // --- TOP BANNER ---
             MarqueeBanner(
                 text = "WHO IS THE IMPOSTER? /// WARNING /// TRUST NO ONE /// VOTE CAREFULLY /// ",
                 backgroundColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.Black
+                contentColor = Color.Black,
             )
 
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .systemBarsPadding()
-                    .padding(horizontal = BrutalistDimens.SpacingLarge)
-                    .padding(
-                        top = BrutalistDimens.SpacingLarge,
-                        bottom = BrutalistDimens.SpacingMedium
-                    ),
-                horizontalAlignment = Alignment.CenterHorizontally
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .systemBarsPadding()
+                        .padding(horizontal = Dimens.SpacingLarge)
+                        .padding(
+                            top = Dimens.SpacingLarge,
+                            bottom = Dimens.SpacingMedium,
+                        ),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-
                 // --- LIST CONTAINER ---
                 Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .brutalistCard(
-                            backgroundColor = MaterialTheme.colorScheme.surface,
-                            borderColor = MaterialTheme.colorScheme.outline,
-                            shadowOffset = BrutalistDimens.ShadowMedium,
-                            borderWidth = BrutalistDimens.BorderThick
-                        )
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .brutalistCard(
+                                backgroundColor = MaterialTheme.colorScheme.surface,
+                                borderColor = MaterialTheme.colorScheme.outline,
+                                shadowOffset = Dimens.ShadowMedium,
+                                borderWidth = Dimens.BorderThick,
+                            ),
                 ) {
                     // Internal Header
                     BrutalistSectionHeader(
@@ -133,23 +134,23 @@ fun VotingContent(
                             Icon(
                                 imageVector = ImageVector.vectorResource(R.drawable.sharp_how_to_vote_24),
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onBackground
+                                tint = MaterialTheme.colorScheme.onBackground,
                             )
-                        }
+                        },
                     )
 
                     // Scrollable List
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         items(players) { player ->
                             VoteSelectionRow(
                                 player = player,
                                 isSelected = (player == votedPlayer),
                                 isLocked = isVoteConfirmed,
-                                onSelect = { onVoteForPlayer(player) }
+                                onSelect = { onVoteForPlayer(player) },
                             )
                         }
                     }
@@ -161,27 +162,27 @@ fun VotingContent(
                 if (isVoteConfirmed) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
                                 imageVector = Icons.Default.CheckCircle,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(48.dp)
+                                modifier = Modifier.size(48.dp),
                             )
                             Text(
                                 text = "VOTE CAST!",
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Black
+                                fontWeight = FontWeight.Black,
                             )
                         }
 
                         BrutalistButton(
                             text = "WAITING FOR OTHERS...",
                             enabled = false,
-                            onClick = {}
+                            onClick = {},
                         )
                     }
                 } else {
@@ -191,7 +192,7 @@ fun VotingContent(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
                         enabled = votedPlayer != null,
-                        onClick = onConfirmVote
+                        onClick = onConfirmVote,
                     )
                 }
             }
@@ -210,32 +211,38 @@ private fun PreviewVotingActive() {
         Surface {
             CompositionLocalProvider(LocalIndication provides NoFeedbackIndication()) {
                 VotingContent(
-                    players = listOf(
-                        Player(
-                            id = "p1",
-                            name = "RoboPlayer",
-                            color = NewPlayerColors.DarkGreen.hexCode
+                    players =
+                        listOf(
+                            Player(
+                                id = "p1",
+                                name = "RoboPlayer",
+                                color = NewPlayerColors.DarkGreen.hexCode,
+                            ),
+                            Player(
+                                id = "p2",
+                                name = "HappyGil",
+                                color = NewPlayerColors.Purple.hexCode,
+                            ),
+                            Player(
+                                id = "p3",
+                                name = "DogLover99",
+                                color = NewPlayerColors.Orange.hexCode,
+                            ),
+                            Player(
+                                id = "p4",
+                                name = "ExtraGuest",
+                                color = NewPlayerColors.Red.hexCode,
+                            ),
                         ),
-                        Player(
-                            id = "p2",
-                            name = "HappyGil",
-                            color = NewPlayerColors.Purple.hexCode
-                        ),
+                    votedPlayer =
                         Player(
                             id = "p3",
                             name = "DogLover99",
-                            color = NewPlayerColors.Orange.hexCode
+                            color = NewPlayerColors.Orange.hexCode,
                         ),
-                        Player(id = "p4", name = "ExtraGuest", color = NewPlayerColors.Red.hexCode),
-                    ),
-                    votedPlayer = Player(
-                        id = "p3",
-                        name = "DogLover99",
-                        color = NewPlayerColors.Orange.hexCode
-                    ),
                     isVoteConfirmed = false,
                     onVoteForPlayer = {},
-                    onConfirmVote = {}
+                    onConfirmVote = {},
                 )
             }
         }
@@ -245,7 +252,7 @@ private fun PreviewVotingActive() {
 @Preview(
     name = "Confirmed/Waiting (Dark)",
     showBackground = true,
-    uiMode = Configuration.UI_MODE_NIGHT_YES
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
 )
 @Composable
 private fun PreviewVotingConfirmed() {
@@ -253,26 +260,28 @@ private fun PreviewVotingConfirmed() {
         Surface {
             CompositionLocalProvider(LocalIndication provides NoFeedbackIndication()) {
                 VotingContent(
-                    players = listOf(
+                    players =
+                        listOf(
+                            Player(
+                                id = "p1",
+                                name = "RoboPlayer",
+                                color = NewPlayerColors.DarkGreen.hexCode,
+                            ),
+                            Player(
+                                id = "p2",
+                                name = "HappyGil",
+                                color = NewPlayerColors.Purple.hexCode,
+                            ),
+                        ),
+                    votedPlayer =
                         Player(
                             id = "p1",
                             name = "RoboPlayer",
-                            color = NewPlayerColors.DarkGreen.hexCode
+                            color = NewPlayerColors.DarkGreen.hexCode,
                         ),
-                        Player(
-                            id = "p2",
-                            name = "HappyGil",
-                            color = NewPlayerColors.Purple.hexCode
-                        ),
-                    ),
-                    votedPlayer = Player(
-                        id = "p1",
-                        name = "RoboPlayer",
-                        color = NewPlayerColors.DarkGreen.hexCode,
-                    ),
                     isVoteConfirmed = true,
                     onVoteForPlayer = {},
-                    onConfirmVote = {}
+                    onConfirmVote = {},
                 )
             }
         }

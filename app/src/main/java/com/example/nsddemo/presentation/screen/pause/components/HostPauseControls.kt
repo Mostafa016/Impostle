@@ -19,11 +19,11 @@ fun HostPauseControls(
     isEndGameEnabled: Boolean,
     onResume: () -> Unit,
     onGameEnd: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         BrutalistButton(
             text = "CONTINUE ANYWAY",
@@ -31,7 +31,7 @@ fun HostPauseControls(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
             enabled = true,
-            onClick = onResume
+            onClick = onResume,
         )
 
         BrutalistButton(
@@ -40,7 +40,7 @@ fun HostPauseControls(
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.error,
             enabled = isEndGameEnabled,
-            onClick = onGameEnd
+            onClick = onGameEnd,
         )
     }
 }

@@ -66,15 +66,16 @@ class HeadlessPlayer(
     private val fakeServerRepo: FakeServerNetworkRepository? =
         if (isHost) FakeServerNetworkRepository(router, gameCode) else null
 
-    val gameServer: GameServer? = fakeServerRepo?.let { serverRepo ->
-        val wordRepo = FakeWordRepository()
-        val strategy = QuestionGameModeStrategy(wordRepo)
-        GameServer(
-            serverNetworkRepository = serverRepo,
-            strategies = mapOf(GameMode.Question to strategy),
-            sessionManager = SessionManager()
-        )
-    }
+    val gameServer: GameServer? =
+        fakeServerRepo?.let { serverRepo ->
+            val wordRepo = FakeWordRepository()
+            val strategy = QuestionGameModeStrategy(wordRepo)
+            GameServer(
+                serverNetworkRepository = serverRepo,
+                strategies = mapOf(GameMode.Question to strategy),
+                sessionManager = SessionManager(),
+            )
+        }
 
     // ─── Public assertion surface ────────────────────────────────────────────
 
@@ -118,18 +119,28 @@ class HeadlessPlayer(
     // ─── Readable test actions ───────────────────────────────────────────────
 
     suspend fun joinGame() = gameClient.registerPlayer(name, playerId)
+
     suspend fun selectCategory(cat: GameCategory) = gameClient.selectCategory(cat)
+
     suspend fun startGame() = gameClient.startGame()
+
     suspend fun confirmRole() = gameClient.confirmRole()
+
     suspend fun endTurn() = gameClient.endTurn()
+
     suspend fun replayRound() = gameClient.replayRound()
+
     suspend fun startVote() = gameClient.startVote()
+
     suspend fun submitVote(targetId: String) = gameClient.submitVote(targetId)
-    suspend fun submitImposterGuess(guessedWord: String) =
-        gameClient.submitImposterGuess(guessedWord)
+
+    suspend fun submitImposterGuess(guessedWord: String) = gameClient.submitImposterGuess(guessedWord)
 
     suspend fun continueToGameChoice() = gameClient.continueToGameChoice()
+
     suspend fun replayGame() = gameClient.replayGame()
+
     suspend fun endGame() = gameClient.endGame()
+
     suspend fun kickPlayer(targetId: String) = gameClient.kickPlayer(targetId)
 }

@@ -11,7 +11,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 
 /**
  * Applies the signature "Friendly Cyber-Brutalist" look:
@@ -24,9 +24,9 @@ fun Modifier.brutalistCard(
     backgroundColor: Color,
     borderColor: Color,
     shadowColor: Color = Color.Black, // Usually Black, even in Dark Mode
-    cornerRadius: Dp = BrutalistDimens.CornerLarge,
-    borderWidth: Dp = BrutalistDimens.BorderThin,
-    shadowOffset: Dp = BrutalistDimens.ShadowMedium,
+    cornerRadius: Dp = Dimens.CornerLarge,
+    borderWidth: Dp = Dimens.BorderThin,
+    shadowOffset: Dp = Dimens.ShadowMedium,
 ) = this
     .drawBehind {
         if (shadowOffset > 0.dp) {
@@ -34,11 +34,10 @@ fun Modifier.brutalistCard(
                 color = shadowColor,
                 topLeft = Offset(shadowOffset.toPx(), shadowOffset.toPx()),
                 size = size,
-                cornerRadius = CornerRadius(cornerRadius.toPx())
+                cornerRadius = CornerRadius(cornerRadius.toPx()),
             )
         }
-    }
-    .clip(RoundedCornerShape(cornerRadius))
+    }.clip(RoundedCornerShape(cornerRadius))
     .background(backgroundColor)
     .border(borderWidth, borderColor, RoundedCornerShape(cornerRadius))
 
@@ -48,7 +47,7 @@ fun Modifier.brutalistCard(
 fun Modifier.brutalistGridBackground(
     backgroundColor: Color,
     gridLineColor: Color,
-    gridSize: Dp = 40.dp
+    gridSize: Dp = 40.dp,
 ) = this
     .background(backgroundColor)
     .drawBehind {
@@ -61,7 +60,7 @@ fun Modifier.brutalistGridBackground(
                 gridLineColor,
                 start = Offset(x.toFloat(), 0f),
                 end = Offset(x.toFloat(), size.height),
-                strokeWidth = stroke
+                strokeWidth = stroke,
             )
         }
         // Horizontal Lines
@@ -70,7 +69,7 @@ fun Modifier.brutalistGridBackground(
                 gridLineColor,
                 start = Offset(0f, y.toFloat()),
                 end = Offset(size.width, y.toFloat()),
-                strokeWidth = stroke
+                strokeWidth = stroke,
             )
         }
     }
@@ -80,12 +79,12 @@ fun Modifier.brutalistGridBackground(
  */
 fun Modifier.brutalistBorderBottom(
     color: Color,
-    strokeWidth: Dp = BrutalistDimens.BorderThin
+    strokeWidth: Dp = Dimens.BorderThin,
 ) = drawBehind {
     drawLine(
         color = color,
         start = Offset(0f, size.height),
         end = Offset(size.width, size.height),
-        strokeWidth = strokeWidth.toPx()
+        strokeWidth = strokeWidth.toPx(),
     )
 }

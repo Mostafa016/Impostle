@@ -21,7 +21,6 @@ import org.junit.Test
  * all coroutines and [delay] calls use virtual time → executes in milliseconds.
  */
 class HappyPathE2ETest : BaseE2ETest() {
-
     override val gameCode = "HAPPY"
 
     @Test

@@ -6,5 +6,5 @@ import kotlinx.serialization.Serializable
 enum class GameCategory {
     ANIMALS,
     FOOD,
-    JOBS;
+    JOBS,
 }

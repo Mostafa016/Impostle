@@ -19,7 +19,7 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 
 @Composable
 fun BrutalistPlayerRow(
@@ -27,49 +27,56 @@ fun BrutalistPlayerRow(
     avatarColor: Color,
     isLocalPlayer: Boolean,
     modifier: Modifier = Modifier,
-    trailingContent: @Composable (() -> Unit)? = null
+    trailingContent: @Composable (() -> Unit)? = null,
 ) {
     val borderColor =
-        if (isLocalPlayer) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline.copy(
-            alpha = 0.2f
-        )
+        if (isLocalPlayer) {
+            MaterialTheme.colorScheme.secondary
+        } else {
+            MaterialTheme.colorScheme.outline.copy(
+                alpha = 0.2f,
+            )
+        }
     // subtle background tint for local player
-    val bgColor = if (isLocalPlayer)
-        MaterialTheme.colorScheme.background.compositeOver(MaterialTheme.colorScheme.primary)
-    else
-        MaterialTheme.colorScheme.surface
+    val bgColor =
+        if (isLocalPlayer) {
+            MaterialTheme.colorScheme.background.compositeOver(MaterialTheme.colorScheme.primary)
+        } else {
+            MaterialTheme.colorScheme.surface
+        }
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .brutalistCard(
-                backgroundColor = bgColor,
-                borderColor = borderColor,
-                cornerRadius = BrutalistDimens.CornerMedium, // 8.dp
-                shadowOffset = BrutalistDimens.ShadowSmall, // 2.dp
-                borderWidth = BrutalistDimens.BorderThin // 2.dp
-            )
-            .padding(BrutalistDimens.SpacingSmall + 4.dp), // Approx 12dp
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .brutalistCard(
+                    backgroundColor = bgColor,
+                    borderColor = borderColor,
+                    cornerRadius = Dimens.CornerMedium, // 8.dp
+                    shadowOffset = Dimens.ShadowSmall, // 2.dp
+                    borderWidth = Dimens.BorderThin, // 2.dp
+                ).padding(Dimens.SpacingSmall + 4.dp),
+        // Approx 12dp
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(BrutalistDimens.SpacingMedium)
+            horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingMedium),
         ) {
             // Avatar Square
             Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        color = avatarColor,
-                        shape = RoundedCornerShape(BrutalistDimens.CornerSmall)
-                    )
-                    .border(
-                        width = BrutalistDimens.BorderThin,
-                        color = MaterialTheme.colorScheme.outline,
-                        shape = RoundedCornerShape(BrutalistDimens.CornerSmall)
-                    )
+                modifier =
+                    Modifier
+                        .size(40.dp)
+                        .background(
+                            color = avatarColor,
+                            shape = RoundedCornerShape(Dimens.CornerSmall),
+                        ).border(
+                            width = Dimens.BorderThin,
+                            color = MaterialTheme.colorScheme.outline,
+                            shape = RoundedCornerShape(Dimens.CornerSmall),
+                        ),
             )
 
             Text(
@@ -77,7 +84,7 @@ fun BrutalistPlayerRow(
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
 

@@ -13,12 +13,12 @@ interface GameModeStrategy {
         data: GameData,
         phase: GamePhase,
         message: ClientMessage,
-        playerID: String
+        playerID: String,
     ): GameStateTransition
 
     fun onPlayerRemoved(
         data: GameData,
         phase: GamePhase,
-        removedPlayerId: String
+        removedPlayerId: String,
     ): GameStateTransition
 }

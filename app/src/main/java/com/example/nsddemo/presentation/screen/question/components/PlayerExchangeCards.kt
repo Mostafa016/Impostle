@@ -35,7 +35,7 @@ import androidx.compose.ui.zIndex
 import com.example.nsddemo.domain.model.NewPlayerColors
 import com.example.nsddemo.domain.model.Player
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 import com.example.nsddemo.presentation.util.toComposeColor
 
 @Composable
@@ -44,17 +44,17 @@ fun PlayerExchangeCards(
     isCurrentPlayerAsked: Boolean,
     askingPlayer: Player,
     askedPlayer: Player,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val verticalGap = BrutalistDimens.SpacingXLarge
+    val verticalGap = Dimens.SpacingXLarge
 
     Box(
         modifier = modifier.fillMaxWidth(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // ASKER CARD
             val askerAvatarColor = NewPlayerColors.fromHex(askingPlayer.color).toComposeColor()
@@ -63,7 +63,7 @@ fun PlayerExchangeCards(
                 playerName = if (isCurrentPlayerAsking) "YOU" else askingPlayer.name.uppercase(),
                 avatarColor = askerAvatarColor,
                 isActive = isCurrentPlayerAsking,
-                isRightAligned = false
+                isRightAligned = false,
             )
 
             Spacer(modifier = Modifier.height(verticalGap))
@@ -73,7 +73,7 @@ fun PlayerExchangeCards(
                 isCurrentPlayerAsking = isCurrentPlayerAsking,
                 isCurrentPlayerAsked = isCurrentPlayerAsked,
                 askingName = askingPlayer.name.uppercase(),
-                askedName = askedPlayer.name.uppercase()
+                askedName = askedPlayer.name.uppercase(),
             )
 
             Spacer(modifier = Modifier.height(verticalGap))
@@ -85,7 +85,7 @@ fun PlayerExchangeCards(
                 playerName = if (isCurrentPlayerAsked) "YOU" else askedPlayer.name.uppercase(),
                 avatarColor = askedAvatarColor,
                 isActive = isCurrentPlayerAsked,
-                isRightAligned = true
+                isRightAligned = true,
             )
         }
     }
@@ -97,7 +97,7 @@ private fun ExchangeCard(
     playerName: String,
     avatarColor: Color,
     isActive: Boolean,
-    isRightAligned: Boolean
+    isRightAligned: Boolean,
 ) {
     val outlineColor = MaterialTheme.colorScheme.outline
     val cardBorderColor = if (isActive) MaterialTheme.colorScheme.primary else outlineColor
@@ -108,61 +108,60 @@ private fun ExchangeCard(
     Box(modifier = Modifier.fillMaxWidth()) {
         if (isActive) {
             Box(
-                modifier = Modifier
-                    .align(if (isRightAligned) Alignment.TopEnd else Alignment.TopStart)
-                    .offset(
-                        x = if (isRightAligned) 8.dp else (-8).dp,
-                        y = (-12).dp
-                    )
-                    .rotate(if (isRightAligned) 4f else -4f)
-                    .brutalistCard(
-                        backgroundColor = MaterialTheme.colorScheme.primary,
-                        borderColor = outlineColor,
-                        shadowOffset = 2.dp,
-                        cornerRadius = 4.dp
-                    )
-                    .padding(horizontal = 12.dp, vertical = 4.dp)
-                    .zIndex(10f)
+                modifier =
+                    Modifier
+                        .align(if (isRightAligned) Alignment.TopEnd else Alignment.TopStart)
+                        .offset(
+                            x = if (isRightAligned) 8.dp else (-8).dp,
+                            y = (-12).dp,
+                        ).rotate(if (isRightAligned) 4f else -4f)
+                        .brutalistCard(
+                            backgroundColor = MaterialTheme.colorScheme.primary,
+                            borderColor = outlineColor,
+                            shadowOffset = 2.dp,
+                            cornerRadius = 4.dp,
+                        ).padding(horizontal = 12.dp, vertical = 4.dp)
+                        .zIndex(10f),
             ) {
                 Text(
                     text = "YOUR TURN",
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                    color = MaterialTheme.colorScheme.onPrimary
+                    color = MaterialTheme.colorScheme.onPrimary,
                 )
             }
         }
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .brutalistCard(
-                    backgroundColor = cardBgTint,
-                    borderColor = cardBorderColor,
-                    shadowColor = shadowColor,
-                    shadowOffset = BrutalistDimens.ShadowMedium,
-                    cornerRadius = BrutalistDimens.CornerXLarge,
-                    borderWidth = BrutalistDimens.BorderThick
-                )
-                .padding(24.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .brutalistCard(
+                        backgroundColor = cardBgTint,
+                        borderColor = cardBorderColor,
+                        shadowColor = shadowColor,
+                        shadowOffset = Dimens.ShadowMedium,
+                        cornerRadius = Dimens.CornerXLarge,
+                        borderWidth = Dimens.BorderThick,
+                    ).padding(24.dp),
             horizontalArrangement = if (isRightAligned) Arrangement.End else Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             if (!isRightAligned) AvatarCircle(avatarColor)
 
             Column(
                 modifier = Modifier.padding(horizontal = 20.dp),
-                horizontalAlignment = if (isRightAligned) Alignment.End else Alignment.Start
+                horizontalAlignment = if (isRightAligned) Alignment.End else Alignment.Start,
             ) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
                 Text(
                     text = playerName,
                     style = MaterialTheme.typography.displayMedium.copy(fontSize = 32.sp),
                     color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1
+                    maxLines = 1,
                 )
             }
 
@@ -174,17 +173,18 @@ private fun ExchangeCard(
 @Composable
 private fun AvatarCircle(color: Color) {
     Box(
-        modifier = Modifier
-            .size(80.dp)
-            .background(color, CircleShape)
-            .border(4.dp, MaterialTheme.colorScheme.outline, CircleShape),
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .size(80.dp)
+                .background(color, CircleShape)
+                .border(4.dp, MaterialTheme.colorScheme.outline, CircleShape),
+        contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = Icons.Default.Person,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.outline,
-            modifier = Modifier.size(48.dp)
+            modifier = Modifier.size(48.dp),
         )
     }
 }
@@ -194,90 +194,96 @@ private fun BridgePill(
     isCurrentPlayerAsking: Boolean,
     isCurrentPlayerAsked: Boolean,
     askingName: String,
-    askedName: String
+    askedName: String,
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Box(
             modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(2.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(1.dp)
-                    )
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(2.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(1.dp),
+                        ),
             )
             Box(
-                modifier = Modifier
-                    .brutalistCard(
-                        backgroundColor = MaterialTheme.colorScheme.surface,
-                        borderColor = MaterialTheme.colorScheme.outline,
-                        cornerRadius = BrutalistDimens.CornerPill,
-                        shadowOffset = BrutalistDimens.ShadowSmall,
-                        borderWidth = BrutalistDimens.BorderThin
-                    )
-                    .padding(horizontal = 24.dp, vertical = 10.dp)
+                modifier =
+                    Modifier
+                        .brutalistCard(
+                            backgroundColor = MaterialTheme.colorScheme.surface,
+                            borderColor = MaterialTheme.colorScheme.outline,
+                            cornerRadius = Dimens.CornerPill,
+                            shadowOffset = Dimens.ShadowSmall,
+                            borderWidth = Dimens.BorderThin,
+                        ).padding(horizontal = 24.dp, vertical = 10.dp),
             ) {
-                val annotatedString = when {
-                    isCurrentPlayerAsking -> buildAnnotatedString {
-                        append("Ask ")
-                        withStyle(
-                            SpanStyle(
-                                color = MaterialTheme.colorScheme.secondary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        ) {
-                            append(askedName)
-                        }
-                        append(" a question")
-                    }
+                val annotatedString =
+                    when {
+                        isCurrentPlayerAsking ->
+                            buildAnnotatedString {
+                                append("Ask ")
+                                withStyle(
+                                    SpanStyle(
+                                        color = MaterialTheme.colorScheme.secondary,
+                                        fontWeight = FontWeight.Bold,
+                                    ),
+                                ) {
+                                    append(askedName)
+                                }
+                                append(" a question")
+                            }
 
-                    isCurrentPlayerAsked -> buildAnnotatedString {
-                        withStyle(
-                            SpanStyle(
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        ) {
-                            append(askingName)
-                        }
-                        append(" is asking you...")
-                    }
+                        isCurrentPlayerAsked ->
+                            buildAnnotatedString {
+                                withStyle(
+                                    SpanStyle(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Bold,
+                                    ),
+                                ) {
+                                    append(askingName)
+                                }
+                                append(" is asking you...")
+                            }
 
-                    else -> buildAnnotatedString {
-                        withStyle(
-                            SpanStyle(
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        ) {
-                            append(askingName)
-                        }
-                        append(" asks ")
-                        withStyle(
-                            SpanStyle(
-                                color = MaterialTheme.colorScheme.secondary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        ) {
-                            append(askedName)
-                        }
+                        else ->
+                            buildAnnotatedString {
+                                withStyle(
+                                    SpanStyle(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Bold,
+                                    ),
+                                ) {
+                                    append(askingName)
+                                }
+                                append(" asks ")
+                                withStyle(
+                                    SpanStyle(
+                                        color = MaterialTheme.colorScheme.secondary,
+                                        fontWeight = FontWeight.Bold,
+                                    ),
+                                ) {
+                                    append(askedName)
+                                }
+                            }
                     }
-                }
 
                 Text(
                     text = annotatedString.text.uppercase(),
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        letterSpacing = 1.sp,
-                        fontSize = 11.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
+                    style =
+                        MaterialTheme.typography.labelSmall.copy(
+                            letterSpacing = 1.sp,
+                            fontSize = 11.sp,
+                        ),
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
         }
@@ -286,7 +292,7 @@ private fun BridgePill(
             imageVector = Icons.Default.KeyboardArrowDown,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(24.dp),
         )
     }
 }

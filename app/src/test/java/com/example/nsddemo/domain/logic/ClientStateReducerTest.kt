@@ -18,18 +18,18 @@ import org.junit.Before
 import org.junit.Test
 
 class ClientStateReducerTest {
-
     // --- Helper Data ---
     private val localId = "local_p1"
     private val p1 = Player("Alice", "Red", localId, isConnected = true)
     private val p2 = Player("Bob", "Blue", "p2", isConnected = true)
 
     // A standard starting state
-    private val baseData = GameData(
-        localPlayerId = localId,
-        hostId = localId,
-        players = mapOf(localId to p1, "p2" to p2)
-    )
+    private val baseData =
+        GameData(
+            localPlayerId = localId,
+            hostId = localId,
+            players = mapOf(localId to p1, "p2" to p2),
+        )
 
     @Before
     fun setUp() {
@@ -120,10 +120,11 @@ class ClientStateReducerTest {
     @Test
     fun `GIVEN Question Message WHEN Current Round Idle THEN Creates New List`() {
         val idleData = baseData.copy(roundData = RoundData.Idle)
-        val msg = ServerMessage.Question(
-            "p1",
-            "p2"
-        ) // isFirst not strictly needed by your current logic branch
+        val msg =
+            ServerMessage.Question(
+                "p1",
+                "p2",
+            ) // isFirst not strictly needed by your current logic branch
 
         val result = ClientStateReducer.reduce(idleData, msg)
 
@@ -136,10 +137,11 @@ class ClientStateReducerTest {
     @Test
     fun `GIVEN Question Message WHEN Current Round Exists THEN Appends and Increments`() {
         // Arrange: Existing pair at index 0
-        val existingRound = RoundData.QuestionRoundData(
-            roundPairs = listOf("p1" to "p2"),
-            currentPairIndex = 0
-        )
+        val existingRound =
+            RoundData.QuestionRoundData(
+                roundPairs = listOf("p1" to "p2"),
+                currentPairIndex = 0,
+            )
         val activeData = baseData.copy(roundData = existingRound)
 
         // Act: Next question arrives
@@ -155,9 +157,10 @@ class ClientStateReducerTest {
 
     @Test
     fun `GIVEN RoundEnd Message WHEN Reduced THEN No Change (Persist Last Question)`() {
-        val data = baseData.copy(
-            roundData = RoundData.QuestionRoundData(listOf("a" to "b"), 0)
-        )
+        val data =
+            baseData.copy(
+                roundData = RoundData.QuestionRoundData(listOf("a" to "b"), 0),
+            )
         val msg = ServerMessage.RoundEnd
         val result = ClientStateReducer.reduce(data, msg)
 
@@ -167,10 +170,11 @@ class ClientStateReducerTest {
 
     @Test
     fun `GIVEN ReplayRound Message WHEN Reduced THEN Increments Round and Resets Data`() {
-        val data = baseData.copy(
-            roundNumber = 1,
-            roundData = RoundData.QuestionRoundData(listOf("a" to "b"), 0)
-        )
+        val data =
+            baseData.copy(
+                roundNumber = 1,
+                roundData = RoundData.QuestionRoundData(listOf("a" to "b"), 0),
+            )
         val msg = ServerMessage.ReplayRound()
         val result = ClientStateReducer.reduce(data, msg)
 
@@ -235,9 +239,10 @@ class ClientStateReducerTest {
     @Test
     fun `GIVEN GameResumed Message WHEN Reduced THEN Clears PhaseAfterPause`() {
         // Arrange: Game is currently paused, waiting to go back to InRound
-        val pausedData = baseData.copy(
-            phaseAfterPause = GamePhase.InRound
-        )
+        val pausedData =
+            baseData.copy(
+                phaseAfterPause = GamePhase.InRound,
+            )
         val msg = ServerMessage.GameResumed(GamePhase.InRound)
 
         // Act
@@ -299,11 +304,12 @@ class ClientStateReducerTest {
         // Arrange:
         // Local Data: I am "local_p1"
         // Server Message Data: Says localPlayerId is "" (empty from session manager)
-        val serverState = GameData(
-            localPlayerId = "",
-            hostId = "host",
-            gameCode = "SYNCED"
-        )
+        val serverState =
+            GameData(
+                localPlayerId = "",
+                hostId = "host",
+                gameCode = "SYNCED",
+            )
         val msg = ServerMessage.ReconnectionFullStateSync(serverState, GamePhase.InRound)
 
         // Act
@@ -320,12 +326,13 @@ class ClientStateReducerTest {
 
     @Test
     fun `GIVEN ReplayGame Message WHEN Reduced THEN Soft Reset (Keep Scores)`() {
-        val dirtyData = baseData.copy(
-            roundNumber = 5,
-            word = "Word",
-            category = GameCategory.FOOD,
-            scores = mapOf(localId to 500)
-        )
+        val dirtyData =
+            baseData.copy(
+                roundNumber = 5,
+                word = "Word",
+                category = GameCategory.FOOD,
+                scores = mapOf(localId to 500),
+            )
         val msg = ServerMessage.ReplayGame
 
         val result = ClientStateReducer.reduce(dirtyData, msg)
@@ -371,20 +378,21 @@ class ClientStateReducerTest {
     @Test
     fun `GIVEN No-Op Message WHEN Reduced THEN Returns Same Instance`() {
         // Messages that shouldn't trigger data changes
-        val noOpMessages = listOf(
-            ServerMessage.RoundEnd,
-            ServerMessage.GameFull,
-            ServerMessage.GameAlreadyStarted,
-            ServerMessage.ContinueToGameChoice,
-            ServerMessage.StartVote
-        )
+        val noOpMessages =
+            listOf(
+                ServerMessage.RoundEnd,
+                ServerMessage.GameFull,
+                ServerMessage.GameAlreadyStarted,
+                ServerMessage.ContinueToGameChoice,
+                ServerMessage.StartVote,
+            )
 
         noOpMessages.forEach { msg ->
             val result = ClientStateReducer.reduce(baseData, msg)
             assertSame(
                 "Message ${msg::class.simpleName} should return same instance",
                 baseData,
-                result
+                result,
             )
         }
     }

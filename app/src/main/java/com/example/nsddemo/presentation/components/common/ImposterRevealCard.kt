@@ -20,7 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 
 /**
  * A unified "Hero" card for highlighting the Imposter reveal.
@@ -30,19 +30,19 @@ fun ImposterRevealCard(
     imposterName: String,
     imposterColor: Color,
     modifier: Modifier = Modifier,
-    isWasLabelVisible: Boolean = true
+    isWasLabelVisible: Boolean = true,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .brutalistCard(
-                backgroundColor = MaterialTheme.colorScheme.surface,
-                borderColor = MaterialTheme.colorScheme.outline,
-                shadowOffset = BrutalistDimens.ShadowLarge,
-                borderWidth = BrutalistDimens.BorderThick
-            )
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .brutalistCard(
+                    backgroundColor = MaterialTheme.colorScheme.surface,
+                    borderColor = MaterialTheme.colorScheme.outline,
+                    shadowOffset = Dimens.ShadowLarge,
+                    borderWidth = Dimens.BorderThick,
+                ).padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = imposterName.uppercase(),
@@ -50,7 +50,7 @@ fun ImposterRevealCard(
             color = imposterColor,
             textAlign = TextAlign.Center,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
 
         if (isWasLabelVisible) {
@@ -61,16 +61,17 @@ fun ImposterRevealCard(
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
 
             // Underline decoration
             Box(
-                modifier = Modifier
-                    .padding(top = 16.dp)
-                    .height(4.dp)
-                    .width(64.dp)
-                    .background(MaterialTheme.colorScheme.outline, RoundedCornerShape(2.dp))
+                modifier =
+                    Modifier
+                        .padding(top = 16.dp)
+                        .height(4.dp)
+                        .width(64.dp)
+                        .background(MaterialTheme.colorScheme.outline, RoundedCornerShape(2.dp)),
             )
         }
     }

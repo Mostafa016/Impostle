@@ -15,33 +15,37 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class VotingViewModel @Inject constructor(
-    gameSession: GameSession
-) : BaseGameViewModel(gameSession) {
+class VotingViewModel
+    @Inject
+    constructor(
+        gameSession: GameSession,
+    ) : BaseGameViewModel(gameSession) {
+        private val _state =
+            MutableStateFlow(
+                gameData.value.localPlayerVotedTargetPlayer?.let {
+                    VotingState(
+                        votedPlayer = it,
+                        isVoteConfirmed = true,
+                    )
+                } ?: VotingState(),
+            )
+        val state = _state.asStateFlow()
 
-    private val _state = MutableStateFlow(gameData.value.localPlayerVotedTargetPlayer?.let {
-        VotingState(
-            votedPlayer = it,
-            isVoteConfirmed = true
-        )
-    } ?: VotingState())
-    val state = _state.asStateFlow()
+        private val _eventFlow = MutableSharedFlow<UiEvent>()
+        val eventFlow = _eventFlow.asSharedFlow()
 
-    private val _eventFlow = MutableSharedFlow<UiEvent>()
-    val eventFlow = _eventFlow.asSharedFlow()
+        // Static list of candidates (Others)
+        val playersExcludingCurrent = gameData.value.otherPlayers
 
-    // Static list of candidates (Others)
-    val playersExcludingCurrent = gameData.value.otherPlayers
+        fun onEvent(event: VotingEvent) {
+            when (event) {
+                is VotingEvent.VoteForPlayer -> {
+                    _state.value = _state.value.copy(votedPlayer = event.player)
+                }
 
-    fun onEvent(event: VotingEvent) {
-        when (event) {
-            is VotingEvent.VoteForPlayer -> {
-                _state.value = _state.value.copy(votedPlayer = event.player)
-            }
-
-            VotingEvent.VoteConfirmed -> {
-                val target = _state.value.votedPlayer ?: return
-                _state.value = _state.value.copy(isVoteConfirmed = true)
+                VotingEvent.VoteConfirmed -> {
+                    val target = _state.value.votedPlayer ?: return
+                    _state.value = _state.value.copy(isVoteConfirmed = true)
                 viewModelScope.launch {
                     activeClient?.submitVote(target.id)
                 }

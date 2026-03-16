@@ -34,7 +34,7 @@ import com.example.nsddemo.presentation.components.common.MarqueeBanner
 import com.example.nsddemo.presentation.components.modifier.brutalistGridBackground
 import com.example.nsddemo.presentation.screen.disconnected.components.DisconnectedHeroCard
 import com.example.nsddemo.presentation.theme.AppTheme
-import com.example.nsddemo.presentation.theme.BrutalistDimens
+import com.example.nsddemo.presentation.theme.Dimens
 import com.example.nsddemo.presentation.util.NavigationUtil.popBackStackAndNavigateTo
 import com.example.nsddemo.presentation.util.NoFeedbackIndication
 import com.example.nsddemo.presentation.util.UiEvent
@@ -43,7 +43,7 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun DisconnectedScreen(
     viewModel: DisconnectedViewModel = hiltViewModel(),
-    navController: NavHostController
+    navController: NavHostController,
 ) {
     LaunchedEffect(true) {
         viewModel.eventFlow.collectLatest { event ->
@@ -52,7 +52,7 @@ fun DisconnectedScreen(
                     navController.popBackStackAndNavigateTo(event.destination)
                 }
 
-                else -> { /* Do nothing */
+                else -> { // Do nothing
                 }
             }
         }
@@ -64,7 +64,7 @@ fun DisconnectedScreen(
         isReconnectEnabled = state.isReconnectButtonEnabled,
         isMainMenuEnabled = state.isGoToMainMenuButtonEnabled,
         onReconnectClick = { viewModel.onEvent(DisconnectedEvent.ReconnectButtonPressed) },
-        onMainMenuClick = { viewModel.onEvent(DisconnectedEvent.GoToMainMenuButtonPressed) }
+        onMainMenuClick = { viewModel.onEvent(DisconnectedEvent.GoToMainMenuButtonPressed) },
     )
 }
 
@@ -73,42 +73,44 @@ fun DisconnectedContent(
     isReconnectEnabled: Boolean,
     isMainMenuEnabled: Boolean,
     onReconnectClick: () -> Unit,
-    onMainMenuClick: () -> Unit
+    onMainMenuClick: () -> Unit,
 ) {
     val gridColor = MaterialTheme.colorScheme.surfaceVariant
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .brutalistGridBackground(
-                backgroundColor = MaterialTheme.colorScheme.background,
-                gridLineColor = gridColor
-            )
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .brutalistGridBackground(
+                    backgroundColor = MaterialTheme.colorScheme.background,
+                    gridLineColor = gridColor,
+                ),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .displayCutoutPadding()
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .displayCutoutPadding(),
         ) {
             // --- TOP BANNER ---
             MarqueeBanner(
                 text = "CONNECTION ERROR /// DISCONNECTED /// CONNECTION ERROR /// RETRYING /// ",
                 backgroundColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.Black
+                contentColor = Color.Black,
             )
 
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .systemBarsPadding()
-                    .padding(horizontal = BrutalistDimens.SpacingLarge)
-                    .padding(
-                        top = BrutalistDimens.SpacingLarge,
-                        bottom = BrutalistDimens.SpacingMedium
-                    ),
-                horizontalAlignment = Alignment.CenterHorizontally
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .systemBarsPadding()
+                        .padding(horizontal = Dimens.SpacingLarge)
+                        .padding(
+                            top = Dimens.SpacingLarge,
+                            bottom = Dimens.SpacingMedium,
+                        ),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-
                 Spacer(modifier = Modifier.weight(0.2f))
 
                 // --- HERO CARD ---
@@ -119,7 +121,7 @@ fun DisconnectedContent(
                 // --- ACTIONS ---
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(BrutalistDimens.SpacingMedium)
+                    verticalArrangement = Arrangement.spacedBy(Dimens.SpacingMedium),
                 ) {
                     // Rejoin Button (Primary)
                     BrutalistButton(
@@ -128,7 +130,7 @@ fun DisconnectedContent(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
                         enabled = isReconnectEnabled,
-                        onClick = onReconnectClick
+                        onClick = onReconnectClick,
                     )
 
                     // Main Menu Button (Secondary)
@@ -138,7 +140,7 @@ fun DisconnectedContent(
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
                         enabled = isMainMenuEnabled,
-                        onClick = onMainMenuClick
+                        onClick = onMainMenuClick,
                     )
                 }
             }
@@ -156,7 +158,7 @@ private fun PreviewDisconnectedLight() {
                     isReconnectEnabled = true,
                     isMainMenuEnabled = true,
                     onReconnectClick = {},
-                    onMainMenuClick = {}
+                    onMainMenuClick = {},
                 )
             }
         }
@@ -173,7 +175,7 @@ private fun PreviewDisconnectedDark() {
                     isReconnectEnabled = false,
                     isMainMenuEnabled = true,
                     onReconnectClick = {},
-                    onMainMenuClick = {}
+                    onMainMenuClick = {},
                 )
             }
         }
