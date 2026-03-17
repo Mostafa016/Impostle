@@ -3,6 +3,7 @@ package com.example.nsddemo.presentation.screen.choosecategory
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.example.nsddemo.core.util.Debugging.TAG
+import com.example.nsddemo.di.IoDispatcher
 import com.example.nsddemo.domain.engine.GameSession
 import com.example.nsddemo.domain.model.GameCategory
 import com.example.nsddemo.presentation.util.BaseGameViewModel
@@ -10,7 +11,7 @@ import com.example.nsddemo.presentation.util.Routes
 import com.example.nsddemo.presentation.util.UiEvent
 import com.example.nsddemo.presentation.util.uiCategory
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -24,6 +25,7 @@ class ChooseCategoryViewModel
     @Inject
     constructor(
         gameSession: GameSession,
+        @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) : BaseGameViewModel(gameSession) {
         private val _eventFlow = MutableSharedFlow<UiEvent>()
         val eventFlow = _eventFlow.asSharedFlow()
@@ -54,7 +56,7 @@ class ChooseCategoryViewModel
         private fun onSelectionConfirmed() {
             val selectedCategory = selectedCategory.value?.domainCategory ?: return
             viewModelScope.launch {
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                     activeClient?.selectCategory(selectedCategory)
                 }
                 _eventFlow.emit(UiEvent.NavigateTo(Routes.Lobby.route))

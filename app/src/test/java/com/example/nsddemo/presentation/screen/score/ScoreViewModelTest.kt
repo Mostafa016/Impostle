@@ -13,6 +13,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -33,7 +34,7 @@ class ScoreViewModelTest {
             every { mockGameSession.gameData } returns MutableStateFlow(GameData())
             every { mockGameSession.gamePhase } returns gamePhaseFlow
 
-            val viewModel = ScoreViewModel(mockGameSession)
+            val viewModel = ScoreViewModel(mockGameSession, UnconfinedTestDispatcher())
 
             viewModel.eventFlow.test {
                 // Act: Server resets game
@@ -54,7 +55,7 @@ class ScoreViewModelTest {
             every { mockGameSession.gamePhase } returns MutableStateFlow(GamePhase.GameReplayChoice)
             every { mockGameSession.activeClient } returns mockActiveClient
 
-            val viewModel = ScoreViewModel(mockGameSession)
+            val viewModel = ScoreViewModel(mockGameSession, UnconfinedTestDispatcher())
 
             viewModel.onEvent(ScoreEvent.ReplayGame)
             advanceUntilIdle()

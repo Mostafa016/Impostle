@@ -4,13 +4,14 @@ import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.example.nsddemo.R
 import com.example.nsddemo.core.util.Debugging.TAG
+import com.example.nsddemo.di.IoDispatcher
 import com.example.nsddemo.domain.engine.GameSession
 import com.example.nsddemo.domain.model.GamePhase
 import com.example.nsddemo.domain.model.Player
 import com.example.nsddemo.presentation.util.BaseGameViewModel
 import com.example.nsddemo.presentation.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -24,6 +25,7 @@ class ScoreViewModel
     @Inject
     constructor(
         gameSession: GameSession,
+        @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) : BaseGameViewModel(gameSession) {
         private val _state = MutableStateFlow(ScoreState())
         val state = _state.asStateFlow()
@@ -40,7 +42,7 @@ class ScoreViewModel
         val playerScores = gameData.value.scoresAsPlayers
 
         init {
-            viewModelScope.launch(Dispatchers.IO) {
+            viewModelScope.launch(ioDispatcher) {
                 gamePhase.collectLatest { phase ->
                     if (phase is GamePhase.Lobby) {
                         _eventFlow.emit(UiEvent.ShowSnackBar(R.string.continuing_playing))
@@ -52,11 +54,11 @@ class ScoreViewModel
         fun onEvent(event: ScoreEvent) {
             when (event) {
                 ScoreEvent.ReplayGame -> {
-                    viewModelScope.launch(Dispatchers.IO) { activeClient?.replayGame() }
+                    viewModelScope.launch(ioDispatcher) { activeClient?.replayGame() }
                 }
 
                 ScoreEvent.EndGame -> {
-                    viewModelScope.launch(Dispatchers.IO) {
+                    viewModelScope.launch(ioDispatcher) {
                         activeClient?.endGame()
                     }
                 }

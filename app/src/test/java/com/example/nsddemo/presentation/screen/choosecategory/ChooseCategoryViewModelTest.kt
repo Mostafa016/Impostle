@@ -14,6 +14,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -41,7 +42,7 @@ class ChooseCategoryViewModelTest {
     @Test
     fun `WHEN category chosen confirmed THEN notifies client AND navigates to Lobby`() =
         runTest {
-            val viewModel = ChooseCategoryViewModel(mockGameSession)
+            val viewModel = ChooseCategoryViewModel(mockGameSession, UnconfinedTestDispatcher())
 
             viewModel.eventFlow.test {
                 viewModel.onEvent(ChooseCategoryEvent.CategoryChosen(GameCategory.FOOD))
