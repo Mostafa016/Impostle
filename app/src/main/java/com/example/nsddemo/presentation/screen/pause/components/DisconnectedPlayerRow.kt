@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -80,7 +81,7 @@ fun DisconnectedPlayerRow(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = "RECONNECTING...",
+                    text = stringResource(R.string.reconnecting),
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                     color = MaterialTheme.colorScheme.error,
                     fontWeight = FontWeight.Bold,

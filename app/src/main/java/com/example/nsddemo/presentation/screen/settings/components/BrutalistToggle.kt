@@ -20,7 +20,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.nsddemo.R
 import com.example.nsddemo.presentation.theme.Dimens
 
 @Composable
@@ -72,14 +74,14 @@ fun BrutalistToggle(
 
         if (checked) {
             Text(
-                text = "ON",
+                text = stringResource(R.string.on),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.padding(start = 10.dp),
             )
         } else {
             Text(
-                text = "OFF",
+                text = stringResource(R.string.off),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 modifier =

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.example.nsddemo.presentation.components.modifier.brutalistBorderBottom
@@ -22,6 +23,7 @@ fun MarqueeBanner(
     contentColor: Color = MaterialTheme.colorScheme.onPrimary,
 ) {
     // Note: We use .background() here instead of brutalistCard because banners are rectangular
+    val extendedText: String = remember { text + text }
     Box(
         modifier =
             modifier
@@ -31,7 +33,7 @@ fun MarqueeBanner(
                 .padding(vertical = Dimens.SpacingSmall),
     ) {
         Text(
-            text = text,
+            text = extendedText,
             style = MaterialTheme.typography.labelSmall,
             color = contentColor,
             maxLines = 1,

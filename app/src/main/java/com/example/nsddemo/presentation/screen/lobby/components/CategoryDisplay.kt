@@ -90,14 +90,14 @@ fun CategoryDisplay(
             }
             Column {
                 Text(
-                    text = "CATEGORY",
+                    text = stringResource(R.string.category),
                     style = MaterialTheme.typography.labelSmall,
                     color = contentColor.copy(alpha = 0.7f),
                 )
                 Text(
                     text =
                         chosenCategory?.nameResId?.let { stringResource(it) }?.uppercase()
-                            ?: "SELECT...",
+                            ?: stringResource(R.string.select),
                     style = MaterialTheme.typography.titleLarge,
                     color = contentColor,
                 )

@@ -134,7 +134,7 @@ fun LobbyContent(
                     .displayCutoutPadding(),
         ) {
             // 1. Dynamic Banner
-            val bannerText = if (isHost) "HOST CONTROLS ///..." else "CONNECTED ///..."
+            val bannerText = if (isHost) stringResource(R.string.host_controls) else stringResource(R.string.connected)
             MarqueeBanner(text = bannerText)
 
             Column(
@@ -167,7 +167,7 @@ fun LobbyContent(
                     Column(modifier = Modifier.fillMaxSize()) {
                         // Header
                         BrutalistSectionHeader(
-                            text = "PLAYERS JOINED",
+                            text = stringResource(R.string.players_joined),
                             trailingContent = {
                                 Text(
                                     modifier =
@@ -270,7 +270,8 @@ fun LobbyContent(
 // 5. PREVIEWS
 // ============================================================================
 
-@Preview(name = "Host View", showBackground = true)
+@Preview(name = "Host View", showBackground = true, locale = "en")
+@Preview(name = "Host View (Arabic)", showBackground = true, locale = "ar")
 @Composable
 private fun LobbyPreviewHost() {
     AppTheme(useDarkTheme = false) {
@@ -286,7 +287,7 @@ private fun LobbyPreviewHost() {
                             ),
                             Player(
                                 id = "p2",
-                                name = "Me",
+                                name = "Current Player",
                                 color = NewPlayerColors.Red.hexCode,
                             ),
                             Player(
@@ -309,7 +310,8 @@ private fun LobbyPreviewHost() {
     }
 }
 
-@Preview(name = "Client View", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Client View", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, locale = "en")
+@Preview(name = "Client View (Arabic)", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, locale = "ar")
 @Composable
 private fun LobbyPreviewClient() {
     AppTheme(useDarkTheme = true) {

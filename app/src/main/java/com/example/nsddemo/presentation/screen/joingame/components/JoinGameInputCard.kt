@@ -85,7 +85,7 @@ fun JoinGameInputCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "ASK THE HOST FOR THE 4-DIGIT CODE",
+                text = stringResource(R.string.ask_the_host_for_the_4_digit_code),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             )

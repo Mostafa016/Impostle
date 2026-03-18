@@ -19,9 +19,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.example.nsddemo.R
 import com.example.nsddemo.presentation.components.common.CornerBrackets
 import com.example.nsddemo.presentation.components.common.MarqueeBanner
 import com.example.nsddemo.presentation.components.common.WaitingMessage
@@ -80,7 +82,7 @@ fun ChooseExtraQuestionsContent(
         ) {
             // --- TOP BANNER ---
             MarqueeBanner(
-                text = "TIME IS UP! /// ROUND COMPLETE /// TIME IS UP! /// DECISION PHASE /// ",
+                text = stringResource(R.string.time_is_up_round_complete_time_is_up_decision_phase),
                 backgroundColor = MaterialTheme.colorScheme.primary, // Yellow
                 contentColor = Color.Black,
             )
@@ -111,7 +113,7 @@ fun ChooseExtraQuestionsContent(
                         onVoteClick = onVoteClick,
                     )
                 } else {
-                    WaitingMessage(text = "WAITING FOR HOST TO DECIDE...")
+                    WaitingMessage(text = stringResource(R.string.waiting_for_host_to_decide))
                 }
             }
         }
@@ -128,7 +130,8 @@ fun ChooseExtraQuestionsContent(
 // 4. PREVIEWS
 // ============================================================================
 
-@Preview(name = "Host View (Light)", showBackground = true)
+@Preview(name = "Host View (Light)", showBackground = true, locale = "en")
+@Preview(name = "Host View (Light) (Arabic)", showBackground = true, locale = "ar")
 @Composable
 private fun PreviewHostLight() {
     AppTheme(useDarkTheme = false) {
@@ -150,6 +153,13 @@ private fun PreviewHostLight() {
     name = "Client View (Dark)",
     showBackground = true,
     uiMode = Configuration.UI_MODE_NIGHT_YES,
+    locale = "en",
+)
+@Preview(
+    name = "Client View (Dark) (Arabic)",
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    locale = "ar",
 )
 @Composable
 private fun PreviewClientDark() {

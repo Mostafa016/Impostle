@@ -15,10 +15,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.nsddemo.R
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
 import com.example.nsddemo.presentation.theme.Dimens
 
@@ -27,9 +29,10 @@ import com.example.nsddemo.presentation.theme.Dimens
  */
 @Composable
 fun ImposterRevealCard(
+    modifier: Modifier = Modifier,
     imposterName: String,
     imposterColor: Color,
-    modifier: Modifier = Modifier,
+    isCurrentUserImposter: Boolean,
     isWasLabelVisible: Boolean = true,
 ) {
     Column(
@@ -45,7 +48,7 @@ fun ImposterRevealCard(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = imposterName.uppercase(),
+            text = if (isCurrentUserImposter) stringResource(R.string.you) else imposterName.uppercase(),
             style = MaterialTheme.typography.displayMedium,
             color = imposterColor,
             textAlign = TextAlign.Center,
@@ -57,7 +60,7 @@ fun ImposterRevealCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "WAS THE IMPOSTER!",
+                text = if (isCurrentUserImposter) stringResource(R.string.were_the_imposter) else stringResource(R.string.was_the_imposter),
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,

@@ -64,12 +64,11 @@ fun DisconnectedHeroCard(modifier: Modifier = Modifier) {
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "DISCONNECTED",
+            text = stringResource(R.string.disconnected),
             style =
                 MaterialTheme.typography.displayMedium.copy(
                     fontSize = 32.sp,
                     lineHeight = 36.sp,
-                    letterSpacing = (-1).sp,
                 ),
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,

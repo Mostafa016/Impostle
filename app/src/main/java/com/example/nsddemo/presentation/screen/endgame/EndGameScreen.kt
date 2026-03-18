@@ -90,7 +90,7 @@ fun EndGameContent(
         ) {
             // --- TOP BANNER ---
             MarqueeBanner(
-                text = "SESSION TERMINATED",
+                text = stringResource(R.string.session_terminated),
                 backgroundColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.Black,
             )
@@ -129,7 +129,8 @@ fun EndGameContent(
     }
 }
 
-@Preview(name = "Light Mode", showBackground = true)
+@Preview(name = "Light Mode", showBackground = true, locale = "en")
+@Preview(name = "Light Mode (Arabic)", showBackground = true, locale = "ar")
 @Composable
 private fun PreviewEndGameLight() {
     AppTheme(useDarkTheme = false) {
@@ -144,7 +145,7 @@ private fun PreviewEndGameLight() {
     }
 }
 
-@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, locale = "en")
 @Composable
 private fun PreviewEndGameDark() {
     AppTheme(useDarkTheme = true) {

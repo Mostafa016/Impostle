@@ -28,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -142,7 +143,7 @@ fun PauseContent(
                         ) {
                             // List Title
                             BrutalistSectionHeader(
-                                text = "DISCONNECTED PLAYERS (${players.size})",
+                                text = stringResource(R.string.disconnected_players, players.size),
                                 contentColor = MaterialTheme.colorScheme.error,
                                 trailingContent = {
                                     Icon(
@@ -186,7 +187,7 @@ fun PauseContent(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 PulsingText(
-                                    text = "WAITING FOR PLAYERS TO RETURN...",
+                                    text = stringResource(R.string.waiting_for_players_to_return),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
@@ -206,7 +207,7 @@ fun PauseContent(
                 } else {
                     ClientWaitingStatus()
                     BrutalistButton(
-                        text = "LEAVE GAME",
+                        text = stringResource(R.string.leave_game),
                         icon = Icons.AutoMirrored.Filled.ExitToApp,
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
@@ -219,14 +220,11 @@ fun PauseContent(
 }
 
 // ============================================================================
-// 3. SUB-COMPONENTS
+// 3. PREVIEWS
 // ============================================================================
 
-// ============================================================================
-// 4. PREVIEWS
-// ============================================================================
-
-@Preview(name = "Host View (Light)", showBackground = true)
+@Preview(name = "Host View (Light)", showBackground = true, locale = "en")
+@Preview(name = "Host View (Light) (Arabic)", showBackground = true, locale = "ar")
 @Composable
 private fun PreviewPauseHostLight() {
     AppTheme(useDarkTheme = false) {
@@ -262,6 +260,13 @@ private fun PreviewPauseHostLight() {
     name = "Client View (Dark)",
     showBackground = true,
     uiMode = Configuration.UI_MODE_NIGHT_YES,
+    locale = "en",
+)
+@Preview(
+    name = "Client View (Dark) (Arabic)",
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    locale = "ar",
 )
 @Composable
 private fun PreviewPauseClientDark() {

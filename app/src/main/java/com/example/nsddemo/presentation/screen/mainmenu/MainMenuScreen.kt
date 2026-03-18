@@ -24,10 +24,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.example.nsddemo.R
 import com.example.nsddemo.presentation.components.common.BrutalistButton
 import com.example.nsddemo.presentation.components.common.CornerBrackets
 import com.example.nsddemo.presentation.components.common.MarqueeBanner
@@ -122,7 +124,7 @@ fun MainMenuContent(
                     .displayCutoutPadding(),
         ) {
             MarqueeBanner(
-                text = "IMPOSTER /// TRUST NO ONE /// SUSPICION IS KEY /// WHO DO YOU TRUST? /// ",
+                text = stringResource(R.string.imposter_trust_no_one_suspicion_is_key_who_do_you_trust),
             )
 
             // --- HEADER (Avatar & Settings) ---
@@ -146,8 +148,8 @@ fun MainMenuContent(
                 Spacer(modifier = Modifier.height(Dimens.SpacingLarge))
 
                 BrutalistButton(
-                    text = "Create Game",
-                    subtext = "HOST A LOCAL LOBBY",
+                    text = stringResource(R.string.create_game),
+                    subtext = stringResource(R.string.host_a_local_lobby),
                     icon = Icons.Default.Add,
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -158,8 +160,8 @@ fun MainMenuContent(
                 Spacer(modifier = Modifier.height(Dimens.SpacingMedium))
 
                 BrutalistButton(
-                    text = "Join Game",
-                    subtext = "ENTER CODE TO CONNECT",
+                    text = stringResource(R.string.join_game),
+                    subtext = stringResource(R.string.enter_code_to_connect),
                     icon = Icons.AutoMirrored.Filled.ArrowForward,
                     enabled = isJoinGameEnabled,
                     onClick = onJoinGameClick,
@@ -175,10 +177,10 @@ fun MainMenuContent(
 // 5. PREVIEWS
 // ============================================================================
 
-@Preview(name = "Light Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_NO)
+@Preview(name = "Light Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_NO, locale = "en")
 @Composable
 private fun PreviewLight() {
-    AppTheme(useDarkTheme = false) {
+    AppTheme {
         // Use your AppTheme wrapper!
         Surface {
             CompositionLocalProvider(LocalIndication provides NoFeedbackIndication()) {
@@ -196,15 +198,16 @@ private fun PreviewLight() {
     }
 }
 
-@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, locale = "en")
+@Preview(name = "Dark Mode (Arabic)", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, locale = "ar", group = "Arabic")
 @Composable
 private fun PreviewDark() {
-    AppTheme(useDarkTheme = true) {
+    AppTheme {
         // Use your AppTheme wrapper!
         Surface {
             CompositionLocalProvider(LocalIndication provides NoFeedbackIndication()) {
                 MainMenuContent(
-                    playerName = "DARKMODE_USER",
+                    playerName = "أحمد",
                     isCreateGameEnabled = true,
                     isJoinGameEnabled = true,
                     onCreateGameClick = {},
@@ -217,7 +220,7 @@ private fun PreviewDark() {
     }
 }
 
-@Preview(name = "Dialog - Light Mode", showBackground = true)
+@Preview(name = "Dialog - Light Mode", showBackground = true, locale = "en")
 @Composable
 private fun PreviewNameDialogLight() {
     AppTheme(useDarkTheme = false) {
@@ -240,6 +243,14 @@ private fun PreviewNameDialogLight() {
     name = "Dialog - Dark Mode",
     showBackground = true,
     uiMode = Configuration.UI_MODE_NIGHT_YES,
+    locale = "en",
+)
+@Preview(
+    name = "Dialog - Dark Mode (Arabic)",
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    locale = "ar",
+    group = "Arabic",
 )
 @Composable
 private fun PreviewNameDialogDark() {

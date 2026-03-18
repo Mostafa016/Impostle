@@ -97,7 +97,7 @@ fun VotingContent(
         ) {
             // --- TOP BANNER ---
             MarqueeBanner(
-                text = "WHO IS THE IMPOSTER? /// WARNING /// TRUST NO ONE /// VOTE CAREFULLY /// ",
+                text = stringResource(R.string.who_is_the_imposter_warning_trust_no_one_vote_carefully),
                 backgroundColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.Black,
             )
@@ -129,7 +129,7 @@ fun VotingContent(
                 ) {
                     // Internal Header
                     BrutalistSectionHeader(
-                        text = "CAST YOUR VOTE",
+                        text = stringResource(R.string.cast_your_vote),
                         trailingContent = {
                             Icon(
                                 imageVector = ImageVector.vectorResource(R.drawable.sharp_how_to_vote_24),
@@ -172,7 +172,7 @@ fun VotingContent(
                                 modifier = Modifier.size(48.dp),
                             )
                             Text(
-                                text = "VOTE CAST!",
+                                text = stringResource(R.string.vote_cast),
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Black,
@@ -180,7 +180,7 @@ fun VotingContent(
                         }
 
                         BrutalistButton(
-                            text = "WAITING FOR OTHERS...",
+                            text = stringResource(R.string.waiting_for_others),
                             enabled = false,
                             onClick = {},
                         )
@@ -204,7 +204,8 @@ fun VotingContent(
 // 5. PREVIEWS
 // ============================================================================
 
-@Preview(name = "Active Voting (Light)", showBackground = true)
+@Preview(name = "Active Voting (Light)", showBackground = true, locale = "en")
+@Preview(name = "Active Voting (Light) (Arabic)", showBackground = true, locale = "ar")
 @Composable
 private fun PreviewVotingActive() {
     AppTheme(useDarkTheme = false) {
@@ -253,6 +254,13 @@ private fun PreviewVotingActive() {
     name = "Confirmed/Waiting (Dark)",
     showBackground = true,
     uiMode = Configuration.UI_MODE_NIGHT_YES,
+    locale = "en",
+)
+@Preview(
+    name = "Confirmed/Waiting (Dark) (Arabic)",
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    locale = "ar",
 )
 @Composable
 private fun PreviewVotingConfirmed() {

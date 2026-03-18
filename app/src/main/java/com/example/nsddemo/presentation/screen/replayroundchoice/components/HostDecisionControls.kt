@@ -29,7 +29,7 @@ fun HostDecisionControls(
     ) {
         BrutalistButton(
             text = stringResource(R.string.additional_round),
-            subtext = "ASK MORE QUESTIONS",
+            subtext = stringResource(R.string.ask_more_questions),
             icon = Icons.Default.Add,
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -39,7 +39,7 @@ fun HostDecisionControls(
 
         BrutalistButton(
             text = stringResource(R.string.start_vote),
-            subtext = "FIND THE IMPOSTOR",
+            subtext = stringResource(R.string.find_the_impostor),
             icon = ImageVector.vectorResource(R.drawable.sharp_target_24),
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,

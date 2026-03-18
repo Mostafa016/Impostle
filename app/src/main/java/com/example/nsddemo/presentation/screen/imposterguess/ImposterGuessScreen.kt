@@ -27,10 +27,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.nsddemo.R
 import com.example.nsddemo.domain.model.GameCategory
 import com.example.nsddemo.presentation.components.common.BrutalistButton
 import com.example.nsddemo.presentation.components.common.BrutalistDashedDivider
@@ -44,6 +46,7 @@ import com.example.nsddemo.presentation.screen.imposterguess.components.Imposter
 import com.example.nsddemo.presentation.theme.AppTheme
 import com.example.nsddemo.presentation.theme.Dimens
 import com.example.nsddemo.presentation.util.NoFeedbackIndication
+import com.example.nsddemo.presentation.util.uiCategory
 
 // ============================================================================
 // 1. STATEFUL ROOT
@@ -100,7 +103,7 @@ fun WaitImposterGuessContent() {
         ) {
             // --- TOP BANNER ---
             MarqueeBanner(
-                text = "WAITING FOR IMPOSTER /// THE TRUTH IS NEAR /// DO NOT LEAVE /// DECISION PHASE /// ",
+                text = stringResource(R.string.waiting_for_imposter_the_truth_is_near_do_not_leave_decision_phase),
                 backgroundColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.Black,
             )
@@ -119,7 +122,7 @@ fun WaitImposterGuessContent() {
 
                 Spacer(Modifier.height(48.dp))
 
-                WaitingMessage(text = "WAITING FOR THE TRUTH...")
+                WaitingMessage(text = stringResource(R.string.waiting_for_the_truth))
             }
         }
     }
@@ -157,7 +160,7 @@ fun ImposterGuessContent(
         ) {
             // --- TOP BANNER ---
             MarqueeBanner(
-                text = "GUESS THE SECRET WORD /// MAKE YOUR CHOICE /// GUESS THE SECRET WORD /// MAKE YOUR CHOICE /// ",
+                text = stringResource(R.string.guess_the_secret_word_make_your_choice_guess_the_secret_word_make_your_choice),
             )
 
             Column(
@@ -186,7 +189,12 @@ fun ImposterGuessContent(
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CategoryInfo(category?.name?.uppercase() ?: "UNKNOWN")
+                        CategoryInfo(
+                            category?.let { stringResource(it.uiCategory.nameResId) }?.uppercase()
+                                ?: stringResource(
+                                    R.string.unknown,
+                                ),
+                        )
                         BrutalistDashedDivider(
                             modifier =
                                 Modifier
@@ -194,7 +202,7 @@ fun ImposterGuessContent(
                                     .fillMaxWidth(),
                         )
                         Text(
-                            text = "GUESS THE WORD",
+                            text = stringResource(R.string.guess_the_word),
                             style = MaterialTheme.typography.headlineLarge,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
@@ -222,7 +230,7 @@ fun ImposterGuessContent(
 
                 // --- CONFIRM BUTTON ---
                 BrutalistButton(
-                    text = "Confirm Guess",
+                    text = stringResource(R.string.confirm_guess),
                     icon = Icons.AutoMirrored.Filled.ArrowForward,
                     onClick = onConfirmClick,
                     enabled = selectedWord != null,
@@ -237,7 +245,7 @@ fun ImposterGuessContent(
 @Composable
 private fun CategoryInfo(category: String) {
     Text(
-        text = "CATEGORY",
+        text = stringResource(R.string.category),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
     )
@@ -251,15 +259,24 @@ private fun CategoryInfo(category: String) {
 // 4. PREVIEWS
 // ============================================================================
 
-@Preview(name = "Light Mode", showBackground = true)
+@Preview(name = "Light Mode", showBackground = true, locale = "en")
+@Preview(name = "Light Mode (Arabic)", showBackground = true, locale = "ar")
 @Composable
 private fun GuessPreviewLight() {
     AppTheme(useDarkTheme = false) {
         Surface {
             CompositionLocalProvider(LocalIndication provides NoFeedbackIndication()) {
                 ImposterGuessContent(
-                    wordOptions = listOf("Apple", "Banana", "Cherry", "Date", "Elderberry", "Fig"),
-                    selectedWord = "Cherry",
+                    wordOptions =
+                        listOf(
+                            stringResource(R.string.cake),
+                            stringResource(R.string.pizza),
+                            stringResource(R.string.burger),
+                            stringResource(R.string.cookie),
+                            stringResource(R.string.beef),
+                            stringResource(R.string.popcorn),
+                        ),
+                    selectedWord = stringResource(R.string.pizza),
                     category = GameCategory.FOOD,
                     onWordSelect = {},
                     onConfirmClick = {},
@@ -273,6 +290,13 @@ private fun GuessPreviewLight() {
     name = "Wait Screen (Dark)",
     showBackground = true,
     uiMode = Configuration.UI_MODE_NIGHT_YES,
+    locale = "en",
+)
+@Preview(
+    name = "Wait Screen (Dark) (Arabic)",
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    locale = "ar",
 )
 @Composable
 private fun WaitPreview() {

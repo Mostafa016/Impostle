@@ -26,7 +26,7 @@ fun HostPauseControls(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         BrutalistButton(
-            text = "CONTINUE ANYWAY",
+            text = stringResource(R.string.continue_anyway),
             icon = Icons.Default.PlayArrow,
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,

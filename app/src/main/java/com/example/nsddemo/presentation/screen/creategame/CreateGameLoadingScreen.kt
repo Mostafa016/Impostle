@@ -92,7 +92,7 @@ fun CreateGameLoadingContent(onCancel: () -> Unit) {
         ) {
             // --- MARQUEE BANNER ---
             MarqueeBanner(
-                text = "LOBBY /// CREATING SESSION /// STAND BY /// LOBBY /// CREATING SESSION /// STAND BY /// ",
+                text = stringResource(R.string.lobby_creating_session_stand_by_lobby_creating_session_stand_by),
                 backgroundColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
             )
@@ -118,7 +118,7 @@ fun CreateGameLoadingContent(onCancel: () -> Unit) {
 
                 // --- CANCEL BUTTON ---
                 BrutalistButton(
-                    text = "CANCEL",
+                    text = stringResource(R.string.cancel),
                     containerColor = MaterialTheme.colorScheme.surface,
                     contentColor = MaterialTheme.colorScheme.onSurface,
                     onClick = onCancel,
@@ -134,7 +134,7 @@ fun CreateGameLoadingContent(onCancel: () -> Unit) {
     }
 }
 
-@Preview(name = "Create Game Loading", showBackground = true)
+@Preview(name = "Create Game Loading", showBackground = true, locale = "en")
 @Composable
 private fun PreviewCreateLoadingLight() {
     AppTheme(useDarkTheme = false) {
@@ -150,6 +150,13 @@ private fun PreviewCreateLoadingLight() {
     name = "Create Game Loading",
     showBackground = true,
     uiMode = Configuration.UI_MODE_NIGHT_YES,
+    locale = "en",
+)
+@Preview(
+    name = "Create Game Loading (Arabic)",
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    locale = "ar",
 )
 @Composable
 private fun PreviewCreateLoadingDark() {

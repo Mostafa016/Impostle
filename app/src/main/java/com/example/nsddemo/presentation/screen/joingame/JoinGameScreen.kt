@@ -19,9 +19,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.nsddemo.R
 import com.example.nsddemo.presentation.components.common.CornerBrackets
 import com.example.nsddemo.presentation.components.common.MarqueeBanner
 import com.example.nsddemo.presentation.components.modifier.brutalistGridBackground
@@ -93,7 +95,7 @@ fun JoinGameContent(
         ) {
             // --- MARQUEE ---
             MarqueeBanner(
-                text = "JOIN GAME /// ENTER CODE /// CONNECT /// WHO IS THE IMPOSTER? /// ",
+                text = stringResource(R.string.join_game_enter_code_connect_who_is_the_imposter),
                 backgroundColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.Black,
             )
@@ -132,7 +134,7 @@ fun JoinGameContent(
     }
 }
 
-@Preview(name = "Join Game Light", showBackground = true)
+@Preview(name = "Join Game Light", showBackground = true, locale = "en")
 @Composable
 private fun PreviewJoinGameLight() {
     AppTheme(useDarkTheme = false) {
@@ -150,7 +152,8 @@ private fun PreviewJoinGameLight() {
     }
 }
 
-@Preview(name = "Join Game Dark", showBackground = true)
+@Preview(name = "Join Game Dark", showBackground = true, locale = "en")
+@Preview(name = "Join Game Dark (Arabic)", showBackground = true, locale = "ar")
 @Composable
 private fun PreviewJoinGameDark() {
     AppTheme(useDarkTheme = true) {

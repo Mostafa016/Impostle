@@ -156,7 +156,7 @@ fun QuestionContent(
                         modifier = Modifier.size(20.dp),
                     )
                     Text(
-                        text = "PEEK WORD",
+                        text = stringResource(R.string.peek_word),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
@@ -187,7 +187,7 @@ fun QuestionContent(
                 } else {
                     // Waiting State for Asked Player and Observers
                     BrutalistButton(
-                        text = "WAITING...",
+                        text = stringResource(R.string.waiting),
                         enabled = false,
                         onClick = {},
                     )
@@ -221,7 +221,7 @@ private fun QuestionPhaseBanner() {
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "QUESTION PHASE",
+            text = stringResource(R.string.question_phase),
             style = MaterialTheme.typography.labelSmall,
             color = Color.Black,
             letterSpacing = 4.sp,
@@ -241,6 +241,7 @@ private fun QuestionPhaseBanner() {
 // ============================================================================
 
 @Preview(name = "Asker View (Light)", showBackground = true)
+@Preview(name = "Asker View (Light) (Arabic)", showBackground = true, locale = "ar")
 @Composable
 private fun PreviewAsker() {
     AppTheme(useDarkTheme = false) {
@@ -275,6 +276,12 @@ private fun PreviewAsker() {
     showBackground = true,
     uiMode = Configuration.UI_MODE_NIGHT_YES,
 )
+@Preview(
+    name = "Asked View (Dark) (Arabic)",
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    locale = "ar",
+)
 @Composable
 private fun PreviewAsked() {
     AppTheme(useDarkTheme = true) {
@@ -305,13 +312,14 @@ private fun PreviewAsked() {
 }
 
 @Preview(name = "Dialog: Innocent", showBackground = true)
+@Preview(name = "Dialog: Innocent (Arabic)", showBackground = true, locale = "ar")
 @Composable
 private fun PreviewDialogInnocent() {
     AppTheme {
         CompositionLocalProvider(LocalIndication provides NoFeedbackIndication()) {
             CategoryAndWordDialog(
-                category = "Food",
-                word = "Burger",
+                category = stringResource(R.string.food),
+                word = stringResource(R.string.burger),
                 isImposter = false,
                 onDismissRequest = {},
                 onOkClick = {},
@@ -321,12 +329,13 @@ private fun PreviewDialogInnocent() {
 }
 
 @Preview(name = "Dialog: Imposter", showBackground = true)
+@Preview(name = "Dialog: Imposter (Arabic)", showBackground = true, locale = "ar")
 @Composable
 private fun PreviewDialogImposter() {
     AppTheme {
         CompositionLocalProvider(LocalIndication provides NoFeedbackIndication()) {
             CategoryAndWordDialog(
-                category = "Movie Set",
+                category = stringResource(R.string.food),
                 word = null,
                 isImposter = true,
                 onDismissRequest = {},

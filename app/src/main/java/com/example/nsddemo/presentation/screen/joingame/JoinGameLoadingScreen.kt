@@ -87,7 +87,7 @@ fun JoinGameLoadingContent(onCancel: () -> Unit) {
         ) {
             // --- MARQUEE ---
             MarqueeBanner(
-                text = "WAIT /// SCANNING NETWORK /// LOBBY /// WAIT /// SCANNING NETWORK /// ",
+                text = stringResource(R.string.wait_scanning_network_lobby_wait_scanning_network),
                 backgroundColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
             )
@@ -112,7 +112,7 @@ fun JoinGameLoadingContent(onCancel: () -> Unit) {
                 Spacer(modifier = Modifier.height(64.dp))
 
                 BrutalistButton(
-                    text = "CANCEL",
+                    text = stringResource(R.string.cancel),
                     containerColor = MaterialTheme.colorScheme.surface,
                     contentColor = MaterialTheme.colorScheme.onSurface,
                     onClick = onCancel,
@@ -127,7 +127,7 @@ fun JoinGameLoadingContent(onCancel: () -> Unit) {
     }
 }
 
-@Preview(name = "Join Loading Light", showBackground = true)
+@Preview(name = "Join Loading Light", showBackground = true, locale = "en")
 @Composable
 private fun PreviewJoinLoadingLight() {
     AppTheme(useDarkTheme = false) {
@@ -139,7 +139,8 @@ private fun PreviewJoinLoadingLight() {
     }
 }
 
-@Preview(name = "Join Loading Dark", showBackground = true)
+@Preview(name = "Join Loading Dark", showBackground = true, locale = "en")
+@Preview(name = "Join Loading Dark (Arabic)", showBackground = true, locale = "ar")
 @Composable
 private fun PreviewJoinLoadingDark() {
     AppTheme(useDarkTheme = true) {

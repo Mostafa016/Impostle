@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -94,7 +94,7 @@ fun DisconnectedContent(
         ) {
             // --- TOP BANNER ---
             MarqueeBanner(
-                text = "CONNECTION ERROR /// DISCONNECTED /// CONNECTION ERROR /// RETRYING /// ",
+                text = stringResource(R.string.connection_error_disconnected_connection_error_retrying),
                 backgroundColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.Black,
             )
@@ -136,7 +136,7 @@ fun DisconnectedContent(
                     // Main Menu Button (Secondary)
                     BrutalistButton(
                         text = stringResource(R.string.go_to_main_menu),
-                        icon = Icons.Default.ArrowBack,
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
                         enabled = isMainMenuEnabled,
@@ -148,7 +148,8 @@ fun DisconnectedContent(
     }
 }
 
-@Preview(name = "Light Mode", showBackground = true)
+@Preview(name = "Light Mode", showBackground = true, locale = "en")
+@Preview(name = "Light Mode (Arabic)", showBackground = true, locale = "ar")
 @Composable
 private fun PreviewDisconnectedLight() {
     AppTheme(useDarkTheme = false) {
@@ -165,7 +166,8 @@ private fun PreviewDisconnectedLight() {
     }
 }
 
-@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, locale = "en")
+@Preview(name = "Dark Mode (Arabic)", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, locale = "ar")
 @Composable
 private fun PreviewDisconnectedDark() {
     AppTheme(useDarkTheme = true) {

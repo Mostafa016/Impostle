@@ -128,7 +128,7 @@ fun ScoreContent(
         ) {
             // --- TOP BANNER ---
             MarqueeBanner(
-                text = "GAME OVER /// FINAL RESULTS /// GAME OVER /// FINAL RESULTS /// ",
+                text = stringResource(R.string.game_over_final_results_game_over_final_results),
                 backgroundColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.Black,
             )
@@ -147,8 +147,9 @@ fun ScoreContent(
             ) {
                 // --- HERO: IMPOSTER REVEAL ---
                 ImposterHeaderCard(
-                    imposterName = if (isUserImposter) stringResource(R.string.you) else imposter.name,
+                    imposterName = imposter.name,
                     imposterColor = NewPlayerColors.fromHex(imposter.color).toComposeColor(),
+                    isCurrentUserImposter = isUserImposter,
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -168,7 +169,7 @@ fun ScoreContent(
                 ) {
                     // Header
                     BrutalistSectionHeader(
-                        text = "FINAL RANKING",
+                        text = stringResource(R.string.final_ranking),
                         trailingContent = {
                             Icon(
                                 imageVector = ImageVector.vectorResource(R.drawable.sharp_leaderboard_24),
@@ -224,7 +225,7 @@ fun ScoreContent(
                     }
                 } else {
                     BrutalistButton(
-                        text = "WAITING FOR HOST...",
+                        text = stringResource(R.string.waiting_for_host),
                         enabled = false,
                         onClick = {},
                     )
@@ -238,7 +239,8 @@ fun ScoreContent(
 // 5. PREVIEWS
 // ============================================================================
 
-@Preview(name = "Score Screen (Light)", showBackground = true, heightDp = 900)
+@Preview(name = "Score Screen (Light)", showBackground = true, heightDp = 900, locale = "en")
+@Preview(name = "Score Screen (Light) (Arabic)", showBackground = true, heightDp = 900, locale = "ar")
 @Composable
 private fun PreviewScoreLight() {
     AppTheme(useDarkTheme = false) {
@@ -291,7 +293,8 @@ private fun PreviewScoreLight() {
 // 4. PREVIEWS
 // ============================================================================
 
-@Preview(name = "Score Screen (Light 2)", showBackground = true, heightDp = 900)
+@Preview(name = "Score Screen (Light 2)", showBackground = true, heightDp = 900, locale = "en")
+@Preview(name = "Score Screen (Light 2) (Arabic)", showBackground = true, heightDp = 900, locale = "ar")
 @Composable
 private fun PreviewScoreLight2() {
     AppTheme(useDarkTheme = false) {
@@ -300,11 +303,11 @@ private fun PreviewScoreLight2() {
                 ScoreContent(
                     imposter =
                         Player(
-                            id = "p1",
-                            name = "RoboPlayer",
-                            color = NewPlayerColors.Orange.hexCode,
+                            id = "p3",
+                            name = "You",
+                            color = NewPlayerColors.Blue.hexCode,
                         ),
-                    isUserImposter = false,
+                    isUserImposter = true,
                     scores =
                         listOf(
                             Player(
@@ -340,7 +343,8 @@ private fun PreviewScoreLight2() {
     }
 }
 
-@Preview(name = "Score Screen (Dark)", showBackground = true, heightDp = 900)
+@Preview(name = "Score Screen (Dark)", showBackground = true, heightDp = 900, locale = "en")
+@Preview(name = "Score Screen (Dark) (Arabic)", showBackground = true, heightDp = 900, locale = "ar")
 @Composable
 private fun PreviewScoreDark() {
     AppTheme(useDarkTheme = true) {
@@ -377,7 +381,7 @@ private fun PreviewScoreDark() {
                                 color = NewPlayerColors.DarkGreen.hexCode,
                             ) to 800,
                         ),
-                    isHost = true,
+                    isHost = false,
                     currentPlayer = Player("p3", "You", NewPlayerColors.Blue.hexCode),
                     isEndGameEnabled = true,
                     isReplayEnabled = true,
