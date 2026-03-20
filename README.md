@@ -346,7 +346,7 @@ This project features a comprehensive, multi-tiered testing architecture, utiliz
 ## Project Structure
 
 ```text
-com.example.nsddemo
+com.mostafa.impostle
 ├── core/             # Constants, Debugging utils
 ├── data/
 │   ├── local/        # NSD, Ktor TCP, Loopback logic

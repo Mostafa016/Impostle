@@ -9,13 +9,13 @@ plugins {
 }
 
 android {
-    namespace 'com.example.nsddemo'
-    compileSdk 35
+    namespace 'com.mostafa.impostle'
+    compileSdk 36
 
     defaultConfig {
-        applicationId "com.example.nsddemo"
+        applicationId "com.mostafa.impostle"
         minSdk 24
-        targetSdk 33
+        targetSdk 36
         versionCode 1
         versionName "1.0"
 

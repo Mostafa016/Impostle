@@ -1,0 +1,98 @@
+package com.mostafa.impostle.presentation.screen.question
+
+import android.util.Log
+import androidx.lifecycle.viewModelScope
+import com.mostafa.impostle.core.util.Debugging.TAG
+import com.mostafa.impostle.domain.engine.GameSession
+import com.mostafa.impostle.domain.model.Player
+import com.mostafa.impostle.domain.model.RoundData
+import com.mostafa.impostle.presentation.util.BaseGameViewModel
+import com.mostafa.impostle.presentation.util.UiEvent
+import com.mostafa.impostle.presentation.util.uiCategory
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class QuestionViewModel
+    @Inject
+    constructor(
+        gameSession: GameSession,
+    ) : BaseGameViewModel(gameSession) {
+        private val _eventFlow = MutableSharedFlow<UiEvent>()
+        val eventFlow = _eventFlow.asSharedFlow()
+
+        // --- Static Data (Fetched Synchronously) ---
+        // Safe because we only navigate here after the data is set in the previous phase
+        val categoryNameResId: Int =
+            gameData.value.category!!
+                .uiCategory.nameResId
+        val word: String? = gameData.value.word?.lowercase()
+        val isImposter: Boolean = gameData.value.isImposter
+
+        // --- Dynamic Data (Changes per turn) ---
+        private val _state =
+            MutableStateFlow(
+                QuestionState(
+                    askingPlayer = Player("Loading...", "FF000000"),
+                    askedPlayer = Player("Loading...", "FF000000"),
+                    isCurrentPlayerAsking = false,
+                    isCurrentPlayerAsked = false,
+                ),
+            )
+        val state = _state.asStateFlow()
+
+        init {
+            // Observe Round Changes (Next Question)
+            viewModelScope.launch {
+                gameData.collect { data ->
+                    val round = data.roundData
+                    if (round is RoundData.QuestionRoundData) {
+                        val askerId = round.currentAskerId!!
+                        val askedId = round.currentAskedId!!
+
+                        val asker = data.players[askerId]!!
+                        val asked = data.players[askedId]!!
+                        val localId = data.localPlayerId
+
+                        _state.value =
+                            _state.value.copy(
+                                askingPlayer = asker,
+                                askedPlayer = asked,
+                                isCurrentPlayerAsking = data.isMyTurn,
+                                isCurrentPlayerAsked = askedId == localId,
+                                isDoneAskingQuestionClicked = false,
+                            )
+                    }
+                }
+            }
+        }
+
+        fun onEvent(event: QuestionEvent) {
+            when (event) {
+                QuestionEvent.ShowWordDialog -> {
+                    _state.value = _state.value.copy(isWordDialogVisible = true)
+                }
+
+                QuestionEvent.DismissWordDialog, QuestionEvent.ConfirmWordDialog -> {
+                    _state.value = _state.value.copy(isWordDialogVisible = false)
+                }
+
+                QuestionEvent.FinishAskingYourQuestion -> {
+                    _state.value = _state.value.copy(isDoneAskingQuestionClicked = true)
+                    viewModelScope.launch {
+                        activeClient?.endTurn()
+                    }
+                }
+            }
+        }
+
+        override fun onCleared() {
+            super.onCleared()
+            Log.i(TAG, "QuestionViewModel: Cleared!")
+        }
+    }
