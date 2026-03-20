@@ -103,7 +103,7 @@ fun ChangePlayerNameDialogContent(
                 singleLine = true,
                 placeholder = {
                     Text(
-                        "Type name...",
+                        stringResource(R.string.type_name),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
                     )

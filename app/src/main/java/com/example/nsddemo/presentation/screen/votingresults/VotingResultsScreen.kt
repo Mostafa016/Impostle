@@ -94,7 +94,7 @@ fun VotingResultsContent(
         ) {
             // --- TOP BANNER ---
             MarqueeBanner(
-                text = "THE REVEAL /// THE TRUTH IS OUT /// THE REVEAL /// GAME OVER /// ",
+                text = stringResource(R.string.the_reveal_the_truth_is_out_the_reveal_game_over),
                 backgroundColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.Black,
             )
@@ -113,8 +113,9 @@ fun VotingResultsContent(
             ) {
                 // --- HERO: IMPOSTER REVEAL ---
                 ImposterRevealCard(
-                    imposterName = if (isUserImposter) "YOU" else imposter.name,
+                    imposterName = imposter.name,
                     imposterColor = NewPlayerColors.fromHex(imposter.color).toComposeColor(),
+                    isCurrentUserImposter = isUserImposter,
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -134,7 +135,7 @@ fun VotingResultsContent(
                 ) {
                     // List Header
                     BrutalistSectionHeader(
-                        text = "VOTES RECEIVED",
+                        text = stringResource(R.string.votes_received),
                         backgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
                         trailingContent = {
                             Icon(
@@ -175,7 +176,7 @@ fun VotingResultsContent(
                 } else {
                     // Client waiting state
                     BrutalistButton(
-                        text = "WAITING FOR HOST...",
+                        text = stringResource(R.string.waiting_for_host),
                         enabled = false,
                         onClick = {},
                     )
@@ -189,7 +190,8 @@ fun VotingResultsContent(
 // 4. PREVIEWS
 // ============================================================================
 
-@Preview(name = "Host View (Light)", showBackground = true)
+@Preview(name = "Host View (Light)", showBackground = true, locale = "en")
+@Preview(name = "Host View (Light) (Arabic)", showBackground = true, locale = "ar")
 @Composable
 private fun PreviewResultsHost() {
     AppTheme(useDarkTheme = false) {
@@ -233,6 +235,13 @@ private fun PreviewResultsHost() {
     name = "Client View (Dark)",
     showBackground = true,
     uiMode = Configuration.UI_MODE_NIGHT_YES,
+    locale = "en",
+)
+@Preview(
+    name = "Client View (Dark) (Arabic)",
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    locale = "ar",
 )
 @Composable
 private fun PreviewResultsClient() {

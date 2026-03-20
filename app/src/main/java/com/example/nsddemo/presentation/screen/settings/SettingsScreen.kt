@@ -5,6 +5,7 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -111,11 +112,11 @@ fun SettingsContent(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .systemBarsPadding(),
+                    .displayCutoutPadding(),
         ) {
             // --- TOP BANNER ---
             MarqueeBanner(
-                text = "SETTINGS /// CONFIGURATION /// SYSTEM PREFERENCES /// AUDIO & VISUAL /// ",
+                text = stringResource(R.string.settings_configuration_system_preferences_audio_visual),
                 backgroundColor = MaterialTheme.colorScheme.secondary,
                 contentColor = MaterialTheme.colorScheme.onSecondary,
             )
@@ -170,7 +171,7 @@ fun SettingsContent(
 
                     // 3. SAVE CHANGES BUTTON
                     BrutalistButton(
-                        text = "SAVE CHANGES",
+                        text = stringResource(R.string.save_changes),
                         icon = ImageVector.vectorResource(R.drawable.sharp_save_24),
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -214,6 +215,7 @@ private fun SettingsPreviewLight() {
 }
 
 @Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Dark Mode (Arabic)", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, locale = "ar")
 @Composable
 private fun SettingsPreviewDark() {
     AppTheme(useDarkTheme = true) {
@@ -222,7 +224,7 @@ private fun SettingsPreviewDark() {
                 SettingsContent(
                     isDarkTheme = true,
                     currentLanguage = GameLocales.English,
-                    isDropdownExpanded = true,
+                    isDropdownExpanded = false,
                     onThemeChange = {},
                     onLanguageDropdownExpandChange = {},
                     onLanguageChange = {},

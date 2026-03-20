@@ -9,8 +9,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.nsddemo.R
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
 
 @Composable
@@ -29,7 +31,7 @@ fun LobbyClientStatus(modifier: Modifier = Modifier) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "WAITING FOR HOST...",
+                text = stringResource(R.string.waiting_for_host),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 letterSpacing = 2.sp,

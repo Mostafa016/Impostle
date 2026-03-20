@@ -55,7 +55,7 @@ fun HeroTitleCard(modifier: Modifier = Modifier) {
         )
 
         Text(
-            text = "SOCIAL DEDUCTION PROTOCOL",
+            text = "SOCIAL DEDUCTION GAME",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
         )

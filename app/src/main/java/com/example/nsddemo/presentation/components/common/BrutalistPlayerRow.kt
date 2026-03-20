@@ -16,8 +16,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.nsddemo.R
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
 import com.example.nsddemo.presentation.theme.Dimens
 
@@ -80,7 +82,7 @@ fun BrutalistPlayerRow(
             )
 
             Text(
-                text = if (isLocalPlayer) "YOU ($playerName)" else playerName,
+                text = if (isLocalPlayer) stringResource(R.string.you_2, playerName) else playerName,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,

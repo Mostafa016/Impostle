@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -143,12 +144,12 @@ private fun ReadyStatusHero() {
 
         Column {
             Text(
-                text = "YOU ARE",
-                style = MaterialTheme.typography.labelSmall,
+                text = stringResource(R.string.you_are),
+                style = MaterialTheme.typography.labelLarge,
                 color = Color.Gray,
             )
             Text(
-                text = "READY!",
+                text = stringResource(R.string.ready),
                 style =
                     MaterialTheme.typography.displayMedium.copy(
                         fontSize = 34.sp,
@@ -184,12 +185,12 @@ private fun SynchronizationFooter(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "WAITING FOR OTHERS",
+                text = stringResource(R.string.waiting_for_others),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = "($current/$total)...",
+                text = "($current/$total)",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
             )

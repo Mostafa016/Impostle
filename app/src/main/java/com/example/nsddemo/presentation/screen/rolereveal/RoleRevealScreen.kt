@@ -47,8 +47,10 @@ fun RoleRevealScreen(viewModel: RoleRevealViewModel = hiltViewModel()) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
 
     // Resolve dynamic text
-    val categoryText = stringResource(viewModel.categoryNameResId)
-    val wordText = viewModel.word?.let { stringResource(WordResourceMapper.getResId(it)) } ?: ""
+    val categoryText = stringResource(viewModel.categoryNameResId).uppercase()
+    val wordText =
+        viewModel.word?.let { stringResource(WordResourceMapper.getResId(it)) }?.uppercase()
+            ?: ""
 
     // Determine visual state
     val revealState =
@@ -108,13 +110,13 @@ fun RoleRevealContent(
             // --- DYNAMIC TOP BANNER ---
             if (state == RoleRevealUIState.CONFIRMED) {
                 MarqueeBanner(
-                    text = "GAME IN PROGRESS /// WAIT FOR INSTRUCTIONS /// DO NOT REVEAL YOUR ROLE /// ",
+                    text = stringResource(R.string.game_in_progress_wait_for_instructions_do_not_reveal_your_role),
                     backgroundColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                 )
             } else {
                 MarqueeBanner(
-                    text = "SECRET ROLE REVEALED /// DO NOT SHARE /// MEMORIZE YOUR WORD /// ",
+                    text = stringResource(R.string.secret_role_revealed_do_not_share_memorize_your_word),
                 )
             }
 
@@ -177,7 +179,7 @@ fun RoleRevealContent(
                 // --- ACTION BUTTON ---
                 if (state == RoleRevealUIState.CONFIRMED) {
                     BrutalistButton(
-                        text = "WAITING FOR OTHERS...",
+                        text = stringResource(R.string.waiting_for_others),
                         enabled = false,
                         onClick = {},
                     )
@@ -199,7 +201,8 @@ fun RoleRevealContent(
 // 5. PREVIEWS
 // ============================================================================
 
-@Preview(name = "1. Innocent Role (Light)", showBackground = true)
+@Preview(name = "1. Innocent Role (Light)", showBackground = true, locale = "en")
+@Preview(name = "1. Innocent Role (Light) (Arabic)", showBackground = true, locale = "ar")
 @Composable
 private fun PreviewInnocentLight() {
     AppTheme(useDarkTheme = false) {
@@ -207,8 +210,8 @@ private fun PreviewInnocentLight() {
             CompositionLocalProvider(LocalIndication provides NoFeedbackIndication()) {
                 RoleRevealContent(
                     state = RoleRevealUIState.INNOCENT,
-                    category = "Food",
-                    secretWord = "Burger",
+                    category = stringResource(R.string.food),
+                    secretWord = stringResource(R.string.pizza),
                     playersWithReadyState = emptyList(),
                     localPlayerId = "p1",
                     onConfirmClick = {},
@@ -222,6 +225,13 @@ private fun PreviewInnocentLight() {
     name = "2. Imposter Role (Dark)",
     showBackground = true,
     uiMode = Configuration.UI_MODE_NIGHT_YES,
+    locale = "en",
+)
+@Preview(
+    name = "2. Imposter Role (Dark) (Arabic)",
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    locale = "ar",
 )
 @Composable
 private fun PreviewImposterDark() {
@@ -230,7 +240,7 @@ private fun PreviewImposterDark() {
             CompositionLocalProvider(LocalIndication provides NoFeedbackIndication()) {
                 RoleRevealContent(
                     state = RoleRevealUIState.IMPOSTER,
-                    category = "Food",
+                    category = stringResource(R.string.food),
                     secretWord = "", // Imposter doesn't see the word
                     playersWithReadyState = emptyList(),
                     localPlayerId = "p1",
@@ -241,7 +251,8 @@ private fun PreviewImposterDark() {
     }
 }
 
-@Preview(name = "3. Confirmed Wait State (Light)", showBackground = true)
+@Preview(name = "3. Confirmed Wait State (Light)", showBackground = true, locale = "en")
+@Preview(name = "3. Confirmed Wait State (Light) (Arabic)", showBackground = true, locale = "ar")
 @Composable
 private fun PreviewWaitLight() {
     AppTheme(useDarkTheme = false) {

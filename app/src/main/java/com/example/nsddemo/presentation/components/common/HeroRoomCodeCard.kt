@@ -10,8 +10,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.nsddemo.R
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
 import com.example.nsddemo.presentation.theme.Dimens
 
@@ -32,7 +34,7 @@ fun HeroRoomCodeCard(
                 ),
     ) {
         BrutalistSectionHeader(
-            text = "ROOM CODE",
+            text = stringResource(R.string.room_code),
             backgroundColor = Color.Transparent,
         )
 

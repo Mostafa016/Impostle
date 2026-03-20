@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -50,12 +51,11 @@ fun EndGameHeroCard(modifier: Modifier = Modifier) {
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "GAME\nHAS\nENDED",
+            text = stringResource(R.string.game_has_ended),
             style =
                 MaterialTheme.typography.displayLarge.copy(
                     fontSize = 56.sp,
                     lineHeight = 56.sp,
-                    letterSpacing = (-2).sp,
                 ),
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,

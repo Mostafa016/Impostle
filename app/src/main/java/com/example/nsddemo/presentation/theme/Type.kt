@@ -13,8 +13,6 @@ val chakraPetchFontFamily =
         Font(R.font.chakra_petch_medium, FontWeight.Medium),
         Font(R.font.chakra_petch_semibold, FontWeight.SemiBold),
         Font(R.font.chakra_petch_bold, FontWeight.Bold),
-        // If you have a Black/ExtraBold weight, add it here:
-        // Font(R.font.chakra_petch_black, FontWeight.Black)
     )
 
 val spaceMonoFontFamily =
@@ -25,7 +23,6 @@ val spaceMonoFontFamily =
 
 private val defaultTypography = Typography()
 
-// 2. Map Material 3 Roles to the "Cyber-Brutalist" System
 val englishTypography =
     Typography(
         // --- DISPLAY (Hero Titles like "IMPOSTLE", "GAME OVER") ---
@@ -84,7 +81,7 @@ val englishTypography =
         bodyLarge =
             defaultTypography.bodyLarge.copy(
                 fontFamily = spaceMonoFontFamily,
-                fontWeight = FontWeight.Bold, // Brutalist body is often bold
+                fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
             ),
         bodyMedium =
@@ -102,7 +99,7 @@ val englishTypography =
             defaultTypography.labelLarge.copy(
                 fontFamily = spaceMonoFontFamily,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 2.sp, // Widely tracked for "tech" feel
+                letterSpacing = 2.sp,
             ),
         labelMedium =
             defaultTypography.labelMedium.copy(
@@ -118,29 +115,51 @@ val englishTypography =
             ),
     )
 
-val tsAnamilFontFamily =
+val cairoFontFamily =
     FontFamily(
-        Font(R.font.tsanamil_regular, FontWeight.Normal),
-        Font(R.font.tsanamil_regular, FontWeight.Medium),
-        Font(R.font.tsanamil_bold, FontWeight.SemiBold),
-        Font(R.font.tsanamil_bold, FontWeight.Bold),
+        Font(R.font.cairo_light, FontWeight.Normal),
+        Font(R.font.cairo_medium, FontWeight.Medium),
+        Font(R.font.cairo_semibold, FontWeight.SemiBold),
+        Font(R.font.cairo_bold, FontWeight.Bold),
+        Font(R.font.cairo_black, FontWeight.Black),
+    )
+
+val ibmPlexSansArabicFontFamily =
+    FontFamily(
+        Font(R.font.ibm_plex_sans_arabic, FontWeight.Normal),
+        Font(R.font.ibm_plex_sans_arabic_bold, FontWeight.Bold),
     )
 
 val arabicTypography =
     Typography(
-        displayLarge = defaultTypography.displayLarge.copy(fontFamily = tsAnamilFontFamily),
-        displayMedium = defaultTypography.displayMedium.copy(fontFamily = tsAnamilFontFamily),
-        displaySmall = defaultTypography.displaySmall.copy(fontFamily = tsAnamilFontFamily),
-        headlineLarge = defaultTypography.headlineLarge.copy(fontFamily = tsAnamilFontFamily),
-        headlineMedium = defaultTypography.headlineMedium.copy(fontFamily = tsAnamilFontFamily),
-        headlineSmall = defaultTypography.headlineSmall.copy(fontFamily = tsAnamilFontFamily),
-        titleLarge = defaultTypography.titleLarge.copy(fontFamily = tsAnamilFontFamily),
-        titleMedium = defaultTypography.titleMedium.copy(fontFamily = tsAnamilFontFamily),
-        titleSmall = defaultTypography.titleSmall.copy(fontFamily = tsAnamilFontFamily),
-        bodyLarge = defaultTypography.bodyLarge.copy(fontFamily = tsAnamilFontFamily),
-        bodyMedium = defaultTypography.bodyMedium.copy(fontFamily = tsAnamilFontFamily),
-        bodySmall = defaultTypography.bodySmall.copy(fontFamily = tsAnamilFontFamily),
-        labelLarge = defaultTypography.labelLarge.copy(fontFamily = tsAnamilFontFamily),
-        labelMedium = defaultTypography.labelMedium.copy(fontFamily = tsAnamilFontFamily),
-        labelSmall = defaultTypography.labelSmall.copy(fontFamily = tsAnamilFontFamily),
+        displayLarge =
+            englishTypography.displayLarge.copy(
+                fontFamily = cairoFontFamily,
+                letterSpacing = 0.sp, // Arabic doesn't handle negative tracking well
+            ),
+        displayMedium = englishTypography.displayMedium.copy(fontFamily = cairoFontFamily),
+        displaySmall = englishTypography.displaySmall.copy(fontFamily = cairoFontFamily),
+        headlineLarge = englishTypography.headlineLarge.copy(fontFamily = cairoFontFamily),
+        headlineMedium = englishTypography.headlineMedium.copy(fontFamily = cairoFontFamily),
+        headlineSmall = englishTypography.headlineSmall.copy(fontFamily = cairoFontFamily),
+        titleLarge =
+            englishTypography.titleLarge.copy(
+                fontFamily = cairoFontFamily,
+                letterSpacing = 0.sp, // Disable letter spacing for Arabic scripts
+            ),
+        // Body & Labels use IBM Plex Sans Arabic
+        bodyLarge =
+            englishTypography.bodyLarge.copy(
+                fontFamily = ibmPlexSansArabicFontFamily,
+                fontSize = 17.sp, // Bumped slightly for Arabic legibility
+            ),
+        bodyMedium = englishTypography.bodyMedium.copy(fontFamily = ibmPlexSansArabicFontFamily),
+        bodySmall = englishTypography.bodySmall.copy(fontFamily = ibmPlexSansArabicFontFamily),
+        labelLarge =
+            englishTypography.labelLarge.copy(
+                fontFamily = ibmPlexSansArabicFontFamily,
+                letterSpacing = 0.sp,
+            ),
+        labelMedium = englishTypography.labelMedium.copy(fontFamily = ibmPlexSansArabicFontFamily),
+        labelSmall = englishTypography.labelSmall.copy(fontFamily = ibmPlexSansArabicFontFamily),
     )

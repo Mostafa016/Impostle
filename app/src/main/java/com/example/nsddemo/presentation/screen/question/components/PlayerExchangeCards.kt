@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -32,6 +33,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import com.example.nsddemo.R
 import com.example.nsddemo.domain.model.NewPlayerColors
 import com.example.nsddemo.domain.model.Player
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
@@ -59,8 +61,8 @@ fun PlayerExchangeCards(
             // ASKER CARD
             val askerAvatarColor = NewPlayerColors.fromHex(askingPlayer.color).toComposeColor()
             ExchangeCard(
-                title = "ASKER",
-                playerName = if (isCurrentPlayerAsking) "YOU" else askingPlayer.name.uppercase(),
+                title = stringResource(R.string.asker),
+                playerName = if (isCurrentPlayerAsking) stringResource(R.string.you) else askingPlayer.name.uppercase(),
                 avatarColor = askerAvatarColor,
                 isActive = isCurrentPlayerAsking,
                 isRightAligned = false,
@@ -81,8 +83,8 @@ fun PlayerExchangeCards(
             // ASKED CARD
             val askedAvatarColor = NewPlayerColors.fromHex(askedPlayer.color).toComposeColor()
             ExchangeCard(
-                title = "THE ASKED",
-                playerName = if (isCurrentPlayerAsked) "YOU" else askedPlayer.name.uppercase(),
+                title = stringResource(R.string.the_asked),
+                playerName = if (isCurrentPlayerAsked) stringResource(R.string.you) else askedPlayer.name.uppercase(),
                 avatarColor = askedAvatarColor,
                 isActive = isCurrentPlayerAsked,
                 isRightAligned = true,
@@ -124,7 +126,7 @@ private fun ExchangeCard(
                         .zIndex(10f),
             ) {
                 Text(
-                    text = "YOUR TURN",
+                    text = stringResource(R.string.your_turn),
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                     color = MaterialTheme.colorScheme.onPrimary,
                 )
@@ -229,7 +231,7 @@ private fun BridgePill(
                     when {
                         isCurrentPlayerAsking ->
                             buildAnnotatedString {
-                                append("Ask ")
+                                append(stringResource(R.string.ask))
                                 withStyle(
                                     SpanStyle(
                                         color = MaterialTheme.colorScheme.secondary,
@@ -238,7 +240,7 @@ private fun BridgePill(
                                 ) {
                                     append(askedName)
                                 }
-                                append(" a question")
+                                append(stringResource(R.string.a_question))
                             }
 
                         isCurrentPlayerAsked ->
@@ -251,7 +253,7 @@ private fun BridgePill(
                                 ) {
                                     append(askingName)
                                 }
-                                append(" is asking you...")
+                                append(stringResource(R.string.is_asking_you))
                             }
 
                         else ->
@@ -264,7 +266,7 @@ private fun BridgePill(
                                 ) {
                                     append(askingName)
                                 }
-                                append(" asks ")
+                                append(stringResource(R.string.asks))
                                 withStyle(
                                     SpanStyle(
                                         color = MaterialTheme.colorScheme.secondary,

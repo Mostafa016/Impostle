@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -47,7 +48,7 @@ fun ImposterGuessHeroCard(modifier: Modifier = Modifier) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "THE IMPOSTER\nIS GUESSING",
+            text = stringResource(R.string.the_imposter_is_guessing),
             style = MaterialTheme.typography.displayLarge,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,

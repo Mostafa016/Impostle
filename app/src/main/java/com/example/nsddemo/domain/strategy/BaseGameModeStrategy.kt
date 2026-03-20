@@ -131,10 +131,8 @@ abstract class BaseGameModeStrategy(
         }
 
         val word = wordRepository.getWordsForCategory(selectedCategory).random()
-        // TODO: Important: allow host to be imposter once done with pause testing
         val imposterId =
             data.players.keys
-                .filter { it != data.hostId && it != "6190a1f9-122b-4bd2-9ca7-47a7286aec3d" }
                 .random()
 
         val dataWithRoles =

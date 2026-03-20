@@ -60,7 +60,7 @@ fun CategoryAndWordDialog(
                         .offset(y = (-2).dp), // Overlap top border slightly
             ) {
                 Text(
-                    text = "SECRET WORD",
+                    text = stringResource(R.string.secret_word),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSecondary,
                 )
@@ -104,7 +104,7 @@ fun CategoryAndWordDialog(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
-                                    "?",
+                                    stringResource(R.string.question_mark),
                                     style = MaterialTheme.typography.headlineLarge,
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )
@@ -120,7 +120,7 @@ fun CategoryAndWordDialog(
                     } else {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = "CATEGORY:\n$category".uppercase(),
+                                text = stringResource(R.string.category_2, category).uppercase(),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                 textAlign = TextAlign.Center,
@@ -139,7 +139,7 @@ fun CategoryAndWordDialog(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    text = "Memorize your role! Don't let others see your screen.",
+                    text = stringResource(R.string.memorize_your_role_don_t_let_others_see_your_screen),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center,
@@ -148,7 +148,7 @@ fun CategoryAndWordDialog(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 BrutalistButton(
-                    text = "DONE",
+                    text = stringResource(R.string.done),
                     containerColor = MaterialTheme.colorScheme.outline, // Black button
                     contentColor = MaterialTheme.colorScheme.surface, // White text
                     onClick = onOkClick,

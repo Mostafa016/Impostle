@@ -163,7 +163,7 @@ fun ChooseCategoryContent(
 
                 // --- CONFIRM BUTTON ---
                 BrutalistButton(
-                    text = "Confirm",
+                    text = stringResource(R.string.confirm),
                     icon = Icons.AutoMirrored.Filled.ArrowForward,
                     onClick = onConfirmClick,
                     enabled = selectedCategory != null,
@@ -179,7 +179,8 @@ fun ChooseCategoryContent(
 // 4. PREVIEWS
 // ============================================================================
 
-@Preview(name = "Light Mode", showBackground = true)
+@Preview(name = "Light Mode", showBackground = true, locale = "en")
+@Preview(name = "Light Mode (Arabic)", showBackground = true, locale = "ar")
 @Composable
 private fun CategoryPreviewLight() {
     AppTheme(useDarkTheme = false) {
@@ -195,7 +196,7 @@ private fun CategoryPreviewLight() {
     }
 }
 
-@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, locale = "en")
 @Composable
 private fun CategoryPreviewDark() {
     AppTheme(useDarkTheme = true) {

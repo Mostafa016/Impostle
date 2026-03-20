@@ -13,9 +13,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.nsddemo.R
 import com.example.nsddemo.presentation.components.common.BrutalistDashedDivider
 import com.example.nsddemo.presentation.components.modifier.brutalistCard
 import com.example.nsddemo.presentation.theme.Dimens
@@ -37,7 +39,7 @@ fun InnocentRoleCard(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         RoleBadge(
-            text = "YOU ARE INNOCENT",
+            text = stringResource(R.string.you_are_innocent),
             backgroundColor = MaterialTheme.colorScheme.secondary,
             textColor = MaterialTheme.colorScheme.onSecondary,
         )
@@ -58,8 +60,9 @@ fun InnocentRoleCard(
             contentAlignment = Alignment.Center,
         ) {
             Text(
+                modifier = Modifier.fillMaxWidth(),
                 text = secretWord.uppercase(),
-                style = MaterialTheme.typography.displayLarge.copy(fontSize = 36.sp),
+                style = MaterialTheme.typography.displayLarge,
                 color = MaterialTheme.colorScheme.onPrimary,
                 textAlign = TextAlign.Center,
                 lineHeight = 40.sp,
@@ -69,13 +72,13 @@ fun InnocentRoleCard(
         BrutalistDashedDivider()
 
         Text(
-            text = "YOUR GOAL:",
+            text = stringResource(R.string.your_goal),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "Figure out who the Imposter is without revealing the secret word.",
+            text = stringResource(R.string.figure_out_who_the_imposter_is_without_revealing_the_secret_word),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
             textAlign = TextAlign.Center,
@@ -99,7 +102,7 @@ fun ImposterRoleCard(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         RoleBadge(
-            text = "YOU ARE THE IMPOSTER",
+            text = stringResource(R.string.you_are_the_imposter),
             backgroundColor = MaterialTheme.colorScheme.primary,
             textColor = MaterialTheme.colorScheme.onPrimary,
         )
@@ -121,7 +124,7 @@ fun ImposterRoleCard(
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "SECRET\nIDENTITY",
+                    text = stringResource(R.string.secret_identity),
                     style = MaterialTheme.typography.displayMedium.copy(fontSize = 32.sp),
                     color = MaterialTheme.colorScheme.onPrimary,
                     textAlign = TextAlign.Center,
@@ -133,13 +136,13 @@ fun ImposterRoleCard(
         BrutalistDashedDivider()
 
         Text(
-            text = "YOUR GOAL:",
+            text = stringResource(R.string.your_goal),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "Figure out the secret word everyone else knows without revealing your identity.",
+            text = stringResource(R.string.figure_out_the_secret_word_everyone_else_knows_without_revealing_your_identity),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
             textAlign = TextAlign.Center,
@@ -177,7 +180,7 @@ private fun RoleBadge(
 @Composable
 private fun CategoryInfo(category: String) {
     Text(
-        text = "CATEGORY",
+        text = stringResource(R.string.category),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
     )
