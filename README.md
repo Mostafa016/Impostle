@@ -28,7 +28,7 @@ Sockets** for real-time, bidirectional game state synchronization.
 * **Resilient Session Recovery:** Implemented a robust "Ghosting" system. If a player drops
   connection, the game **auto-pauses** and preserves state for a seamless **UUID-based reconnection.
 * **Automated CI/CD Pipeline:** Fully integrated GitHub Actions workflow that automatically enforces
-  code formatting (Ktlint), executes the full test suite, and generates a fresh debug APK on every
+  code formatting (Ktlint), executes the full test suite, runs the debug build, and generates a new release APK on every
   push to the main branch.
 * **Sanitized Data Synchronization:** Anti-cheat logic enforced at the protocol level. The server
   scrubs sensitive data (like the secret word or imposter identity) from network payloads based on
@@ -373,7 +373,7 @@ com.mostafa.impostle
 
 You can download the latest automated build here:
 
-[Download Latest APK (Debug)](https://nightly.link/Mostafa016/Impostle/workflows/android_ci/main/Impostle-Debug-APK.zip?h=6f23673eeb26237c8314893ee266a3edf6581486)
+[Download Latest APK (Release)](https://nightly.link/Mostafa016/Impostle/workflows/android_ci/main/Impostle-Release-APK.zip?h=6f23673eeb26237c8314893ee266a3edf6581486)
 *(Builds are automatically generated via GitHub Actions on every push to main)*
 
 ## Getting Started
