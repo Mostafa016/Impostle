@@ -88,9 +88,9 @@ class ReconnectionIntegrationTest : BaseE2ETest() {
     @Test
     fun `3 GIVEN civilian reconnects THEN synced data hides imposterId and provides word`() =
         runTest {
-            advanceToInRound()
+            advanceToInRound(ensureClientImposter = true)
 
-            val imposterId = getImposterId(listOf(alice, bob, charlie))
+            val imposterId = getImposterId(listOf(bob, charlie))
             val civilianToDrop = listOf(bob, charlie).first { it.playerId != imposterId }
 
             router.dropConnection(gameCode, civilianToDrop.playerId)
@@ -114,9 +114,9 @@ class ReconnectionIntegrationTest : BaseE2ETest() {
     @Test
     fun `4 GIVEN imposter reconnects THEN synced data provides null word`() =
         runTest {
-            advanceToInRound()
+            advanceToInRound(ensureClientImposter = true)
 
-            val imposterId = getImposterId(listOf(alice, bob, charlie))
+            val imposterId = getImposterId(listOf(bob, charlie))
             val imposterPlayer = listOf(bob, charlie).first { it.playerId == imposterId }
 
             router.dropConnection(gameCode, imposterPlayer.playerId)

@@ -35,9 +35,9 @@ class KickE2ETest : BaseE2ETest() {
     @Test
     fun `GIVEN civilian disconnected WHEN host kicks them THEN player removed and round restarts for remaining`() =
         runTest {
-            advanceToInRound()
+            advanceToInRound(ensureClientImposter = true)
 
-            val imposterId = getImposterId(listOf(alice, bob, charlie))
+            val imposterId = getImposterId(listOf(bob, charlie))
             val civilianToKick = listOf(bob, charlie).first { it.playerId != imposterId }
             val remainingNonHost = listOf(bob, charlie).first { it != civilianToKick }
 
@@ -73,11 +73,10 @@ class KickE2ETest : BaseE2ETest() {
     @Test
     fun `GIVEN imposter disconnected WHEN host kicks them THEN civilians win and phase is GameResults`() =
         runTest {
-            advanceToInRound()
-
-            val imposterId = getImposterId(listOf(alice, bob, charlie))
-            val imposterPlayer = listOf(bob, charlie).first { it.playerId == imposterId }
-            val nonImposter = listOf(bob, charlie).first { it.playerId != imposterId }
+            advanceToInRound(ensureClientImposter = true)
+            val players = listOf(bob, charlie)
+            val imposterId = getImposterId(players)
+            val nonImposter = players.first { it.playerId != imposterId }
 
             // ── 1. Force the imposter to disconnect FIRST ─────────────────────────
             router.dropConnection(gameCode, imposterId)

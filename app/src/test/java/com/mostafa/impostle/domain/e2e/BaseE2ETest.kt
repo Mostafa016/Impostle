@@ -68,33 +68,61 @@ abstract class BaseE2ETest {
     /**
      * Starts the standard 3 players, joins the lobby, selects a category,
      * starts the game, and confirms roles. Fast-forwards directly to [GamePhase.InRound].
+     *
+     * @param ensureClientImposter If true, rerolls the game setup until the host (Alice) is NOT the imposter.
+     *                             Crucial for tests that require disconnecting the imposter without killing the server.
      */
-    protected suspend fun TestScope.advanceToInRound(category: GameCategory = GameCategory.ANIMALS) {
-        alice.startIn(this)
-        bob.startIn(this)
-        charlie.startIn(this)
-        advanceUntilIdle()
+    protected suspend fun TestScope.advanceToInRound(
+        category: GameCategory = GameCategory.ANIMALS,
+        ensureClientImposter: Boolean = false,
+    ) {
+        var attempt = 0
+        while (attempt < 10) {
+            // If this is a reroll attempt, tear down the previous instances cleanly
+            if (attempt > 0) {
+                alice.stop()
+                bob.stop()
+                charlie.stop()
 
-        alice.joinGame()
-        bob.joinGame()
-        charlie.joinGame()
-        advanceUntilIdle()
+                router = InMemoryNetworkRouter()
+                alice = HeadlessPlayer("alice", "Alice", gameCode, router, isHost = true)
+                bob = HeadlessPlayer("bob", "Bob", gameCode, router, isHost = false)
+                charlie = HeadlessPlayer("charlie", "Charlie", gameCode, router, isHost = false)
+            }
 
-        alice.selectCategory(category)
-        advanceUntilIdle()
+            alice.startIn(this)
+            bob.startIn(this)
+            charlie.startIn(this)
+            advanceUntilIdle()
 
-        alice.startGame()
-        advanceUntilIdle()
+            alice.joinGame()
+            bob.joinGame()
+            charlie.joinGame()
+            advanceUntilIdle()
 
-        // All three confirm roles
-        alice.confirmRole()
-        bob.confirmRole()
-        charlie.confirmRole()
-        advanceUntilIdle()
+            alice.selectCategory(category)
+            advanceUntilIdle()
 
-        assertEquals(GamePhase.InRound, alice.gamePhase.value)
-        assertEquals(GamePhase.InRound, bob.gamePhase.value)
-        assertEquals(GamePhase.InRound, charlie.gamePhase.value)
+            alice.startGame()
+            advanceUntilIdle()
+
+            // All three confirm roles
+            alice.confirmRole()
+            bob.confirmRole()
+            charlie.confirmRole()
+            advanceUntilIdle()
+
+            assertEquals(GamePhase.InRound, alice.gamePhase.value)
+            assertEquals(GamePhase.InRound, bob.gamePhase.value)
+            assertEquals(GamePhase.InRound, charlie.gamePhase.value)
+
+            // Check if we need to reroll to guarantee a client imposter
+            if (!ensureClientImposter || getImposterId(listOf(alice, bob, charlie)) != alice.playerId) {
+                return // Success!
+            }
+            attempt++
+        }
+        throw IllegalStateException("Failed to roll a client imposter after 10 attempts.")
     }
 
     /**
