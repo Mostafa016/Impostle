@@ -22,9 +22,25 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    def localProps = new Properties()
+    localProps.load(rootProject.file('local.properties').newDataInputStream())
+
+    signingConfigs {
+        release {
+            storeFile file(localProps['KEYSTORE_PATH']) ?: System.getenv("KEYSTORE_PATH")
+            storePassword localProps['KEYSTORE_PASSWORD'] ?: System.getenv("KEYSTORE_PASSWORD")
+            keyAlias localProps['KEY_ALIAS'] ?: System.getenv("KEY_ALIAS")
+            keyPassword localProps['KEY_PASSWORD'] ?: System.getenv("KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         release {
-            minifyEnabled false
+//            signingConfig signingConfigs.release
+            signingConfig signingConfigs.debug // Signs the release build with the debug key
+            minifyEnabled true
+            shrinkResources true
+            debuggable false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -47,6 +63,10 @@ android {
     androidResources {
         generateLocaleConfig = true
     }
+
+    lint {
+        disable "NullSafeMutableLiveData"
+    }
 }
 
 dependencies {
@@ -67,12 +87,8 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_version"
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutines_version"
 
-
     // Ktor
     implementation "io.ktor:ktor-network:2.3.0"
-
-    // Gson
-    implementation 'com.google.code.gson:gson:2.10.1'
 
     // ViewModel
     def lifecycle_version = "2.7.0"
@@ -115,7 +131,7 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     testImplementation "io.mockk:mockk:1.14.2"
     testImplementation "app.cash.turbine:turbine:1.2.1"
-    implementation "org.jetbrains.kotlin:kotlin-test:2.0.21"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:2.0.21"
 }
 
 composeCompiler {
