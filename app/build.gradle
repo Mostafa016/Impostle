@@ -23,21 +23,28 @@ android {
     }
 
     def localProps = new Properties()
-    localProps.load(rootProject.file('local.properties').newDataInputStream())
+    def localPropertiesFile = rootProject.file('local.properties')
+    if (localPropertiesFile.exists()) {
+        localProps.load(localPropertiesFile.newDataInputStream())
+    }
 
     signingConfigs {
         release {
-            storeFile file(localProps['KEYSTORE_PATH']) ?: System.getenv("KEYSTORE_PATH")
-            storePassword localProps['KEYSTORE_PASSWORD'] ?: System.getenv("KEYSTORE_PASSWORD")
-            keyAlias localProps['KEY_ALIAS'] ?: System.getenv("KEY_ALIAS")
-            keyPassword localProps['KEY_PASSWORD'] ?: System.getenv("KEY_PASSWORD")
+            def path = localProps['KEYSTORE_PATH'] ?: System.getenv("KEYSTORE_PATH") ?: ""
+
+            if (path != "") {
+                storeFile file(path)
+                storePassword localProps['KEYSTORE_PASSWORD'] ?: System.getenv("KEYSTORE_PASSWORD")
+                keyAlias localProps['KEY_ALIAS'] ?: System.getenv("KEY_ALIAS")
+                keyPassword localProps['KEY_PASSWORD'] ?: System.getenv("KEY_PASSWORD")
+            }
         }
     }
 
     buildTypes {
         release {
 //            signingConfig signingConfigs.release
-            signingConfig signingConfigs.debug // Signs the release build with the debug key
+            signingConfig signingConfigs.debug
             minifyEnabled true
             shrinkResources true
             debuggable false
