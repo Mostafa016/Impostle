@@ -3,6 +3,8 @@ package com.mostafa.impostle.presentation.screen.mainmenu
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mostafa.impostle.di.IoDispatcher
+import com.mostafa.impostle.domain.model.AppPermission
+import com.mostafa.impostle.domain.repository.PermissionsRepository
 import com.mostafa.impostle.domain.repository.SettingsRepository
 import com.mostafa.impostle.presentation.util.Routes
 import com.mostafa.impostle.presentation.util.UiEvent
@@ -10,10 +12,12 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -23,6 +27,7 @@ class MainMenuViewModel
     @Inject
     constructor(
         private val settingsRepository: SettingsRepository,
+        private val permissionsRepository: PermissionsRepository,
         @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) : ViewModel() {
         private val _state = MutableStateFlow(MainMenuState())
@@ -30,6 +35,14 @@ class MainMenuViewModel
 
         private val _eventFlow = MutableSharedFlow<UiEvent>()
         val eventFlow = _eventFlow.asSharedFlow()
+
+        val permissionStates: StateFlow<Map<AppPermission, Boolean>> =
+            permissionsRepository.permissionRequestState
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5_000),
+                    initialValue = AppPermission.entries.associateWith { false },
+                )
 
         // Callback to execute after player name is saved
         private var onPlayerNameSave: () -> Unit = {}
@@ -77,6 +90,10 @@ class MainMenuViewModel
 
                 MainMenuEvent.JoinGameClick -> {
                     showPlayerNameDialogOrJoinGame()
+                }
+
+                is MainMenuEvent.PermissionRequested -> {
+                    markRequested(event.permission)
                 }
             }
         }
@@ -148,6 +165,12 @@ class MainMenuViewModel
                         popPrevious = popPrevious,
                     ),
                 )
+            }
+        }
+
+        private fun markRequested(permission: AppPermission) {
+            viewModelScope.launch(ioDispatcher) {
+                permissionsRepository.markRequested(permission)
             }
         }
     }

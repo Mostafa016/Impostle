@@ -19,7 +19,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,11 +27,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.mostafa.impostle.R
+import com.mostafa.impostle.domain.model.AppPermission
 import com.mostafa.impostle.presentation.components.common.BrutalistButton
 import com.mostafa.impostle.presentation.components.common.CornerBrackets
 import com.mostafa.impostle.presentation.components.common.MarqueeBanner
+import com.mostafa.impostle.presentation.components.common.WithPermission
 import com.mostafa.impostle.presentation.components.modifier.brutalistGridBackground
 import com.mostafa.impostle.presentation.screen.mainmenu.components.ChangePlayerNameDialog
 import com.mostafa.impostle.presentation.screen.mainmenu.components.ChangePlayerNameDialogContent
@@ -54,7 +56,8 @@ fun MainMenuScreen(
     viewModel: MainMenuViewModel = hiltViewModel(),
     navController: NavHostController,
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val permissionStates by viewModel.permissionStates.collectAsStateWithLifecycle()
 
     LaunchedEffect(true) {
         viewModel.eventFlow.collectLatest { event ->
@@ -73,20 +76,32 @@ fun MainMenuScreen(
         }
     }
 
-    if (state.isPlayerNameDialogVisible) {
-        ChangePlayerNameDialog(mainMenuViewModel = viewModel)
-    }
+    WithPermission(
+        appPermission = AppPermission.POST_NOTIFICATIONS,
+        rationaleText = stringResource(R.string.notification_permission_rationale),
+        hasRequested = permissionStates[AppPermission.POST_NOTIFICATIONS] ?: false,
+        markPermissionRequested = { viewModel.onEvent(MainMenuEvent.PermissionRequested(AppPermission.POST_NOTIFICATIONS)) },
+    ) { requestNotificationPermission, isPermissionDialogShowing ->
+        if (state.isPlayerNameDialogVisible && !isPermissionDialogShowing) {
+            ChangePlayerNameDialog(mainMenuViewModel = viewModel)
+        }
 
-    // Pass state down to the stateless UI
-    MainMenuContent(
-        playerName = state.playerName ?: "???",
-        isCreateGameEnabled = state.isCreateGameButtonEnabled,
-        isJoinGameEnabled = state.isJoinGameButtonEnabled,
-        onCreateGameClick = { viewModel.onEvent(MainMenuEvent.CreateGameClick) },
-        onJoinGameClick = { viewModel.onEvent(MainMenuEvent.JoinGameClick) },
-        onSettingsClick = { viewModel.onEvent(MainMenuEvent.SettingsClick) },
-        onPlayerNameClick = { viewModel.onEvent(MainMenuEvent.PlayerNameClick) },
-    )
+        MainMenuContent(
+            playerName = state.playerName ?: stringResource(R.string.unset_player_name),
+            isCreateGameEnabled = state.isCreateGameButtonEnabled,
+            isJoinGameEnabled = state.isJoinGameButtonEnabled,
+            onCreateGameClick = {
+                requestNotificationPermission()
+                viewModel.onEvent(MainMenuEvent.CreateGameClick)
+            },
+            onJoinGameClick = {
+                requestNotificationPermission()
+                viewModel.onEvent(MainMenuEvent.JoinGameClick)
+            },
+            onSettingsClick = { viewModel.onEvent(MainMenuEvent.SettingsClick) },
+            onPlayerNameClick = { viewModel.onEvent(MainMenuEvent.PlayerNameClick) },
+        )
+    }
 }
 
 // ============================================================================

@@ -1,4 +1,4 @@
-package com.mostafa.impostle.domain.e2e
+package com.mostafa.impostle.domain.integration
 
 import app.cash.turbine.test
 import com.mostafa.impostle.domain.model.ClientEvent
@@ -18,7 +18,7 @@ import org.junit.Test
  * reconnection logic loop. Focuses on state synchronization (`ReconnectionFullStateSync`),
  * role privacy (nulling imposter ID/word), partial reconnects, and `GameResumed` emissions.
  */
-class ReconnectionIntegrationTest : BaseE2ETest() {
+class ReconnectionIntegrationTest : BaseIntegrationTest() {
     override val gameCode = "RECONNECT_SYNC"
 
     private suspend fun kotlinx.coroutines.test.TestScope.reconnectPlayer(playerTemplate: HeadlessPlayer): HeadlessPlayer {

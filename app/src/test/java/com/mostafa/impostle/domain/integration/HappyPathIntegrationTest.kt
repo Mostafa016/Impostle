@@ -1,4 +1,4 @@
-package com.mostafa.impostle.domain.e2e
+package com.mostafa.impostle.domain.integration
 
 import com.mostafa.impostle.domain.model.GamePhase
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -20,7 +20,7 @@ import org.junit.Test
  * Because this entire test runs inside [runTest] with [StandardTestDispatcher],
  * all coroutines and [delay] calls use virtual time → executes in milliseconds.
  */
-class HappyPathE2ETest : BaseE2ETest() {
+class HappyPathIntegrationTest : BaseIntegrationTest() {
     override val gameCode = "HAPPY"
 
     @Test

@@ -1,4 +1,4 @@
-package com.mostafa.impostle.domain.e2e
+package com.mostafa.impostle.domain.integration
 
 import com.mostafa.impostle.domain.model.GameCategory
 import com.mostafa.impostle.domain.model.GamePhase
@@ -27,7 +27,7 @@ import org.junit.Test
  *    `ServerMessage.EndGame`). Verifies that all clients reach [GamePhase.GameEnd].
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class AdvancedScenariosE2ETest : BaseE2ETest() {
+class AdvancedScenariosIntegrationTest : BaseIntegrationTest() {
     override val gameCode = "ADVANCED"
 
     // ═══════════════════════════════════════════════════════════════════════════

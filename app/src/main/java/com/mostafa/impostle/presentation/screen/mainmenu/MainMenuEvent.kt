@@ -1,9 +1,11 @@
 package com.mostafa.impostle.presentation.screen.mainmenu
 
-sealed interface MainMenuEvent {
-    object SettingsClick : MainMenuEvent
+import com.mostafa.impostle.domain.model.AppPermission
 
-    object PlayerNameClick : MainMenuEvent
+sealed interface MainMenuEvent {
+    data object SettingsClick : MainMenuEvent
+
+    data object PlayerNameClick : MainMenuEvent
 
     data class PlayerNameDialogTextChange(
         val playerName: String,
@@ -13,9 +15,13 @@ sealed interface MainMenuEvent {
         val playerName: String,
     ) : MainMenuEvent
 
-    object PlayerNameDialogCancel : MainMenuEvent
+    data object PlayerNameDialogCancel : MainMenuEvent
 
-    object CreateGameClick : MainMenuEvent
+    data object CreateGameClick : MainMenuEvent
 
-    object JoinGameClick : MainMenuEvent
+    data object JoinGameClick : MainMenuEvent
+
+    data class PermissionRequested(
+        val permission: AppPermission,
+    ) : MainMenuEvent
 }

@@ -1,7 +1,7 @@
-package com.mostafa.impostle.domain.e2e
+package com.mostafa.impostle.domain.integration
 
 import android.util.Log
-import com.mostafa.impostle.domain.e2e.fakes.InMemoryNetworkRouter
+import com.mostafa.impostle.domain.integration.fakes.InMemoryNetworkRouter
 import com.mostafa.impostle.domain.model.GameCategory
 import com.mostafa.impostle.domain.model.GamePhase
 import com.mostafa.impostle.domain.model.RoundData
@@ -29,7 +29,7 @@ import org.junit.Before
  * - Common utility functions for fast-forwarding game state and driving standard bot actions.
  */
 @ExperimentalCoroutinesApi
-abstract class BaseE2ETest {
+abstract class BaseIntegrationTest {
     protected lateinit var router: InMemoryNetworkRouter
     protected lateinit var alice: HeadlessPlayer
     protected lateinit var bob: HeadlessPlayer

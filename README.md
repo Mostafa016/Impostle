@@ -28,7 +28,8 @@ Sockets** for real-time, bidirectional game state synchronization.
 * **Resilient Session Recovery:** Implemented a robust "Ghosting" system. If a player drops
   connection, the game **auto-pauses** and preserves state for a seamless **UUID-based reconnection.
 * **Automated CI/CD Pipeline:** Fully integrated GitHub Actions workflow that automatically enforces
-  code formatting (Ktlint), executes the full test suite, runs the debug build, and generates a new release APK on every
+  code formatting (Ktlint), executes the full test suite, runs the debug build, and generates a new
+  release APK on every
   push to the main branch.
 * **Sanitized Data Synchronization:** Anti-cheat logic enforced at the protocol level. The server
   scrubs sensitive data (like the secret word or imposter identity) from network payloads based on
@@ -134,9 +135,10 @@ Flow (UDF)**.
   using `supervisorScope` (to isolate client crashes), `withTimeout` (to prevent infinite NSD
   hanging), and `withContext(NonCancellable)` to guarantee memory-safe socket teardown during sudden
   coroutine cancellations.
-* **Headless E2E Network Simulation:** Built a custom `InMemoryNetworkRouter` test harness that
-  allows full 30+ player client-server interactions and reconnection edge-cases to be simulated and
-  tested on a single JVM in milliseconds.
+* **Domain Local Integration Tests**: Built a custom `InMemoryNetworkRouter` test class to
+  orchestrate and validate 30+ player client-server interactions on a single JVM in milliseconds.
+  This allows for fast simulation of domain logic and reconnection edge-cases , ensuring protocol
+  integrity without the overhead of networking.
 
 ## Architecture Decisions
 
@@ -316,16 +318,16 @@ Mobile networks are volatile. To prevent a single dropped Wi-Fi connection from 
 ## Testing Strategy
 
 <p align="center">
-  <img src="https://mermaid.ink/img/pako:eNp1Uk1PwkAQ_SvNcNGkkH4AXTbGg2hEI4ag8SD1sNgpbWh3yXYLYtP_7kIriNY9bN7MvHnzNrMFvIsAgcJCslVkPEx9buiT5fMqcf8ynvmgb-MZM2Xc8HUsBU-RKx_eKu4JfzSxNX-ELEgwy4xJwrYojbORyNT5ScfuDJNYC9mzW5ZihX8RnlCuUVaECv8gIA8aDThNBq7E_L_5TvP8E_mpyBXKovDhjo8xFXL7iGoj5LIq-FCWR_IR1Q80Ltrty1rjWKwf11ysrf0tHmzVi1LbBGuCEcZJQlvhIDQzJcUSact13Rq3N3GgItpdfYCplx0HQJXM0YQUZcp2IRQ7SR9UhCn6QDUMMGR5olft81K3rRh_FSL97pQiX0RAQ5ZkOspXAVN4HTO9h_SQldovyqHIuQLq2sTdqwAt4AOobdkdz9Mee5Y9cC3HIyZsgTpOtzMgxCW9ft_p9ntuacLnfq7V0bke8QjpE9vadZiAQayEHFe_eP-Zyy-6bNlt?type=png" alt="Disconnect & Auto-Recovery Sequence">
+  <img src="https://mermaid.ink/img/pako:eNp1Uk1PwkAQ_SvNcNGkkH4AXTbGg2hEI4ag8SD1sNgpbWh3yXYLYtP_7kIriNY9bN7MvHnzNrMFvIsAgcJCslVkPEx9buiT5fMqcf8ynvmgb-MZM2Xc8HUsBU-RKx_eKu4JfzSxNX-ELEgwy4xJwrYojbORyNT5ScfuDJNYC9mzW5ZihX8RnlCuUVaECv8gIA8aDThNBq7E_L_5TvP8E_mpyBXKovDhjo8xFXL7iGoj5LIq-FCWR_IR1Q80Ltrty1rjWKwf11ysrf0tHmzVi1LbBGuCEcZJQlvhIDQzJcUSact13Rq3N3GgItpdfYCplx0HQJXM0YQUZcp2IRQ7SR9UhCn6QDUMMGR5olft81K3rRh_FSL97pQiX0RAQ5ZkOspXAVN4HTO9h_SQldovyqHIuQLq2sTdqwAt4AOobdkdz9Mee5Y9cC3HIyZsgTpOtzMgxCW9ft_p9ntuacLnfq7V0bke8QjpE9vadZiAQayEHFe_eP-Zyy-6bNlt?type=png" alt="Domain Local Integration Tests Setup">
   <br>
-  <b>Figure 8:</b> <i>Headless E2E Test Harness.</i>
+  <b>Figure 8:</b> <i>Domain Local Integration Tests Setup</i>
 </p>
 
-This project features a comprehensive, multi-tiered testing architecture, utilizing **MockK**, *
-*Turbine**, and `kotlinx-coroutines-test`.
+This project features a comprehensive, multi-tiered testing architecture, utilizing **MockK**,
+**Turbine**, and `kotlinx-coroutines-test`.
 
-* **Headless E2E Simulation:** Built a custom `InMemoryNetworkRouter` and `HeadlessPlayer` test
-  harness. This allows full multi-player client-server interactions, game phases, and complex
+* **Domain Local Integration Tests:** Built a custom `InMemoryNetworkRouter` and `HeadlessPlayer`
+  test classes. This allows full multi-player client-server interactions, game phases, and complex
   reconnect loops to be simulated and verified in milliseconds on a single JVM, without needing
   Android emulators.
 * **Concurrency & Stress Testing:** Explicitly tests race conditions and concurrent state mutations,
@@ -339,7 +341,7 @@ This project features a comprehensive, multi-tiered testing architecture, utiliz
 ## Automated CI/CD Pipeline Steps
 
 1. **Static Analysis:** Checks code style and formatting using `Ktlint`.
-2. **Unit & E2E Testing:** Runs the full suite of local tests via `testDebugUnitTest`.`
+2. **Unit & Local Integration Testing:** Runs the full suite of local tests via `testDebugUnitTest`.
 3. **Build Validation:** Verifies the app compiles correctly into an APK.
 4. **Artifact Deployment:** Uploads the resulting APK for immediate testing.
 
@@ -353,7 +355,7 @@ com.mostafa.impostle
 │   └── repository/   # Repo implementations (Network, Settings)
 ├── di/               # Hilt Modules (App, Socket, Dispatchers, Strategies)
 ├── domain/
-│   ├── e2e/          # Headless E2E test engine (fakes & router)
+│   ├── integration/  # Domain Local Integration Tests (fakes & router)
 │   ├── engine/       # Orchestrators (GameServer, GameClient, GameSession)
 │   ├── logic/        # Reducers, Managers, Pair Generators
 │   ├── model/        # Sealed classes (Phases, Messages, Data)

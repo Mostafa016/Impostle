@@ -1,12 +1,12 @@
-package com.mostafa.impostle.domain.e2e
+package com.mostafa.impostle.domain.integration
 
 import com.mostafa.impostle.data.repository.GameSessionRepositoryImpl
-import com.mostafa.impostle.domain.e2e.fakes.FakeClientNetworkRepository
-import com.mostafa.impostle.domain.e2e.fakes.FakeServerNetworkRepository
-import com.mostafa.impostle.domain.e2e.fakes.FakeWordRepository
-import com.mostafa.impostle.domain.e2e.fakes.InMemoryNetworkRouter
 import com.mostafa.impostle.domain.engine.GameClient
 import com.mostafa.impostle.domain.engine.GameServer
+import com.mostafa.impostle.domain.integration.fakes.FakeClientNetworkRepository
+import com.mostafa.impostle.domain.integration.fakes.FakeServerNetworkRepository
+import com.mostafa.impostle.domain.integration.fakes.FakeWordRepository
+import com.mostafa.impostle.domain.integration.fakes.InMemoryNetworkRouter
 import com.mostafa.impostle.domain.logic.SessionManager
 import com.mostafa.impostle.domain.model.ClientEvent
 import com.mostafa.impostle.domain.model.GameCategory
