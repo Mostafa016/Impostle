@@ -1,6 +1,7 @@
 package com.mostafa.impostle.presentation.screen.mainmenu
 
 import app.cash.turbine.test
+import com.mostafa.impostle.presentation.fakes.FakePermissionsRepository
 import com.mostafa.impostle.presentation.fakes.FakeSettingsRepository
 import com.mostafa.impostle.presentation.util.MainDispatcherRule
 import com.mostafa.impostle.presentation.util.Routes
@@ -23,10 +24,12 @@ class MainMenuViewModelTest {
 
     private lateinit var viewModel: MainMenuViewModel
     private lateinit var fakeSettingsRepo: FakeSettingsRepository
+    private lateinit var fakePermissionsRepository: FakePermissionsRepository
 
     private fun setupViewModel(initialName: String? = null) {
         fakeSettingsRepo = FakeSettingsRepository(initialPlayerName = initialName)
-        viewModel = MainMenuViewModel(fakeSettingsRepo, UnconfinedTestDispatcher())
+        fakePermissionsRepository = FakePermissionsRepository()
+        viewModel = MainMenuViewModel(fakeSettingsRepo, fakePermissionsRepository, UnconfinedTestDispatcher())
     }
 
     @Test
