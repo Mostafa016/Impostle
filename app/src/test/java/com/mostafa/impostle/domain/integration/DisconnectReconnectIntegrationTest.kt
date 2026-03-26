@@ -1,4 +1,4 @@
-package com.mostafa.impostle.domain.e2e
+package com.mostafa.impostle.domain.integration
 
 import com.mostafa.impostle.domain.model.GamePhase
 import com.mostafa.impostle.domain.model.RoundData
@@ -20,7 +20,7 @@ import org.junit.Test
  *  5. All players resume the phase that was active before the drop.
  *  6. Bob receives a [ServerMessage.ReconnectionFullStateSync] and his local state is in sync.
  */
-class DisconnectReconnectE2ETest : BaseE2ETest() {
+class DisconnectReconnectIntegrationTest : BaseIntegrationTest() {
     override val gameCode = "RECONNECT"
 
     @Test

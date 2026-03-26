@@ -17,11 +17,24 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Qualifier
 import javax.inject.Singleton
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(
     name = "impostle_game_settings",
 )
+
+private val Context.permissionsDataStore: DataStore<Preferences> by preferencesDataStore(
+    name = "impostle_game_permissions",
+)
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class GameSettingsDataStore
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class GamePermissionsDataStore
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -40,9 +53,17 @@ object AppModule {
 
     @Provides
     @Singleton
+    @GameSettingsDataStore
     fun provideSettingsPreferencesDataStore(
         @ApplicationContext context: Context,
     ): DataStore<Preferences> = context.settingsDataStore
+
+    @Provides
+    @Singleton
+    @GamePermissionsDataStore
+    fun providePermissionsPreferencesDataStore(
+        @ApplicationContext context: Context,
+    ): DataStore<Preferences> = context.permissionsDataStore
 
     @Provides
     @Singleton

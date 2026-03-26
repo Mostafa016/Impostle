@@ -189,4 +189,12 @@
     <string name="to_resume_the_game">لاستئناف اللعبة</string>
     <string name="disconnected">منقطع</string>
     <string name="were_the_imposter">كنت المدعي!</string>
+    <string name="this_permission_was_permanently_denied_please_enable_it_in_settings">تم رفض هذا الإذن بشكل نهائي. يرجى تفعيله من الإعدادات.</string>
+    <string name="open_settings">فتح الإعدادات</string>
+    <string name="grant_permission">منح الإذن</string>
+    <string name="some_permissions_were_permanently_denied_please_enable_them_in_settings">تم رفض بعض الأذونات بشكل نهائي. يرجى تفعيلها من الإعدادات.</string>
+    <string name="grant_permissions">منح الأذونات</string>
+    <string name="notification_permission_rationale">الإشعارات مطلوبة لعرض حالة اللعبة في الخلفية.</string>
+    <string name="unset_player_name">\؟؟؟</string>
+    <string name="not_now">ليس الآن</string>
 </resources>

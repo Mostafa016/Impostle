@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.mostafa.impostle.core.util.Debugging.TAG
 import com.mostafa.impostle.data.local.settings.AppLocaleHelper
+import com.mostafa.impostle.di.GameSettingsDataStore
 import com.mostafa.impostle.domain.model.AppLocales
 import com.mostafa.impostle.domain.model.UserSettings
 import com.mostafa.impostle.domain.repository.SettingsRepository
@@ -23,7 +24,7 @@ import kotlin.uuid.Uuid
 class DataStoreSettingsRepository
     @Inject
     constructor(
-        private val settingsDataStore: DataStore<Preferences>,
+        @GameSettingsDataStore private val settingsDataStore: DataStore<Preferences>,
         private val appLocaleHelper: AppLocaleHelper,
     ) : SettingsRepository {
         @OptIn(ExperimentalUuidApi::class)

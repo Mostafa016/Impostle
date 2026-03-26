@@ -4,6 +4,7 @@ import com.mostafa.impostle.data.local.network.LoopbackDataSource
 import com.mostafa.impostle.data.local.network.nsd.discovery.NetworkDiscovery
 import com.mostafa.impostle.data.local.network.nsd.resolution.NetworkResolution
 import com.mostafa.impostle.data.local.network.socket.client.SocketClient
+import com.mostafa.impostle.data.repository.DataStorePermissionsRepository
 import com.mostafa.impostle.data.repository.DataStoreSettingsRepository
 import com.mostafa.impostle.data.repository.GameSessionRepositoryImpl
 import com.mostafa.impostle.data.repository.HostServerNetworkRepository
@@ -11,6 +12,7 @@ import com.mostafa.impostle.data.repository.InMemoryWordRepository
 import com.mostafa.impostle.data.repository.LoopbackClientNetworkRepository
 import com.mostafa.impostle.data.repository.RemoteClientNetworkRepository
 import com.mostafa.impostle.domain.repository.GameSessionRepository
+import com.mostafa.impostle.domain.repository.PermissionsRepository
 import com.mostafa.impostle.domain.repository.ServerNetworkRepository
 import com.mostafa.impostle.domain.repository.SettingsRepository
 import com.mostafa.impostle.domain.repository.WordRepository
@@ -39,6 +41,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindWordRepository(inMemoryWordRepository: InMemoryWordRepository): WordRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPermissionsRepository(dataStorePermissionsRepository: DataStorePermissionsRepository): PermissionsRepository
 
     companion object {
         @Provides

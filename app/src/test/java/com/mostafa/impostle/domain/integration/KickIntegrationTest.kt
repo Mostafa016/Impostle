@@ -1,6 +1,6 @@
 // --- START OF FILE KickE2ETest.kt ---
 
-package com.mostafa.impostle.domain.e2e
+package com.mostafa.impostle.domain.integration
 
 import app.cash.turbine.test
 import com.mostafa.impostle.domain.model.ClientEvent
@@ -29,7 +29,7 @@ import org.junit.Test
  *  3. Alice kicks the imposter.
  *  4. All remaining players jump to [GamePhase.GameResults] (civilians win).
  */
-class KickE2ETest : BaseE2ETest() {
+class KickIntegrationTest : BaseIntegrationTest() {
     override val gameCode = "KICK"
 
     @Test

@@ -1,4 +1,4 @@
-package com.mostafa.impostle.domain.e2e.fakes
+package com.mostafa.impostle.domain.integration.fakes
 
 import com.mostafa.impostle.domain.model.ClientMessage
 import com.mostafa.impostle.domain.model.ClientState

@@ -3,10 +3,12 @@ package com.mostafa.impostle.presentation.screen.creategame
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mostafa.impostle.BuildConfig
 import com.mostafa.impostle.R
 import com.mostafa.impostle.core.util.Debugging.TAG
 import com.mostafa.impostle.di.IoDispatcher
 import com.mostafa.impostle.domain.engine.GameSession
+import com.mostafa.impostle.domain.logic.GameCodeGenerator
 import com.mostafa.impostle.domain.model.SessionState
 import com.mostafa.impostle.domain.repository.SettingsRepository
 import com.mostafa.impostle.presentation.service.SessionController
@@ -45,8 +47,7 @@ class CreateGameViewModel
 
         private fun createGame() {
             viewModelScope.launch(ioDispatcher) {
-                // TODO: Important: replace it with GameCodeGenerator.generate() when done testing
-                val gameCode = "AAAA"
+                val gameCode = if (BuildConfig.DEBUG) "AAAA" else GameCodeGenerator.generate()
                 val settings = settingsRepository.userSettings.first()
                 sessionController.startHost(gameCode, settings.playerId)
 

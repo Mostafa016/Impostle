@@ -1,7 +1,7 @@
-package com.mostafa.impostle.domain.e2e
+package com.mostafa.impostle.domain.integration
 
 import android.util.Log
-import com.mostafa.impostle.domain.e2e.fakes.InMemoryNetworkRouter
+import com.mostafa.impostle.domain.integration.fakes.InMemoryNetworkRouter
 import com.mostafa.impostle.domain.model.GameCategory
 import com.mostafa.impostle.domain.model.GamePhase
 import com.mostafa.impostle.domain.model.RoundData
@@ -31,7 +31,7 @@ import org.junit.Test
  * and SessionManager rules hold up under high concurrency and extreme edge cases.
  */
 @ExperimentalCoroutinesApi
-class StressTestsE2ETest {
+class StressIntegrationTest {
     private lateinit var router: InMemoryNetworkRouter
     private lateinit var alice: HeadlessPlayer // host
 
