@@ -375,7 +375,7 @@ com.mostafa.impostle
 
 You can download the latest automated build here:
 
-[Download Latest APK (Release)](https://nightly.link/Mostafa016/Impostle/workflows/android_ci/main/Impostle-Release-APK.zip?h=6f23673eeb26237c8314893ee266a3edf6581486)
+[Download Latest APK (Release)](https://nightly.link/Mostafa016/Impostle/workflows/android_ci/main/Impostle-Release-APK.zip)
 *(Builds are automatically generated via GitHub Actions on every push to main)*
 
 ## Getting Started
