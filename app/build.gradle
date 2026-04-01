@@ -22,6 +22,11 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    buildFeatures {
+        // This replaces the old gradle.properties flag
+        buildConfig = true
+    }
+
     def localProps = new Properties()
     def localPropertiesFile = rootProject.file('local.properties')
     if (localPropertiesFile.exists()) {
