@@ -127,7 +127,7 @@ class KtorSocketServer
         }
 
         //region startListening() Helpers
-        private fun setupServer() {
+        private suspend fun setupServer() {
             val selectorManager = SelectorManager(Dispatchers.IO)
             val serverIP = wifiHelper.ipAddress
             socketServer =

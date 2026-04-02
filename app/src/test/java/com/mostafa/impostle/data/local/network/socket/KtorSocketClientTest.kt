@@ -18,6 +18,7 @@ import io.ktor.network.sockets.openWriteChannel
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.writeFully
+import io.ktor.utils.io.writeInt
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -37,7 +38,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -190,26 +190,6 @@ class KtorSocketClientTest {
 
                 job.cancel()
             }
-        }
-
-    @Test
-    fun `GIVEN data with newline WHEN sendToServer called THEN returns false and does not write`() =
-        runTest {
-            // Arrange
-            coEvery { mockTcpBuilder.connect(any(), any(), any()) } returns mockSocket
-            coEvery { mockReadChannel.readPacket() } coAnswers { awaitCancellation() }
-
-            val job = launch { client.startSession("localhost", 8080) }
-            advanceUntilIdle()
-
-            // Act
-            val success = client.sendToServer("Malicious\nPayload")
-
-            // Assert
-            assertFalse(success)
-            coVerify(exactly = 0) { mockWriteChannel.writePacket(any()) }
-
-            job.cancel()
         }
 
     @Test

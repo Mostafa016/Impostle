@@ -11,9 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -23,7 +20,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -165,7 +164,7 @@ fun MainMenuContent(
                 BrutalistButton(
                     text = stringResource(R.string.create_game),
                     subtext = stringResource(R.string.host_a_local_lobby),
-                    icon = Icons.Default.Add,
+                    icon = ImageVector.vectorResource(R.drawable.sharp_add_24),
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     enabled = isCreateGameEnabled,
@@ -177,7 +176,7 @@ fun MainMenuContent(
                 BrutalistButton(
                     text = stringResource(R.string.join_game),
                     subtext = stringResource(R.string.enter_code_to_connect),
-                    icon = Icons.AutoMirrored.Filled.ArrowForward,
+                    icon = ImageVector.vectorResource(R.drawable.sharp_arrow_forward_24),
                     enabled = isJoinGameEnabled,
                     onClick = onJoinGameClick,
                 )

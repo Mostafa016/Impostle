@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -178,7 +176,7 @@ fun QuestionContent(
                 if (isCurrentPlayerAsking) {
                     BrutalistButton(
                         text = stringResource(R.string.done),
-                        icon = Icons.Default.CheckCircle,
+                        icon = ImageVector.vectorResource(R.drawable.sharp_check_24),
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
                         enabled = !isDoneAsking,

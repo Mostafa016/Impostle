@@ -11,9 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -23,7 +20,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -126,7 +125,7 @@ fun DisconnectedContent(
                     // Rejoin Button (Primary)
                     BrutalistButton(
                         text = stringResource(R.string.rejoin),
-                        icon = Icons.Default.Refresh,
+                        icon = ImageVector.vectorResource(R.drawable.sharp_refresh_24),
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
                         enabled = isReconnectEnabled,
@@ -136,7 +135,7 @@ fun DisconnectedContent(
                     // Main Menu Button (Secondary)
                     BrutalistButton(
                         text = stringResource(R.string.go_to_main_menu),
-                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        icon = ImageVector.vectorResource(R.drawable.sharp_arrow_back_24),
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
                         enabled = isMainMenuEnabled,

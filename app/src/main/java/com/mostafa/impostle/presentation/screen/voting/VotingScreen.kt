@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -166,7 +164,7 @@ fun VotingContent(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
-                                imageVector = Icons.Default.CheckCircle,
+                                imageVector = ImageVector.vectorResource(R.drawable.sharp_check_24),
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(48.dp),
@@ -188,7 +186,7 @@ fun VotingContent(
                 } else {
                     BrutalistButton(
                         text = stringResource(R.string.confirm_vote),
-                        icon = Icons.Default.CheckCircle,
+                        icon = ImageVector.vectorResource(R.drawable.sharp_check_24),
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
                         enabled = votedPlayer != null,

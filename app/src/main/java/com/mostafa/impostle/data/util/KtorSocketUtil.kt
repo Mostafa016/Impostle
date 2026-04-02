@@ -7,7 +7,9 @@ import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.errors.EOFException
 import io.ktor.utils.io.errors.IOException
 import io.ktor.utils.io.readFully
+import io.ktor.utils.io.readInt
 import io.ktor.utils.io.writeFully
+import io.ktor.utils.io.writeInt
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ClosedReceiveChannelException

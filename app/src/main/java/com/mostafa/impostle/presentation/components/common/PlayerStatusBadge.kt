@@ -5,8 +5,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -43,7 +41,14 @@ fun PlayerStatusBadge(
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            imageVector = if (isReady) Icons.Default.Check else ImageVector.vectorResource(R.drawable.sharp_hourglass_24),
+            imageVector =
+                if (isReady) {
+                    ImageVector.vectorResource(
+                        R.drawable.sharp_check_24,
+                    )
+                } else {
+                    ImageVector.vectorResource(R.drawable.sharp_hourglass_24)
+                },
             contentDescription = null,
             tint = iconColor,
             modifier = Modifier.size(20.dp),

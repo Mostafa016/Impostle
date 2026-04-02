@@ -3,8 +3,6 @@ package com.mostafa.impostle.presentation.screen.replayroundchoice.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -30,7 +28,7 @@ fun HostDecisionControls(
         BrutalistButton(
             text = stringResource(R.string.additional_round),
             subtext = stringResource(R.string.ask_more_questions),
-            icon = Icons.Default.Add,
+            icon = ImageVector.vectorResource(R.drawable.sharp_add_24),
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
             enabled = isReplayEnabled,

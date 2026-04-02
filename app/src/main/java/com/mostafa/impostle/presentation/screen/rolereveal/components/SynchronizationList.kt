@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -138,7 +136,7 @@ private fun ReadyStatusHero() {
                         .border(2.dp, Color.Black, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                Icon(ImageVector.vectorResource(R.drawable.sharp_check_24), null, tint = Color.White, modifier = Modifier.size(18.dp))
             }
         }
 

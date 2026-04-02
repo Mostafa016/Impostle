@@ -10,9 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -21,8 +18,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
+import com.mostafa.impostle.R
 import com.mostafa.impostle.presentation.components.modifier.brutalistCard
 import com.mostafa.impostle.presentation.screen.settings.GameLocales
 import com.mostafa.impostle.presentation.theme.Dimens
@@ -60,7 +60,14 @@ fun BrutalistDropdown(
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Icon(
-                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                imageVector =
+                    if (expanded) {
+                        ImageVector.vectorResource(
+                            R.drawable.sharp_keyboard_arrow_up_24,
+                        )
+                    } else {
+                        ImageVector.vectorResource(R.drawable.sharp_keyboard_arrow_down_24)
+                    },
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurface,
             )

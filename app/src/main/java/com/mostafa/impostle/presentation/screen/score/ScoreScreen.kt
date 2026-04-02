@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -208,7 +206,7 @@ fun ScoreContent(
                     ) {
                         BrutalistButton(
                             text = stringResource(R.string.play_again).uppercase(),
-                            icon = Icons.Default.Refresh,
+                            icon = ImageVector.vectorResource(R.drawable.sharp_refresh_24),
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary,
                             enabled = isReplayEnabled,

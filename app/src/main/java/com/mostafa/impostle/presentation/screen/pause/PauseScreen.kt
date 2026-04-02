@@ -17,8 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -208,7 +206,7 @@ fun PauseContent(
                     ClientWaitingStatus()
                     BrutalistButton(
                         text = stringResource(R.string.leave_game),
-                        icon = Icons.AutoMirrored.Filled.ExitToApp,
+                        icon = ImageVector.vectorResource(R.drawable.sharp_exit_to_app_24),
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
                         onClick = onGameEnd, // Client leaving acts as ending their game
