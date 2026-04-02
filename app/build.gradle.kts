@@ -26,7 +26,6 @@ android {
     }
 
     buildFeatures {
-        // This replaces the old gradle.properties flag
         buildConfig = true
         compose = true
     }
@@ -68,8 +67,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     androidResources {
@@ -142,15 +141,10 @@ dependencies {
     testImplementation(libs.kotlin.test)
 }
 
-composeCompiler {
-    reportsDestination = layout.buildDirectory.dir("compose_compiler")
-    stabilityConfigurationFile = rootProject.layout.projectDirectory.file("stability_config.conf")
-}
-
 kotlin {
     compilerOptions {
         languageVersion.set(KotlinVersion.KOTLIN_2_0)
-        jvmTarget.set(JvmTarget.JVM_1_8)
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
