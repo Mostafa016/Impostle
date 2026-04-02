@@ -2,7 +2,7 @@
 agp = "9.1.0"
 kotlin = "2.2.10"
 ksp = "2.3.6"
-hilt = "2.56.2"
+hilt = "2.59.2"
 activityCompose = "1.9.0"
 appcompat = "1.6.1"
 compiler = "1.5.12"
@@ -16,6 +16,7 @@ hiltLifecycleViewmodelCompose = "1.3.0"
 hiltNavigationCompose = "1.3.0"
 junit = "1.1.5"
 junitVersion = "4.13.2"
+junitUIVersion = "1.10.6"
 kotlinTest = "2.0.21"
 kotlinxCoroutinesAndroid = "1.9.0"
 kotlinxCoroutinesTest = "1.7.1"
@@ -76,14 +77,13 @@ junit = { module = "junit:junit", version.ref = "junitVersion" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 androidx-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
-androidx-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+androidx-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "junitUIVersion" }
 androidx-junit = { module = "androidx.test.ext:junit", version.ref = "junit" }
 androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espressoCore" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
