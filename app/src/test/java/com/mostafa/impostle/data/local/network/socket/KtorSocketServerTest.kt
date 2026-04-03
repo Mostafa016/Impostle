@@ -17,7 +17,6 @@ import io.ktor.network.sockets.openReadChannel
 import io.ktor.network.sockets.openWriteChannel
 import io.ktor.network.sockets.toJavaAddress
 import io.ktor.utils.io.ByteChannel
-import io.ktor.utils.io.close
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -260,5 +259,43 @@ class KtorSocketServerTest {
 
                 job.cancel()
             }
+        }
+
+    @Test
+    fun `GIVEN client connected WHEN concurrent writes to same client THEN emits messages in order`() =
+        runTest {
+            var clientReturned = false
+            coEvery { mockServerSocket.accept() } coAnswers {
+                if (!clientReturned) {
+                    clientReturned = true
+                    mockClientSocket1
+                } else {
+                    awaitCancellation()
+                }
+            }
+
+            server.messageEvents.test {
+                val job = launch { server.startListening() }
+                advanceUntilIdle()
+
+                // Simulate Client sending "Hello Server"
+                repeat(10) { count ->
+                    launch {
+                        server.sendToClient("Client1_IP", "Hello Server $count")
+                    }
+                }
+                advanceUntilIdle()
+
+                repeat(10) { count ->
+                    val event = awaitItem()
+                    assertTrue(event is MessageEvent.Sent)
+                    assertEquals("Client1_IP", event.clientId)
+                    assertEquals("Hello Server $count", event.data)
+                }
+
+                job.cancel()
+            }
+
+            advanceUntilIdle()
         }
 }

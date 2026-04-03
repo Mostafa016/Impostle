@@ -18,6 +18,7 @@ import io.ktor.network.sockets.toJavaAddress
 import io.ktor.util.network.port
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -49,9 +50,15 @@ class KtorSocketServer
 
         private var socketServer: ServerSocket? = null
         private var serverPort: Int? = null
-        private val clientConnections =
-            ConcurrentHashMap<String, Connection>() // ConcurrentHashMap<ClientID, Ktor Connection>
-        private val clientJobs = ConcurrentHashMap<String, Job>() // To manage read jobs
+
+        // Wrapper to hold the connection and its dedicated thread-safe channel
+        private data class ActiveClient(
+            val connection: Connection,
+            val sendChannel: Channel<String>,
+        )
+
+        private val activeClients = ConcurrentHashMap<String, ActiveClient>()
+        private val clientJobs = ConcurrentHashMap<String, Job>()
 
         override suspend fun startListening() {
             val currentListeningState = _listeningState.value
@@ -94,32 +101,24 @@ class KtorSocketServer
             clientId: String,
             data: String,
         ): Boolean {
-            try {
-                val clientSendChannel = clientConnections[clientId]!!.output
-                clientSendChannel.writePacket(data)
-                _messageEvents.tryEmit(MessageEvent.Sent(clientId, data))
-                return true
-            } catch (e: NullPointerException) {
-                Log.e(
-                    TAG,
-                    "Client ($clientId) is not connected or clientConnections state is inconsistent.",
-                )
+            val activeClient = activeClients[clientId]
+            if (activeClient == null || activeClient.connection.socket.isClosed) {
+                Log.e(TAG, "Client ($clientId) is not connected.")
                 return false
             }
+            // Thread-safe, non-blocking send to the channel
+            return activeClient.sendChannel.trySend(data).isSuccess
         }
 
         override suspend fun sendToAll(data: String): Boolean {
-            clientConnections.keys.forEach { clientId ->
-                val failure = !sendToClient(clientId, data)
-                if (failure) {
-                    Log.e(
-                        TAG,
-                        "Failed to send to clientId $clientId, skipped sending to rest of clients",
-                    )
-                    return false
+            var allSuccess = true
+            activeClients.keys.forEach { clientId ->
+                if (!sendToClient(clientId, data)) {
+                    Log.e(TAG, "Failed to queue message for clientId $clientId")
+                    allSuccess = false
                 }
             }
-            return true
+            return allSuccess
         }
 
         override fun disconnectClient(clientId: String) {
@@ -133,9 +132,8 @@ class KtorSocketServer
             socketServer =
                 aSocket(selectorManager)
                     .tcp()
-                    .bind(serverIP!!, 0) {
-                        reuseAddress = true
-                    }.also {
+                    .bind(serverIP!!, 0) { reuseAddress = true }
+                    .also {
                         serverPort = it.localAddress.toJavaAddress().port
                         _listeningState.value = ServerListeningState.Listening(serverPort!!)
                         Log.d(TAG, "Server is listening at ${it.localAddress}")
@@ -148,11 +146,10 @@ class KtorSocketServer
                     val clientSocket = socketServer!!.accept()
                     Log.d(TAG, "Server accepted connection: ${clientSocket.remoteAddress}")
 
-                    val clientId = clientSocket.remoteAddress.toString() // Or a better unique ID
+                    val clientId = clientSocket.remoteAddress.toString()
 
-                    // Prevent duplicate connections from same ID if cleanup was slow
-                    if (clientConnections.containsKey(clientId)) {
-                        Log.e(TAG, "Client ($clientId) already connected to server. Closing.")
+                    if (activeClients.containsKey(clientId)) {
+                        Log.e(TAG, "Client ($clientId) already connected to server. Closing duplicate.")
                         clientSocket.close()
                         continue
                     }
@@ -163,11 +160,17 @@ class KtorSocketServer
                             clientSocket.openReadChannel(),
                             clientSocket.openWriteChannel(autoFlush = true),
                         )
-                    clientConnections[clientId] = connection
 
-                    // Launch a dedicated reader job for this client
+                    // Create a buffered channel for outgoing messages
+                    val sendChannel = Channel<String>(capacity = Channel.BUFFERED)
+                    activeClients[clientId] = ActiveClient(connection, sendChannel)
                     _connectionEvents.emit(ConnectionEvent.Connected(clientId))
-                    val clientJob = launch { launchClientReadLoop(clientId, connection) }
+                    // Launch both read and write loops for this client
+                    val clientJob =
+                        launch {
+                            launch { launchClientReadLoop(clientId, connection) }
+                            launch { launchClientWriteLoop(clientId, connection, sendChannel) }
+                        }
                     clientJobs[clientId] = clientJob
                 }
             }
@@ -192,7 +195,28 @@ class KtorSocketServer
             } catch (e: Exception) {
                 Log.e(TAG, "Client $clientId read loop error: ${e.message}", e)
             } finally {
-                Log.d(TAG, "Client $clientId read loop finished.")
+                cleanupClient(clientId)
+            }
+        }
+
+        // The Single Writer Loop
+        private suspend fun launchClientWriteLoop(
+            clientId: String,
+            connection: Connection,
+            sendChannel: Channel<String>,
+        ) {
+            try {
+                for (message in sendChannel) {
+                    if (connection.socket.isClosed) break
+                    connection.output.writePacket(message)
+                    _messageEvents.emit(MessageEvent.Sent(clientId, message))
+                }
+            } catch (e: CancellationException) {
+                Log.i(TAG, "Client write loop cancelled")
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Client $clientId write loop error: ${e.message}", e)
+            } finally {
                 cleanupClient(clientId)
             }
         }
@@ -200,8 +224,9 @@ class KtorSocketServer
 
         //region General Helpers
         private fun cleanupClient(clientId: String) {
-            clientConnections.remove(clientId)?.also { connection ->
-                connection.socket.close()
+            activeClients.remove(clientId)?.also { activeClient ->
+                activeClient.sendChannel.cancel() // Stop accepting new messages
+                activeClient.connection.socket.close()
                 clientJobs.remove(clientId)?.cancel()
                 _connectionEvents.tryEmit(ConnectionEvent.Disconnected(clientId))
                 Log.i(TAG, "Cleaned up client: $clientId")
