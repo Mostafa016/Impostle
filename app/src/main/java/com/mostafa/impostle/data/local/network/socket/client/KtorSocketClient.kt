@@ -14,7 +14,9 @@ import io.ktor.network.sockets.openReadChannel
 import io.ktor.network.sockets.openWriteChannel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.isActive
@@ -40,26 +42,35 @@ class KtorSocketClient
         private lateinit var serverConnection: Connection
         private var selectorManager: SelectorManager? = null
 
+        // Dedicated channel for outgoing messages
+        private var sendChannel: Channel<String>? = null
+
         override suspend fun startSession(
             host: String,
             port: Int,
-        ) {
-            try {
-                setupClient(host, port)
-                launchServerReadLoop()
-            } catch (e: CancellationException) {
-                Log.w(TAG, "Client connection attempt cancelled.")
-                withContext(NonCancellable) {
-                    _connectionEvents.emit(ConnectionEvent.Disconnected(host))
+        ): Unit =
+            coroutineScope {
+                try {
+                    setupClient(host, port)
+                    sendChannel = Channel(capacity = Channel.BUFFERED)
+                    val readJob = launch { launchServerReadLoop() }
+                    val writeJob = launch { launchServerWriteLoop() }
+
+                    readJob.join()
+                    writeJob.cancel()
+                } catch (e: CancellationException) {
+                    Log.w(TAG, "Client connection attempt cancelled.")
+                    withContext(NonCancellable) {
+                        _connectionEvents.emit(ConnectionEvent.Disconnected(host))
+                    }
+                    throw e
+                } catch (e: Exception) {
+                    Log.e(TAG, "SocketClient: Exception in session: ${e.message}", e)
+                    _connectionEvents.emit(ConnectionEvent.Error(host, e.message.toString()))
+                } finally {
+                    cleanup()
                 }
-                throw e
-            } catch (e: Exception) {
-                Log.e(TAG, "SocketClient: Exception in session: ${e.message}", e)
-                _connectionEvents.emit(ConnectionEvent.Error(host, e.message.toString()))
-            } finally {
-                cleanup()
             }
-        }
 
         override suspend fun disconnect(): Unit =
             coroutineScope {
@@ -75,22 +86,12 @@ class KtorSocketClient
             }
 
         override suspend fun sendToServer(data: String): Boolean {
-            return try {
-                if (!::serverConnection.isInitialized || serverConnection.socket.isClosed) {
-                    Log.e(TAG, "SocketClient: Cannot send, socket closed.")
-                    return false
-                }
-                serverConnection.output.writePacket(data)
-                _messageEvents.emit(
-                    MessageEvent.Sent(serverConnection.socket.remoteAddress.toString(), data),
-                )
-                true
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.e(TAG, "SocketClient: Failed to send data", e)
-                false
+            if (!::serverConnection.isInitialized || serverConnection.socket.isClosed || sendChannel == null) {
+                Log.e(TAG, "SocketClient: Cannot send, socket or channel closed.")
+                return false
             }
+            // Thread-safe, non-blocking send
+            return sendChannel?.trySend(data)?.isSuccess ?: false
         }
 
         private suspend fun setupClient(
@@ -119,47 +120,60 @@ class KtorSocketClient
             }
         }
 
-        private suspend fun launchServerReadLoop() =
-            coroutineScope {
-                launch {
-                    try {
-                        while (isActive && !serverConnection.socket.isClosed) {
-                            val line = serverConnection.input.readPacket()
-                            if (line == null) {
-                                Log.i(TAG, "SocketClient: Server closed connection (EOF).")
-                                _connectionEvents.emit(
-                                    ConnectionEvent.Disconnected(
-                                        serverConnection.socket.remoteAddress.toString(),
-                                    ),
-                                )
-                                break
-                            }
-                            Log.d(TAG, "SocketClient: Read packet: $line")
-                            _messageEvents.emit(
-                                MessageEvent.Received(
-                                    serverConnection.socket.remoteAddress.toString(),
-                                    line,
-                                ),
-                            )
-                        }
-                    } catch (e: CancellationException) {
-                        Log.d(TAG, "SocketClient: Read loop cancelled")
-                        throw e
-                    } catch (e: Exception) {
-                        // Handle actual IO errors (timeout, malformed, etc)
-                        Log.e(TAG, "SocketClient: Read Loop Error: ${e.message}", e)
+        private suspend fun launchServerReadLoop() {
+            try {
+                while (currentCoroutineContext().isActive && !serverConnection.socket.isClosed) {
+                    val line = serverConnection.input.readPacket()
+                    if (line == null) {
+                        Log.i(TAG, "SocketClient: Server closed connection (EOF).")
                         _connectionEvents.emit(
-                            ConnectionEvent.Error(
-                                serverConnection.socket.remoteAddress.toString(),
-                                e.message ?: "Unknown Error",
-                            ),
+                            ConnectionEvent.Disconnected(serverConnection.socket.remoteAddress.toString()),
                         )
+                        break
                     }
+                    Log.d(TAG, "SocketClient: Read packet: $line")
+                    _messageEvents.emit(
+                        MessageEvent.Received(serverConnection.socket.remoteAddress.toString(), line),
+                    )
                 }
+            } catch (e: CancellationException) {
+                Log.d(TAG, "SocketClient: Read loop cancelled")
+                throw e
+            } catch (e: Exception) {
+                // Handle actual IO errors (timeout, malformed, etc)
+                Log.e(TAG, "SocketClient: Read Loop Error: ${e.message}", e)
+                _connectionEvents.emit(
+                    ConnectionEvent.Error(
+                        serverConnection.socket.remoteAddress.toString(),
+                        e.message ?: "Unknown Error",
+                    ),
+                )
             }
+        }
+
+        // The Single Writer Loop
+        private suspend fun launchServerWriteLoop() {
+            val channel = sendChannel ?: return
+            val hostAddress = serverConnection.socket.remoteAddress.toString()
+
+            try {
+                for (message in channel) {
+                    if (serverConnection.socket.isClosed) break
+                    serverConnection.output.writePacket(message)
+                    _messageEvents.emit(MessageEvent.Sent(hostAddress, message))
+                }
+            } catch (e: CancellationException) {
+                Log.i(TAG, "Client write loop cancelled")
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "SocketClient: Write Loop Error: ${e.message}", e)
+            }
+        }
 
         private suspend fun cleanup() {
             withContext(NonCancellable) {
+                sendChannel?.cancel() // Stop accepting messages
+                sendChannel = null
                 try {
                     if (::serverConnection.isInitialized && !serverConnection.socket.isClosed) {
                         serverConnection.socket.close()

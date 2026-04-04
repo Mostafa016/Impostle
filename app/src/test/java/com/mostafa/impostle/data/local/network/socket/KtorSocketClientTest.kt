@@ -157,7 +157,7 @@ class KtorSocketClientTest {
         }
 
     @Test
-    fun `GIVEN connected WHEN sendToServer called THEN writes string with newline`() =
+    fun `GIVEN connected WHEN sendToServer called THEN writes string`() =
         runTest {
             // Arrange
             coEvery { mockTcpBuilder.connect(any(), any(), any()) } returns mockSocket
@@ -245,6 +245,40 @@ class KtorSocketClientTest {
                     "Expected Disconnected but got $disconnected",
                     disconnected is ConnectionEvent.Disconnected,
                 )
+
+                job.cancel()
+            }
+        }
+
+    @Test
+    fun `GIVEN connected WHEN concurrent writes THEN emits messages in order`() =
+        runTest {
+            coEvery { mockTcpBuilder.connect(any(), any(), any()) } returns mockSocket
+            coEvery { mockReadChannel.readPacket() } coAnswers { awaitCancellation() }
+            coEvery { mockWriteChannel.writePacket(any()) } returns Unit
+
+            // Fix: Mock low-level byte operations so the real writePacket() works
+            coEvery { mockWriteChannel.writeInt(any()) } returns Unit
+            coEvery { mockWriteChannel.writeFully(any<ByteArray>()) } returns Unit
+            coEvery { mockWriteChannel.flush() } returns Unit
+
+            client.messageEvents.test {
+                val job = launch { client.startSession("localhost", 8000) }
+
+                // Simulate Client sending "Hello Server"
+                repeat(10) { count ->
+                    launch {
+                        client.sendToServer("Hello Server $count")
+                    }
+                }
+                advanceUntilIdle()
+
+                repeat(10) { count ->
+                    val event = awaitItem()
+                    assertTrue(event is MessageEvent.Sent)
+                    assertEquals("192.168.1.100:8080", event.clientId)
+                    assertEquals("Hello Server $count", event.data)
+                }
 
                 job.cancel()
             }
