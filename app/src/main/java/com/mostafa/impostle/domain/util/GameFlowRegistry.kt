@@ -77,6 +77,9 @@ object GameFlowRegistry {
 
             // Sent when to a player who was kicked
             ServerMessage.YouWereKicked -> null
+
+            // Sent to detect Wi-Fi disconnects
+            is ServerMessage.Heartbeat -> throw IllegalArgumentException("Message should be filtered")
         }
 
     /**
@@ -115,5 +118,8 @@ object GameFlowRegistry {
 
             // Kicking
             is ClientMessage.RequestKickPlayer -> setOf(GamePhase.Lobby, GamePhase.Paused)
+
+            // Sent to detect Wi-Fi disconnects
+            is ClientMessage.Heartbeat -> throw IllegalArgumentException("Message should be filtered")
         }
 }

@@ -9,6 +9,8 @@ import com.mostafa.impostle.data.local.network.socket.ConnectionEvent
 import com.mostafa.impostle.data.local.network.socket.MessageEvent
 import com.mostafa.impostle.data.local.network.socket.server.ServerListeningState
 import com.mostafa.impostle.data.local.network.socket.server.SocketServer
+import com.mostafa.impostle.data.util.PingTimings.PING_INTERVAL_MS
+import com.mostafa.impostle.data.util.PingTimings.PING_TIMEOUT_MS
 import com.mostafa.impostle.domain.model.ClientMessage
 import com.mostafa.impostle.domain.model.NetworkJson
 import com.mostafa.impostle.domain.model.PlayerConnectionEvent
@@ -17,6 +19,7 @@ import com.mostafa.impostle.domain.model.ServerState
 import com.mostafa.impostle.domain.repository.ServerNetworkRepository
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,7 +32,6 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.encodeToString
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 
@@ -43,6 +45,7 @@ class HostServerNetworkRepository
         private val _serverState = MutableStateFlow<ServerState>(ServerState.Idle)
         override val serverState: StateFlow<ServerState> = _serverState
 
+        private val clientLastSeen = ConcurrentHashMap<String, Long>()
         private val sessionManager = SessionManager()
 
         override val incomingMessages: Flow<Pair<String, ClientMessage>> =
@@ -51,12 +54,14 @@ class HostServerNetworkRepository
                     .filterIsInstance(MessageEvent.Received::class)
                     .mapNotNull { event ->
                         try {
+                            clientLastSeen[event.clientId] = System.currentTimeMillis()
                             val message = NetworkJson.decodeFromString<ClientMessage>(event.data)
+                            if (message is ClientMessage.Heartbeat) return@mapNotNull null
                             handleIncomingSession(message, TransportEndpoint.Network(event.clientId))
                         } catch (e: SerializationException) {
                             Log.e(
                                 TAG,
-                                "Failed to parse message from ${event.clientId}: ${e.message},",
+                                "Failed to parse message from ${event.clientId}: ${e.message}",
                                 e,
                             )
                             null
@@ -117,6 +122,7 @@ class HostServerNetworkRepository
             socketServer.connectionEvents
                 .filterIsInstance<ConnectionEvent.Disconnected>()
                 .mapNotNull { event ->
+                    clientLastSeen.remove(event.clientId)
                     val playerTransport = TransportEndpoint.Network(event.clientId)
                     val playerId = sessionManager.getDomainId(playerTransport)
                     if (playerId != null) {
@@ -133,10 +139,8 @@ class HostServerNetworkRepository
 
         override suspend fun start(gameCode: String): Unit =
             coroutineScope {
-                // Start Socket
                 launch { socketServer.startListening() }
 
-                // Wait for Binding
                 val listeningState =
                     try {
                         withTimeout(CONNECTION_STEP_TIMEOUT) {
@@ -149,6 +153,8 @@ class HostServerNetworkRepository
                 when (listeningState) {
                     is ServerListeningState.Listening -> {
                         handleRegistration(gameCode, listeningState.port)
+                        // NEW: Launch the server heartbeat loop
+                        launch { startHeartbeatLoop() }
                         launch {
                             socketServer.listeningState.collect { state ->
                                 // If we encounter an error AFTER startup (e.g. OS kills socket, interface down)
@@ -170,6 +176,30 @@ class HostServerNetworkRepository
                     }
                 }
             }
+
+        private suspend fun startHeartbeatLoop() {
+            val encodedPing = NetworkJson.encodeToString<ServerMessage>(ServerMessage.Heartbeat)
+
+            while (true) {
+                delay(PING_INTERVAL_MS)
+                val now = System.currentTimeMillis()
+
+                // Get all network clients (exclude the Host's loopback connection)
+                val networkClients = sessionManager.getAllNetworkClientIds()
+
+                for (clientId in networkClients) {
+                    // 1. Send Ping
+                    socketServer.sendToClient(clientId, encodedPing)
+
+                    // 2. Check for Timeout
+                    val lastSeen = clientLastSeen[clientId] ?: now
+                    if (now - lastSeen > PING_TIMEOUT_MS) {
+                        Log.w(TAG, "Client $clientId heartbeat timeout. Forcing disconnect.")
+                        socketServer.disconnectClient(clientId)
+                    }
+                }
+            }
+        }
 
         override suspend fun sendToPlayer(
             playerId: String,
@@ -289,6 +319,11 @@ class HostServerNetworkRepository
 
             fun getTransport(domainId: String): TransportEndpoint? = idToTransport[domainId]
 
+            fun getAllNetworkClientIds(): List<String> =
+                transportToId.keys
+                    .filterIsInstance<TransportEndpoint.Network>()
+                    .map { it.clientId }
+
             fun clearSession(transport: TransportEndpoint) {
                 val id = transportToId.remove(transport)
                 if (id != null) {
@@ -303,8 +338,8 @@ class HostServerNetworkRepository
         }
         //endregion
 
+        // 1. Add Timing Constants
         companion object {
             const val CONNECTION_STEP_TIMEOUT = 2500L
-            const val NUMBER_OF_CONNECTION_STEPS = 2
         }
     }

@@ -234,6 +234,20 @@ object ProtocolRegistry {
             // =================================================================
             // SYSTEM / ASYNC MESSAGES
             // =================================================================
+            ServerMessage.Heartbeat::class to
+                MessageDefinition(
+                    code = "S_HRTB",
+                    description = "A heartbeat message to detect half-open TCP connections",
+                    direction = MessageDirection.ServerToClient,
+                    expectedPhase = null, // Can happen anytime during game
+                ),
+            ClientMessage.Heartbeat::class to
+                MessageDefinition(
+                    code = "C_HRTB",
+                    description = "A heartbeat message to detect half-open TCP connections",
+                    direction = MessageDirection.ClientToServer,
+                    expectedPhase = null, // Can happen anytime during game
+                ),
             ServerMessage.PlayerReconnected::class to
                 MessageDefinition(
                     code = "S_RECN",

@@ -129,6 +129,8 @@ object ClientStateReducer {
             is ServerMessage.ReconnectionFullStateSync ->
                 message.data.copy(localPlayerId = data.localPlayerId)
 
+            is ServerMessage.Heartbeat -> throw IllegalArgumentException("Message should be filtered")
+
             // --- MESSAGES WITHOUT DATA UPDATES (handled elsewhere) ---
             is ServerMessage.GameFull -> data
             is ServerMessage.GameAlreadyStarted -> data

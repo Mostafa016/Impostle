@@ -10,6 +10,9 @@ sealed class Message
 sealed class ServerMessage : Message() {
     //region Session Management
     @Serializable
+    data object Heartbeat : ServerMessage()
+
+    @Serializable
     data class PlayerDisconnected(
         val playerId: String,
     ) : ServerMessage()
@@ -128,6 +131,9 @@ sealed class ServerMessage : Message() {
 
 @Serializable
 sealed class ClientMessage : Message() {
+    @Serializable
+    data object Heartbeat : ClientMessage()
+
     @Serializable
     data class RegisterPlayer(
         val playerName: String,

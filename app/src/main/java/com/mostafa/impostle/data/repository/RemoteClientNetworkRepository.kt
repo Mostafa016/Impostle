@@ -11,6 +11,8 @@ import com.mostafa.impostle.data.local.network.nsd.resolution.NsdResolutionState
 import com.mostafa.impostle.data.local.network.socket.ConnectionEvent
 import com.mostafa.impostle.data.local.network.socket.MessageEvent
 import com.mostafa.impostle.data.local.network.socket.client.SocketClient
+import com.mostafa.impostle.data.util.PingTimings.PING_INTERVAL_MS
+import com.mostafa.impostle.data.util.PingTimings.PING_TIMEOUT_MS
 import com.mostafa.impostle.di.IoDispatcher
 import com.mostafa.impostle.domain.model.ClientMessage
 import com.mostafa.impostle.domain.model.ClientState
@@ -21,6 +23,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,8 +35,9 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
-import kotlinx.serialization.encodeToString
 import javax.inject.Inject
+import kotlin.concurrent.atomics.AtomicLong
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 class RemoteClientNetworkRepository
     @Inject
@@ -46,25 +50,26 @@ class RemoteClientNetworkRepository
         private val _clientState = MutableStateFlow<ClientState>(ClientState.Idle)
         override val clientState = _clientState.asStateFlow()
 
-        // Mapping Raw Socket events to Domain Sealed Classes
+        @OptIn(ExperimentalAtomicApi::class)
+        private val lastServerHeartbeat = AtomicLong(System.currentTimeMillis())
+
+        @OptIn(ExperimentalAtomicApi::class)
         override val incomingMessages: Flow<Pair<String, ServerMessage>> =
             socketClient.messageEvents
                 .filterIsInstance(MessageEvent.Received::class)
                 .onEach { Log.d(TAG, "RemoteClientNetworkRepository: Saw event $it") }
                 .mapNotNull { event ->
                     try {
-                        event.clientId to NetworkJson.decodeFromString<ServerMessage>(event.data)
+                        lastServerHeartbeat.store(System.currentTimeMillis())
+
+                        val message = NetworkJson.decodeFromString<ServerMessage>(event.data)
+                        if (message is ServerMessage.Heartbeat) return@mapNotNull null
+
+                        event.clientId to message
                     } catch (e: Exception) {
-                        if (e is CancellationException) {
-                            Log.e(
-                                TAG,
-                                "RemoteClientNetworkRepository: incomingMessages collection cancelled",
-                                e,
-                            )
-                            throw e
-                        }
+                        if (e is CancellationException) throw e
                         Log.e(TAG, "Failed to parse message: ${e.message}")
-                        null // Drop bad packet, keep connection alive
+                        null
                     }
                 }
 
@@ -94,6 +99,8 @@ class RemoteClientNetworkRepository
                         TAG,
                         "RemoteClientRepository Connect: Performed server connection for service $serviceInfo with $host:$port",
                     )
+
+                    launch { startHeartbeatLoop() }
 
                     // 4. Runtime Monitoring (Serialized)
                     // We listen to BOTH messages and connection events in a single sequential flow.
@@ -150,6 +157,31 @@ class RemoteClientNetworkRepository
                     cleanupResources()
                 }
             }
+
+        @OptIn(ExperimentalAtomicApi::class)
+        private suspend fun startHeartbeatLoop() {
+            lastServerHeartbeat.store(System.currentTimeMillis())
+
+            while (true) {
+                delay(PING_INTERVAL_MS)
+
+                // Only ping and check timeouts if we are actually connected
+                if (_clientState.value is ClientState.Connected) {
+                    // 1. Send Ping
+                    sendToServer(ClientMessage.Heartbeat)
+
+                    // 2. Check Timeout
+                    val now = System.currentTimeMillis()
+                    if (now - lastServerHeartbeat.load() > PING_TIMEOUT_MS) {
+                        Log.w(TAG, "Server heartbeat timeout. Forcing disconnect.")
+
+                        _clientState.value = ClientState.Disconnected
+                        cleanupResources()
+                        break
+                    }
+                }
+            }
+        }
 
         override suspend fun disconnect() {
             _clientState.value = ClientState.Idle
