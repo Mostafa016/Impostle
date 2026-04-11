@@ -29,12 +29,10 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.serialization.encodeToString
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -117,8 +115,7 @@ class HostServerNetworkRepositoryTest {
                 // 2. NSD Registration triggered
                 verify { networkRegistration.registerService("GAME123", 12345) }
                 registrationStateFlow.value = NsdRegistrationState.Registered("Impostle_GAME123")
-
-                advanceUntilIdle()
+                runCurrent()
 
                 // 3. Final State
                 val state = awaitItem()
